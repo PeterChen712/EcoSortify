@@ -56,6 +56,9 @@ public class TrashMapFragment extends Fragment implements OnMapReadyCallback, Go
     private ExecutorService executor;
     private Map<Marker, TrashEntity> markerTrashMap = new HashMap<>();
     private String currentFilter = "All";
+    
+    // Tambahkan variabel untuk marker lokasi saat ini
+    private Marker currentLocationMarker;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -83,6 +86,17 @@ public class TrashMapFragment extends Fragment implements OnMapReadyCallback, Go
         binding.btnBack.setOnClickListener(v -> navigateBack());
         binding.fabFilter.setOnClickListener(v -> showFilterOptions());
         
+        // Tambahkan listener untuk test:
+        // TEMPORARY DEBUG BUTTON
+        binding.fabFilter.setOnLongClickListener(v -> {
+            // Test marker dengan lokasi default
+            LatLng testLocation = new LatLng(-5.1477, 119.4327);
+            addCurrentLocationMarker(testLocation, 10.0f);
+            debugMarkerStatus();
+            Toast.makeText(requireContext(), "Test marker added!", Toast.LENGTH_SHORT).show();
+            return true;
+        });
+        
         // Tambahkan kontrol detail level (jika ada di layout)
         // binding.btnZoomDetail1.setOnClickListener(v -> zoomToDetailLevel(1));
         // binding.btnZoomDetail2.setOnClickListener(v -> zoomToDetailLevel(2));
@@ -109,7 +123,7 @@ public class TrashMapFragment extends Fragment implements OnMapReadyCallback, Go
         // Set info window click listener
         mMap.setOnInfoWindowClickListener(this);
 
-        // Enable semua UI controls untuk navigasi detail
+        // Enable UI controls
         mMap.getUiSettings().setZoomControlsEnabled(true);
         mMap.getUiSettings().setCompassEnabled(true);
         mMap.getUiSettings().setMyLocationButtonEnabled(true);
@@ -118,11 +132,10 @@ public class TrashMapFragment extends Fragment implements OnMapReadyCallback, Go
         mMap.getUiSettings().setTiltGesturesEnabled(true);
         mMap.getUiSettings().setScrollGesturesEnabled(true);
         mMap.getUiSettings().setZoomGesturesEnabled(true);
-        mMap.getUiSettings().setAllGesturesEnabled(true);
         
-        // Set map type untuk detail maksimal dengan buildings 3D
+        // Set map type ke NORMAL (bukan satelit atau hybrid)
         mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
-        mMap.setBuildingsEnabled(true); // Enable 3D buildings
+        mMap.setBuildingsEnabled(true); // Enable 3D buildings untuk detail
         mMap.setIndoorEnabled(true); // Enable indoor maps
         mMap.setTrafficEnabled(false); // Disable traffic untuk clarity
     
@@ -136,7 +149,7 @@ public class TrashMapFragment extends Fragment implements OnMapReadyCallback, Go
         // Enable my location button
         mMap.setMyLocationEnabled(true);
         
-        // Set initial location dengan zoom tinggi
+        // Set initial location dengan zoom sedang
         LatLng defaultLocation = new LatLng(-5.1477, 119.4327);
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(defaultLocation, 15f));
 
@@ -196,11 +209,21 @@ public class TrashMapFragment extends Fragment implements OnMapReadyCallback, Go
                                         @Override
                                         public void onFinish() {
                                             Log.d("TrashMapFragment", "Camera animation completed at max zoom");
+                                            
+                                            // Tambahkan atau update marker lokasi saat ini SETELAH animasi selesai
+                                            addCurrentLocationMarker(currentLatLng, location.getAccuracy());
+                                            
+                                            // Debug marker status
+                                            debugMarkerStatus();
                                         }
                                         
                                         @Override
                                         public void onCancel() {
                                             Log.d("TrashMapFragment", "Camera animation cancelled");
+                                            
+                                            // Tetap tambahkan marker meski animasi dibatalkan
+                                            addCurrentLocationMarker(currentLatLng, location.getAccuracy());
+                                            debugMarkerStatus();
                                         }
                                     }
                                 );
@@ -229,6 +252,12 @@ public class TrashMapFragment extends Fragment implements OnMapReadyCallback, Go
                             
                             if (bestLocation != null) {
                                 showLocationInfo(bestLocation);
+                                
+                                // Pastikan marker lokasi saat ini ditambahkan
+                                if (mMap != null) {
+                                    LatLng finalLocation = new LatLng(bestLocation.getLatitude(), bestLocation.getLongitude());
+                                    addCurrentLocationMarker(finalLocation, bestLocation.getAccuracy());
+                                }
                             }
                             break;
                         }
@@ -253,6 +282,9 @@ public class TrashMapFragment extends Fragment implements OnMapReadyCallback, Go
                                 
                                 LatLng cachedLatLng = new LatLng(cachedLocation.getLatitude(), cachedLocation.getLongitude());
                                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(cachedLatLng, 20f));
+                                
+                                // Tambahkan marker untuk lokasi cache
+                                addCurrentLocationMarker(cachedLatLng, cachedLocation.getAccuracy());
                             }
                         }
                         
@@ -278,6 +310,257 @@ public class TrashMapFragment extends Fragment implements OnMapReadyCallback, Go
                 
         } catch (SecurityException e) {
             Log.e("TrashMapFragment", "Security exception in ultra detail location", e);
+        }
+    }
+
+    // Method untuk menambahkan marker lokasi saat ini
+    private void addCurrentLocationMarker(LatLng location, float accuracy) {
+        if (mMap == null) {
+            Log.w("TrashMapFragment", "Map is null, cannot add current location marker");
+            return;
+        }
+        
+        if (location == null) {
+            Log.w("TrashMapFragment", "Location is null, cannot add current location marker");
+            return;
+        }
+        
+        try {
+            // Hapus marker lokasi sebelumnya jika ada
+            if (currentLocationMarker != null) {
+                currentLocationMarker.remove();
+                Log.d("TrashMapFragment", "Removed previous current location marker");
+            }
+            
+            // Buat marker baru untuk lokasi saat ini
+            String title = "📍 Lokasi Saya";
+            String snippet = String.format(Locale.getDefault(), 
+                "Akurasi: ±%.1fm\nLat: %.6f\nLng: %.6f", 
+                accuracy, location.latitude, location.longitude);
+            
+            MarkerOptions markerOptions = new MarkerOptions()
+                    .position(location)
+                    .title(title)
+                    .snippet(snippet)
+                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)) // Warna biru untuk lokasi saya
+                    .anchor(0.5f, 0.5f) // Center the marker
+                    .draggable(false) // Tidak bisa di-drag
+                    .flat(false) // 3D marker
+                    .visible(true); // Pastikan marker terlihat
+        
+            currentLocationMarker = mMap.addMarker(markerOptions);
+            
+            if (currentLocationMarker != null) {
+                Log.d("TrashMapFragment", String.format(
+                    "✅ Current location marker successfully added at: %.6f, %.6f with accuracy ±%.1fm",
+                    location.latitude, location.longitude, accuracy
+                ));
+                
+                // Pastikan marker terlihat dengan menampilkan info window sebentar
+                currentLocationMarker.showInfoWindow();
+                
+                // Sembunyikan info window setelah 2 detik
+                new android.os.Handler().postDelayed(() -> {
+                    if (currentLocationMarker != null) {
+                        currentLocationMarker.hideInfoWindow();
+                    }
+                }, 2000);
+            } else {
+                Log.e("TrashMapFragment", "❌ Failed to add current location marker - marker is null");
+            }
+            
+        } catch (Exception e) {
+            Log.e("TrashMapFragment", "❌ Exception while adding current location marker", e);
+        }
+    }
+
+    private void loadTrashPoints() {
+        // Use LiveData properly
+        db.trashDao().getAllTrash().observe(getViewLifecycleOwner(), trashList -> {
+            if (trashList != null && !trashList.isEmpty()) {
+                updateMapMarkers(trashList);
+            } else {
+                // Jangan clear semua marker, hanya clear marker sampah
+                if (mMap != null) {
+                    // Simpan referensi current location marker
+                    LatLng currentLocationPosition = null;
+                    float currentLocationAccuracy = 0f;
+                    if (currentLocationMarker != null) {
+                        currentLocationPosition = currentLocationMarker.getPosition();
+                        String snippet = currentLocationMarker.getSnippet();
+                        if (snippet != null && snippet.contains("Akurasi:")) {
+                            try {
+                                String accuracyStr = snippet.substring(snippet.indexOf("±") + 1, snippet.indexOf("m"));
+                                currentLocationAccuracy = Float.parseFloat(accuracyStr);
+                            } catch (Exception e) {
+                                currentLocationAccuracy = 10f;
+                            }
+                        }
+                    }
+                    
+                    // Clear map dan marker trash
+                    mMap.clear();
+                    markerTrashMap.clear();
+                    currentLocationMarker = null;
+                    
+                    // Tambahkan kembali current location marker jika ada
+                    if (currentLocationPosition != null) {
+                        addCurrentLocationMarker(currentLocationPosition, currentLocationAccuracy);
+                    }
+                }
+            }
+        });
+    }
+    
+    private void filterTrashPoints(String filterType) {
+        currentFilter = filterType;
+        
+        if (filterType.equals("All")) {
+            // Load all trash points
+            db.trashDao().getAllTrash().observe(getViewLifecycleOwner(), trashList -> {
+                if (trashList != null) {
+                    updateMapMarkers(trashList);
+                }
+            });
+        } else {
+            // Load filtered trash points
+            db.trashDao().getTrashByType(filterType).observe(getViewLifecycleOwner(), trashList -> {
+                if (trashList != null) {
+                    updateMapMarkers(trashList);
+                } else {
+                    // Clear map if no filtered data
+                    if (mMap != null) {
+                        mMap.clear();
+                        markerTrashMap.clear();
+                    }
+                }
+            });
+        }
+    }
+
+    private void updateMapMarkers(List<TrashEntity> trashList) {
+        if (mMap == null) return;
+        
+        // Simpan referensi marker lokasi saat ini sebelum clear
+        LatLng currentLocationPosition = null;
+        float currentLocationAccuracy = 0f;
+        if (currentLocationMarker != null) {
+            currentLocationPosition = currentLocationMarker.getPosition();
+            String snippet = currentLocationMarker.getSnippet();
+            if (snippet != null && snippet.contains("Akurasi:")) {
+                try {
+                    String accuracyStr = snippet.substring(snippet.indexOf("±") + 1, snippet.indexOf("m"));
+                    currentLocationAccuracy = Float.parseFloat(accuracyStr);
+                } catch (Exception e) {
+                    currentLocationAccuracy = 10f; // Default accuracy
+                }
+            }
+        }
+        
+        // Clear semua marker
+        mMap.clear();
+        markerTrashMap.clear();
+        currentLocationMarker = null;
+
+        // Tambahkan kembali marker lokasi saat ini jika ada
+        if (currentLocationPosition != null) {
+            addCurrentLocationMarker(currentLocationPosition, currentLocationAccuracy);
+        }
+
+        // Tambahkan marker sampah
+        for (TrashEntity trash : trashList) {
+            if (trash.getLatitude() != 0 && trash.getLongitude() != 0) {
+                LatLng position = new LatLng(trash.getLatitude(), trash.getLongitude());
+                
+                // Set marker color based on trash type
+                float markerColor = getMarkerColorForTrashType(trash.getTrashType());
+                
+                String title = trash.getTrashType() != null ? trash.getTrashType() : "Unknown";
+                String snippet = "Tap for details";
+                
+                // Add additional info to snippet if available
+                if (trash.getDescription() != null && !trash.getDescription().isEmpty()) {
+                    snippet = trash.getDescription();
+                }
+                
+                Marker marker = mMap.addMarker(new MarkerOptions()
+                        .position(position)
+                        .title(title)
+                        .snippet(snippet)
+                        .icon(BitmapDescriptorFactory.defaultMarker(markerColor)));
+                
+                if (marker != null) {
+                    markerTrashMap.put(marker, trash);
+                }
+            }
+        }
+        
+        // TAMBAHKAN INI: Pastikan marker lokasi saat ini tetap ada setelah update
+        if (currentLocationPosition != null) {
+            addCurrentLocationMarker(currentLocationPosition, currentLocationAccuracy);
+        }
+    }
+
+    private float getMarkerColorForTrashType(String trashType) {
+        if (trashType == null) return BitmapDescriptorFactory.HUE_RED;
+        
+        switch (trashType.toLowerCase()) {
+            case "plastic":
+            case "plastic bottle":
+            case "plastic bag":
+                return BitmapDescriptorFactory.HUE_YELLOW;
+            case "paper":
+                return BitmapDescriptorFactory.HUE_BLUE;
+            case "glass":
+                return BitmapDescriptorFactory.HUE_GREEN;
+            case "metal":
+            case "metal can":
+                return BitmapDescriptorFactory.HUE_ORANGE;
+            case "organic":
+            case "food waste":
+                return BitmapDescriptorFactory.HUE_MAGENTA;
+            case "electronic":
+                return BitmapDescriptorFactory.HUE_CYAN;
+            case "hazardous":
+                return BitmapDescriptorFactory.HUE_VIOLET;
+            case "cigarette butt":
+                return BitmapDescriptorFactory.HUE_ROSE;
+            default:
+                return BitmapDescriptorFactory.HUE_RED;
+        }
+    }
+
+    private void showFilterOptions() {
+        String[] trashTypes = {"All", "Plastic", "Paper", "Glass", "Metal", "Organic", "Electronic", "Hazardous", "Cigarette Butt", "Other"};
+        
+        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(requireContext());
+        builder.setTitle("Filter Trash By Type");
+        builder.setItems(trashTypes, (dialog, which) -> {
+            String selectedType = trashTypes[which];
+            filterTrashPoints(selectedType);
+            Toast.makeText(requireContext(), "Showing " + selectedType + " trash", Toast.LENGTH_SHORT).show();
+        });
+        builder.show();
+    }
+
+    @Override
+    public void onInfoWindowClick(Marker marker) {
+        // Cek apakah marker yang diklik adalah marker lokasi saat ini
+        if (marker.equals(currentLocationMarker)) {
+            // Tampilkan toast dengan informasi lokasi detail
+            Toast.makeText(requireContext(), 
+                "📍 Ini lokasi Anda saat ini", 
+                Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        // Handle marker sampah
+        TrashEntity trash = markerTrashMap.get(marker);
+        if (trash != null) {
+            NavController navController = Navigation.findNavController(requireView());
+            Bundle args = new Bundle();
+            args.putInt("TRASH_ID", (int)trash.getId());
+            navController.navigate(R.id.action_trashMapFragment_to_trashDetailFragment, args);
         }
     }
 
@@ -350,154 +633,65 @@ public class TrashMapFragment extends Fragment implements OnMapReadyCallback, Go
         Log.d("TrashMapFragment", "Zoomed to detail level " + detailLevel + " (zoom " + zoomLevel + ")");
     }
 
-    private void loadTrashPoints() {
-        // Use LiveData properly
-        db.trashDao().getAllTrash().observe(getViewLifecycleOwner(), trashList -> {
-            if (trashList != null && !trashList.isEmpty()) {
-                updateMapMarkers(trashList);
-            } else {
-                // Clear map if no data
-                if (mMap != null) {
-                    mMap.clear();
-                    markerTrashMap.clear();
-                }
-            }
-        });
-    }
-    
-    private void filterTrashPoints(String filterType) {
-        currentFilter = filterType;
-        
-        if (filterType.equals("All")) {
-            // Load all trash points
-            db.trashDao().getAllTrash().observe(getViewLifecycleOwner(), trashList -> {
-                if (trashList != null) {
-                    updateMapMarkers(trashList);
-                }
-            });
-        } else {
-            // Load filtered trash points
-            db.trashDao().getTrashByType(filterType).observe(getViewLifecycleOwner(), trashList -> {
-                if (trashList != null) {
-                    updateMapMarkers(trashList);
-                } else {
-                    // Clear map if no filtered data
-                    if (mMap != null) {
-                        mMap.clear();
-                        markerTrashMap.clear();
-                    }
-                }
-            });
-        }
-    }
-
-    private void updateMapMarkers(List<TrashEntity> trashList) {
-        if (mMap == null) return;
-        
-        mMap.clear();
-        markerTrashMap.clear();
-
-        for (TrashEntity trash : trashList) {
-            if (trash.getLatitude() != 0 && trash.getLongitude() != 0) {
-                LatLng position = new LatLng(trash.getLatitude(), trash.getLongitude());
-                
-                // Set marker color based on trash type
-                float markerColor = getMarkerColorForTrashType(trash.getTrashType());
-                
-                String title = trash.getTrashType() != null ? trash.getTrashType() : "Unknown";
-                String snippet = "Tap for details";
-                
-                // Add additional info to snippet if available
-                if (trash.getDescription() != null && !trash.getDescription().isEmpty()) {
-                    snippet = trash.getDescription();
-                }
-                
-                Marker marker = mMap.addMarker(new MarkerOptions()
-                        .position(position)
-                        .title(title)
-                        .snippet(snippet)
-                        .icon(BitmapDescriptorFactory.defaultMarker(markerColor)));
-                
-                if (marker != null) {
-                    markerTrashMap.put(marker, trash);
-                }
-            }
-        }
-    }
-
-    private float getMarkerColorForTrashType(String trashType) {
-        if (trashType == null) return BitmapDescriptorFactory.HUE_RED;
-        
-        switch (trashType.toLowerCase()) {
-            case "plastic":
-            case "plastic bottle":
-            case "plastic bag":
-                return BitmapDescriptorFactory.HUE_YELLOW;
-            case "paper":
-                return BitmapDescriptorFactory.HUE_BLUE;
-            case "glass":
-                return BitmapDescriptorFactory.HUE_GREEN;
-            case "metal":
-            case "metal can":
-                return BitmapDescriptorFactory.HUE_ORANGE;
-            case "organic":
-            case "food waste":
-                return BitmapDescriptorFactory.HUE_MAGENTA;
-            case "electronic":
-                return BitmapDescriptorFactory.HUE_CYAN;
-            case "hazardous":
-                return BitmapDescriptorFactory.HUE_VIOLET;
-            case "cigarette butt":
-                return BitmapDescriptorFactory.HUE_ROSE;
-            default:
-                return BitmapDescriptorFactory.HUE_RED;
-        }
-    }
-
-    private void showFilterOptions() {
-        String[] trashTypes = {"All", "Plastic", "Paper", "Glass", "Metal", "Organic", "Electronic", "Hazardous", "Cigarette Butt", "Other"};
-        
-        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(requireContext());
-        builder.setTitle("Filter Trash By Type");
-        builder.setItems(trashTypes, (dialog, which) -> {
-            String selectedType = trashTypes[which];
-            filterTrashPoints(selectedType);
-            Toast.makeText(requireContext(), "Showing " + selectedType + " trash", Toast.LENGTH_SHORT).show();
-        });
-        builder.show();
-    }
-
-    @Override
-    public void onInfoWindowClick(Marker marker) {
-        TrashEntity trash = markerTrashMap.get(marker);
-        if (trash != null) {
-            NavController navController = Navigation.findNavController(requireView());
-            Bundle args = new Bundle();
-            args.putInt("TRASH_ID", (int)trash.getId()); // Changed from putLong to putInt
-            navController.navigate(R.id.action_trashMapFragment_to_trashDetailFragment, args);
-        }
-    }
-
-    private void requestLocationPermission() {
-        requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_PERMISSION_REQUEST_CODE);
-    }
-
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        
         if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Permission granted, initialize map dengan lokasi akurat
+                // Permission granted
+                Log.d("TrashMapFragment", "Location permission granted");
+                
                 if (mMap != null) {
-                    if (ActivityCompat.checkSelfPermission(requireContext(),
-                            Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                        mMap.setMyLocationEnabled(true);
-                        
-                        // Gunakan method yang sudah ada untuk konsistensi
-                        requestUltraDetailLocation();
+                    try {
+                        if (ActivityCompat.checkSelfPermission(requireContext(),
+                                Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                            
+                            mMap.setMyLocationEnabled(true);
+                            
+                            // Start location tracking
+                            requestUltraDetailLocation();
+                            
+                            Toast.makeText(requireContext(), 
+                                "📍 Location access granted! Finding your position...", 
+                                Toast.LENGTH_SHORT).show();
+                        }
+                    } catch (SecurityException e) {
+                        Log.e("TrashMapFragment", "Security exception after permission granted", e);
                     }
                 }
             } else {
-                Toast.makeText(requireContext(), "Lokasi diperlukan untuk menampilkan peta yang akurat", Toast.LENGTH_LONG).show();
+                // Permission denied
+                Log.w("TrashMapFragment", "Location permission denied");
+                
+                // Check if user selected "Don't ask again"
+                if (!ActivityCompat.shouldShowRequestPermissionRationale(requireActivity(),
+                        Manifest.permission.ACCESS_FINE_LOCATION)) {
+                    
+                    // User selected "Don't ask again" - show settings dialog
+                    new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                            .setTitle("Location Permission Required")
+                            .setMessage("Location access has been permanently denied. To enable location features, please go to Settings > Apps > Glean > Permissions and enable Location.")
+                            .setPositiveButton("Open Settings", (dialog, which) -> {
+                                try {
+                                    android.content.Intent intent = new android.content.Intent(
+                                        android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                                    android.net.Uri uri = android.net.Uri.fromParts("package", 
+                                        requireContext().getPackageName(), null);
+                                    intent.setData(uri);
+                                    startActivity(intent);
+                                } catch (Exception e) {
+                                    Log.e("TrashMapFragment", "Error opening settings", e);
+                                }
+                            })
+                            .setNegativeButton("Cancel", null)
+                            .show();
+                } else {
+                    // User just denied this time
+                    Toast.makeText(requireContext(), 
+                        "Location permission is required for full map functionality", 
+                        Toast.LENGTH_LONG).show();
+                }
             }
         }
     }
@@ -505,6 +699,54 @@ public class TrashMapFragment extends Fragment implements OnMapReadyCallback, Go
     private void navigateBack() {
         NavController navController = Navigation.findNavController(requireView());
         navController.navigateUp();
+    }
+
+    private void requestLocationPermission() {
+        try {
+            // Check if we should show rationale
+            if (ActivityCompat.shouldShowRequestPermissionRationale(requireActivity(),
+                    Manifest.permission.ACCESS_FINE_LOCATION)) {
+                
+                // Show explanation dialog
+                new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                        .setTitle("📍 Permission Required")
+                        .setMessage("Glean needs location access to:\n\n" +
+                                  "• Show your current position on the map\n" +
+                                  "• Help you find nearby trash points\n" +
+                                  "• Enable accurate trash reporting\n\n" +
+                                  "Your location data stays on your device.")
+                        .setPositiveButton("Allow", (dialog, which) -> {
+                            requestPermissions();
+                        })
+                        .setNegativeButton("Not Now", (dialog, which) -> {
+                            Toast.makeText(requireContext(), 
+                                "Map functionality will be limited without location access", 
+                                Toast.LENGTH_LONG).show();
+                        })
+                        .setCancelable(false)
+                        .show();
+            } else {
+                // Directly request permission
+                requestPermissions();
+            }
+        } catch (Exception e) {
+            Log.e("TrashMapFragment", "Error requesting location permission", e);
+            Toast.makeText(requireContext(), "Error requesting location permission", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    // Helper method untuk request permissions
+    private void requestPermissions() {
+        try {
+            ActivityCompat.requestPermissions(requireActivity(),
+                    new String[]{
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                    },
+                    LOCATION_PERMISSION_REQUEST_CODE);
+        } catch (Exception e) {
+            Log.e("TrashMapFragment", "Error in requestPermissions", e);
+        }
     }
 
     @Override
@@ -586,5 +828,20 @@ public class TrashMapFragment extends Fragment implements OnMapReadyCallback, Go
             Log.e("TrashMapFragment", "Error requesting new location", e);
             Toast.makeText(requireContext(), "Error getting location", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    // Method untuk debug status marker
+    private void debugMarkerStatus() {
+        Log.d("TrashMapFragment", "=== MARKER DEBUG STATUS ===");
+        Log.d("TrashMapFragment", "Map is null: " + (mMap == null));
+        Log.d("TrashMapFragment", "Current location marker is null: " + (currentLocationMarker == null));
+        Log.d("TrashMapFragment", "Trash markers count: " + markerTrashMap.size());
+        
+        if (currentLocationMarker != null) {
+            Log.d("TrashMapFragment", "Current marker position: " + currentLocationMarker.getPosition());
+            Log.d("TrashMapFragment", "Current marker visible: " + currentLocationMarker.isVisible());
+            Log.d("TrashMapFragment", "Current marker title: " + currentLocationMarker.getTitle());
+        }
+        Log.d("TrashMapFragment", "=== END DEBUG ===");
     }
 }

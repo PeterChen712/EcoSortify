@@ -39,6 +39,9 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -66,6 +69,9 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
     private int userId;
     private ExecutorService executor;
     private int currentRecordId = -1;
+
+    // Tambahkan variabel untuk marker lokasi saat ini
+    private Marker currentLocationMarker;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -126,12 +132,15 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         mMap.getUiSettings().setScrollGesturesEnabled(true);
         mMap.getUiSettings().setZoomGesturesEnabled(true);
         
-        // Set map type untuk detail maksimal
-        mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID); // Hybrid view dengan satellite + roads
+        // Set map type ke NORMAL (bukan HYBRID) untuk tampilan standar
+        mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+        mMap.setBuildingsEnabled(true); // Enable 3D buildings untuk detail
+        mMap.setIndoorEnabled(true); // Enable indoor maps
+        mMap.setTrafficEnabled(false); // Disable traffic untuk clarity
         
-        // Set initial location dengan zoom sangat tinggi
+        // Set initial location dengan zoom sedang
         LatLng defaultLocation = new LatLng(-5.1477, 119.4327); // Makassar
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(defaultLocation, 12f));
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(defaultLocation, 15f));
         
         // Langsung request lokasi presisi tinggi
         requestUltraHighPrecisionLocation();
@@ -142,8 +151,8 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
             // Konfigurasi request lokasi dengan presisi maksimal
             LocationRequest locationRequest = LocationRequest.create()
                     .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
-                    .setInterval(1000)  // 1 detik - sangat cepat
-                    .setFastestInterval(500)  // 0.5 detik - ultra cepat
+                    .setInterval(1000)  // 1 detik
+                    .setFastestInterval(500)  // 0.5 detik
                     .setNumUpdates(10) // Ambil 10 reading untuk presisi terbaik
                     .setSmallestDisplacement(0.1f); // Update untuk pergerakan 10 cm
         
@@ -176,13 +185,16 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                             if (mMap != null) {
                                 LatLng currentLatLng = new LatLng(location.getLatitude(), location.getLongitude());
                                 
-                                // Zoom level 21 untuk detail maksimal (building level)
-                                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 21f), 2000, null);
+                                // Zoom level 22 untuk detail maksimal tetapi tetap mode normal
+                                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 22f), 2000, null);
+                                
+                                // Tambahkan marker lokasi saat ini
+                                addCurrentLocationMarker(currentLatLng, location.getAccuracy());
                                 
                                 lastLocation = location;
                                 
                                 Log.d("PloggingFragment", String.format(
-                                    "Updated to best location: Accuracy=%.2fm, Zoom=21",
+                                    "Updated to best location: Accuracy=%.2fm, Zoom=22 (Normal Mode)",
                                     location.getAccuracy()
                                 ));
                             }
@@ -211,7 +223,11 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                         if (location != null && location.getAccuracy() < 20f) {
                             // Jika ada lokasi cache yang cukup akurat, gunakan sebagai starting point
                             LatLng currentLatLng = new LatLng(location.getLatitude(), location.getLongitude());
-                            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 19f));
+                            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 20f));
+                            
+                            // Tambahkan marker lokasi saat ini untuk cached location
+                            addCurrentLocationMarker(currentLatLng, location.getAccuracy());
+                            
                             lastLocation = location;
                             Log.d("PloggingFragment", "Using cached location as starting point");
                         }
@@ -241,6 +257,31 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         }
     }
 
+    // Method untuk menambahkan marker lokasi saat ini
+    private void addCurrentLocationMarker(LatLng location, float accuracy) {
+        if (mMap == null) return;
+        
+        // Hapus marker lokasi sebelumnya jika ada
+        if (currentLocationMarker != null) {
+            currentLocationMarker.remove();
+        }
+        
+        // Buat marker baru untuk lokasi saat ini
+        String title = "🚶 Posisi Saya";
+        String snippet = String.format(Locale.getDefault(), 
+            "Akurasi GPS: ±%.1fm\nSiap untuk plogging!", accuracy);
+        
+        currentLocationMarker = mMap.addMarker(new MarkerOptions()
+                .position(location)
+                .title(title)
+                .snippet(snippet)
+                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)) // Warna hijau untuk plogging
+                .anchor(0.5f, 0.5f)); // Center the marker
+        
+        Log.d("PloggingFragment", "Current location marker added for plogging at: " + 
+              location.latitude + ", " + location.longitude);
+    }
+
     // Method tambahan untuk continuous location tracking saat plogging
     private void startContinuousLocationTracking() {
         try {
@@ -261,6 +302,9 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                         
                         // Update route tracking
                         routePoints.add(currentLatLng);
+                        
+                        // Update marker lokasi saat ini selama tracking
+                        addCurrentLocationMarker(currentLatLng, location.getAccuracy());
                         
                         // Calculate distance if we have a previous location
                         if (lastLocation != null) {
