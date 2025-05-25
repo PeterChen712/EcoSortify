@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main_navigation"
+    app:startDestination="@id/homeFragment">
+
+    <fragment
+        android:id="@+id/homeFragment"
+        android:name="com.example.glean.fragment.HomeFragment"
+        android:label="Home"
+        tools:layout="@layout/fragment_home">
+        <action
+            android:id="@+id/action_homeFragment_to_ploggingFragment"
+            app:destination="@id/ploggingFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_historyFragment"
+            app:destination="@id/historyFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_trashMapFragment"
+            app:destination="@id/trashMapFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/ploggingFragment"
+        android:name="com.example.glean.fragment.PloggingFragment"
+        android:label="Plogging"
+        tools:layout="@layout/fragment_plogging">
+        <action
+            android:id="@+id/action_ploggingFragment_to_summaryFragment"
+            app:destination="@id/summaryFragment" />
+        <action
+            android:id="@+id/action_ploggingFragment_to_trashMLFragment"
+            app:destination="@id/trashMLFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/trashMLFragment"
+        android:name="com.example.glean.fragment.TrashMLFragment"
+        android:label="Trash Classification"
+        tools:layout="@layout/fragment_trash_ml">
+        <argument
+            android:name="RECORD_ID"
+            app:argType="integer"
+            android:defaultValue="-1" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/statsFragment"
+        android:name="com.example.glean.fragment.StatsFragment"
+        android:label="Statistics"
+        tools:layout="@layout/fragment_stats">
+        <action
+            android:id="@+id/action_statsFragment_to_historyFragment"
+            app:destination="@id/historyFragment" />
+        <action
+            android:id="@+id/action_statsFragment_to_challengeFragment"
+            app:destination="@id/challengeFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/newsFragment"
+        android:name="com.example.glean.fragment.NewsFragment"
+        android:label="News"
+        tools:layout="@layout/fragment_news">
+        <action
+            android:id="@+id/action_newsFragment_to_newsDetailFragment"
+            app:destination="@id/newsDetailFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/newsDetailFragment"
+        android:name="com.example.glean.fragment.NewsDetailFragment"
+        android:label="News Detail"
+        tools:layout="@layout/fragment_news_detail">
+        <argument
+            android:name="NEWS_ID"
+            app:argType="integer"
+            android:defaultValue="-1" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/profileFragment"
+        android:name="com.example.glean.fragment.ProfileFragment"
+        android:label="Profile"
+        tools:layout="@layout/fragment_profile">
+        <action
+            android:id="@+id/action_profileFragment_to_profileDecorFragment"
+            app:destination="@id/profileDecorFragment" />
+        <action
+            android:id="@+id/action_profileFragment_to_loginFragment"
+            app:destination="@id/loginFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/profileDecorFragment"
+        android:name="com.example.glean.fragment.ProfileDecorFragment"
+        android:label="Profile Customization"
+        tools:layout="@layout/fragment_profile_decor" />
+
+    <fragment
+        android:id="@+id/historyFragment"
+        android:name="com.example.glean.fragment.HistoryFragment"
+        android:label="Activity History"
+        tools:layout="@layout/fragment_history">
+        <action
+            android:id="@+id/action_historyFragment_to_summaryFragment"
+            app:destination="@id/summaryFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/summaryFragment"
+        android:name="com.example.glean.fragment.SummaryFragment"
+        android:label="Activity Summary"
+        tools:layout="@layout/fragment_summary">
+        <argument
+            android:name="RECORD_ID"
+            app:argType="integer"
+            android:defaultValue="-1" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/challengeFragment"
+        android:name="com.example.glean.fragment.ChallengeFragment"
+        android:label="Challenges"
+        tools:layout="@layout/fragment_challenge">
+        <action
+            android:id="@+id/action_challengeFragment_to_challengeDetailFragment"
+            app:destination="@id/challengeDetailFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/challengeDetailFragment"
+        android:name="com.example.glean.fragment.ChallengeDetailFragment"
+        android:label="Challenge Detail"
+        tools:layout="@layout/fragment_challenge_detail">
+        <argument
+            android:name="CHALLENGE_ID"
+            app:argType="integer"
+            android:defaultValue="-1" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/aboutFragment"
+        android:name="com.example.glean.fragment.AboutFragment"
+        android:label="About"
+        tools:layout="@layout/fragment_about" />
+
+    <fragment
+        android:id="@+id/loginFragment"
+        android:name="com.example.glean.fragment.LoginFragment"
+        android:label="Login"
+        tools:layout="@layout/fragment_login">
+        <action
+            android:id="@+id/action_loginFragment_to_registerFragment"
+            app:destination="@id/registerFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/registerFragment"
+        android:name="com.example.glean.fragment.RegisterFragment"
+        android:label="Register"
+        tools:layout="@layout/fragment_register">
+        <action
+            android:id="@+id/action_registerFragment_to_loginFragment"
+            app:destination="@id/loginFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/trashListFragment"
+        android:name="com.example.glean.fragment.TrashListFragment"
+        android:label="Trash List"
+        tools:layout="@layout/fragment_trash_list">
+        <action
+            android:id="@+id/action_trashListFragment_to_trashDetailFragment"
+            app:destination="@id/trashDetailFragment" />
+        <argument
+            android:name="RECORD_ID"
+            app:argType="integer"
+            android:defaultValue="-1" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/trashMapFragment"
+        android:name="com.example.glean.fragment.TrashMapFragment"
+        android:label="Trash Map"
+        tools:layout="@layout/fragment_trash_map">
+        <action
+            android:id="@+id/action_trashMapFragment_to_trashDetailFragment"
+            app:destination="@id/trashDetailFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/trashDetailFragment"
+        android:name="com.example.glean.fragment.TrashDetailFragment"
+        android:label="Trash Detail"
+        tools:layout="@layout/fragment_trash_detail">
+        <argument
+            android:name="TRASH_ID"
+            app:argType="integer"
+            android:defaultValue="-1" />
+    </fragment>
+
+</navigation>

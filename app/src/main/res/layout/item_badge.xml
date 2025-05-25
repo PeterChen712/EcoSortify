@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_margin="4dp"
+    app:cardCornerRadius="8dp"
+    app:cardElevation="2dp">
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="8dp"
+        android:gravity="center">
+
+        <ImageView
+            android:id="@+id/iv_badge"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:contentDescription="Badge"
+            android:scaleType="centerCrop"
+            tools:src="@drawable/badge_gold" />
+
+        <TextView
+            android:id="@+id/tv_badge_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textSize="10sp"
+            android:textColor="@android:color/black"
+            android:gravity="center"
+            tools:text="Gold" />
+
+    </LinearLayout>
+</androidx.cardview.widget.CardView>
