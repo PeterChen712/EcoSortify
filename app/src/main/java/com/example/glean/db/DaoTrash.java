@@ -47,6 +47,16 @@ public interface DaoTrash {
     @Query("SELECT COUNT(*) FROM trash WHERE recordId = :recordId")
     int getTrashCountByRecordIdSync(int recordId);
     
+    @Query("SELECT SUM(CASE " +
+           "WHEN trashType = 'plastic' THEN 10 " +
+           "WHEN trashType = 'paper' THEN 8 " +
+           "WHEN trashType = 'metal' THEN 15 " +
+           "WHEN trashType = 'glass' THEN 12 " +
+           "WHEN trashType = 'organic' THEN 5 " +
+           "ELSE 10 " +  // Default points for unrecognized types
+           "END) FROM trash WHERE recordId = :recordId")
+    int getTotalPointsByRecordIdSync(int recordId);
+    
     @Query("SELECT * FROM trash ORDER BY timestamp DESC")
     LiveData<List<TrashEntity>> getAllTrash();
     
