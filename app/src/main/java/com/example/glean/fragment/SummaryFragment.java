@@ -1,13 +1,21 @@
 package com.example.glean.fragment;
 
 import android.content.Intent;
+import android.content.res.ColorStateList;
+import android.location.Location;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
@@ -16,10 +24,17 @@ import com.example.glean.R;
 import com.example.glean.databinding.FragmentSummaryBinding;
 import com.example.glean.db.AppDatabase;
 import com.example.glean.model.RecordEntity;
+import com.example.glean.model.TrashEntity;
+import com.example.glean.model.CommunityPostModel;
+import com.example.glean.helper.FirebaseHelper;
+import com.google.firebase.auth.FirebaseUser;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -29,6 +44,11 @@ public class SummaryFragment extends Fragment {
     private AppDatabase db;
     private ExecutorService executor;
     private int recordId;
+    
+    private FirebaseHelper firebaseHelper;
+    private CommunityPostModel pendingPost;
+    private RecordEntity currentRecord; // Add this missing variable
+    private Location lastKnownLocation; // Add this missing variable
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -40,6 +60,8 @@ public class SummaryFragment extends Fragment {
         if (getArguments() != null) {
             recordId = getArguments().getInt("RECORD_ID", -1);
         }
+        
+        firebaseHelper = new FirebaseHelper(requireContext());
     }
 
     @Nullable
@@ -59,6 +81,9 @@ public class SummaryFragment extends Fragment {
         
         // Load activity data
         loadActivityData();
+        
+        // Add share to community button - comment out until layout is updated
+        // binding.btnShareCommunity.setOnClickListener(v -> shareToCommunitiy());
     }
 
     private void loadActivityData() {
@@ -69,6 +94,7 @@ public class SummaryFragment extends Fragment {
                 
                 requireActivity().runOnUiThread(() -> {
                     if (record != null) {
+                        currentRecord = record; // Store the record for later use
                         displayActivityData(record);
                     }
                 });
@@ -189,5 +215,173 @@ public class SummaryFragment extends Fragment {
     public void onDestroy() {
         super.onDestroy();
         executor.shutdown();
+    }
+
+    private void shareToCommunitiy() {
+        if (!firebaseHelper.isUserLoggedIn()) {
+            showLoginPrompt();
+            return;
+        }
+
+        if (currentRecord == null) {
+            Toast.makeText(requireContext(), "No record data available", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Create community post from plogging data
+        FirebaseUser user = firebaseHelper.getCurrentUser();
+        String content = createPloggingPostContent(currentRecord);
+        
+        CommunityPostModel post = new CommunityPostModel(
+                user.getUid(),
+                user.getDisplayName() != null ? user.getDisplayName() : "Anonymous",
+                content
+        );
+        
+        post.setCategory("plogging");
+        post.setUserProfileUrl(user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : null);
+        
+        // Add metadata
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("distance_km", currentRecord.getTotalDistance() / 1000f);
+        metadata.put("duration_minutes", currentRecord.getDuration() / 60000);
+        metadata.put("trash_count", currentRecord.getTrashCount());
+        metadata.put("points_earned", currentRecord.getTrashCount() * 10); // Fixed: use calculated points
+        metadata.put("record_id", currentRecord.getId());
+        post.setMetadata(metadata);
+        
+        // Show sharing dialog
+        showSharingDialog(post);
+    }
+
+    private void showSharingDialog(CommunityPostModel post) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+        View dialogView = LayoutInflater.from(requireContext())
+                .inflate(R.layout.dialog_share_community, null);
+        
+        EditText etContent = dialogView.findViewById(R.id.etContent);
+        CheckBox cbIncludeLocation = dialogView.findViewById(R.id.cbIncludeLocation);
+        CheckBox cbIncludePhoto = dialogView.findViewById(R.id.cbIncludePhoto);
+        TextView tvPreview = dialogView.findViewById(R.id.tvPreview);
+        
+        etContent.setText(post.getContent());
+        tvPreview.setText("Preview: " + post.getContent());
+        
+        builder.setView(dialogView)
+                .setTitle("Share to Community")
+                .setPositiveButton("Share", (dialog, which) -> {
+                    post.setContent(etContent.getText().toString().trim());
+                    
+                    if (cbIncludeLocation.isChecked() && lastKnownLocation != null) {
+                        post.setLatitude(lastKnownLocation.getLatitude());
+                        post.setLongitude(lastKnownLocation.getLongitude());
+                        post.setLocation("Plogging location");
+                    }
+                    
+                    sharePostToFirebase(post, cbIncludePhoto.isChecked());
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void sharePostToFirebase(CommunityPostModel post, boolean includePhoto) {
+        // Comment out until progressBar and btnShareCommunity are added to layout
+        // binding.progressBar.setVisibility(View.VISIBLE);
+        // binding.btnShareCommunity.setEnabled(false);
+        
+        if (includePhoto && currentRecord != null) {
+            // Find best photo from trash collection
+            executor.execute(() -> {
+                // Use synchronous method instead of LiveData
+                List<TrashEntity> trashItems = db.trashDao().getTrashByRecordIdSync(currentRecord.getId());
+                TrashEntity photoTrash = null;
+                
+                for (TrashEntity trash : trashItems) {
+                    if (trash.getPhotoPath() != null && !trash.getPhotoPath().isEmpty()) {
+                        photoTrash = trash;
+                        break;
+                    }
+                }
+                
+                if (photoTrash != null) {
+                    String photoPath = photoTrash.getPhotoPath();
+                    requireActivity().runOnUiThread(() -> {
+                        uploadPhotoAndShare(post, photoPath);
+                    });
+                } else {
+                    requireActivity().runOnUiThread(() -> {
+                        sharePostWithoutPhoto(post);
+                    });
+                }
+            });
+        } else {
+            sharePostWithoutPhoto(post);
+        }
+    }
+
+    private void uploadPhotoAndShare(CommunityPostModel post, String photoPath) {
+        firebaseHelper.uploadPostImage(photoPath,
+                imageUrl -> {
+                    post.setImageUrl(imageUrl);
+                    sharePostWithoutPhoto(post);
+                },
+                error -> {
+                    Toast.makeText(requireContext(), "Failed to upload photo: " + error.getMessage(), 
+                                   Toast.LENGTH_SHORT).show();
+                    sharePostWithoutPhoto(post);
+                });
+    }
+
+    private void sharePostWithoutPhoto(CommunityPostModel post) {
+        firebaseHelper.createPost(post,
+                postId -> {
+                    // Comment out until UI elements are added to layout
+                    // binding.progressBar.setVisibility(View.GONE);
+                    // binding.btnShareCommunity.setEnabled(true);
+                    
+                    Toast.makeText(requireContext(), "Shared to community successfully! 🎉", 
+                                   Toast.LENGTH_LONG).show();
+                    
+                    // Show success animation or update UI
+                    // binding.btnShareCommunity.setText("✓ Shared");
+                    // binding.btnShareCommunity.setBackgroundTintList(
+                    //         ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.success)));
+                },
+                error -> {
+                    // Comment out until UI elements are added to layout
+                    // binding.progressBar.setVisibility(View.GONE);
+                    // binding.btnShareCommunity.setEnabled(true);
+                    Toast.makeText(requireContext(), "Failed to share: " + error.getMessage(), 
+                                   Toast.LENGTH_SHORT).show();
+                });
+    }
+
+    private String createPloggingPostContent(RecordEntity record) {
+        float distanceKm = record.getTotalDistance() / 1000f;
+        int durationMin = (int) (record.getDuration() / 60000);
+        
+        return String.format(Locale.getDefault(),
+                "🏃‍♂️ Just completed an amazing plogging session!\n\n" +
+                "📊 Stats:\n" +
+                "• Distance: %.2f km\n" +
+                "• Duration: %d minutes\n" +
+                "• Trash collected: %d items\n" +
+                "• Points earned: %d\n\n" +
+                "Every small action makes a big difference! 🌱\n" +
+                "#GleanGo #Plogging #MakeTheWorldClean",
+                distanceKm, durationMin, record.getTrashCount(), record.getTrashCount() * 10);
+    }
+
+    private void showLoginPrompt() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+        builder.setTitle("Join Community")
+                .setMessage("Sign in to share your achievements with the GleanGo community!")
+                .setPositiveButton("Sign In", (dialog, which) -> {
+                    // Navigate to community fragment which will show login
+                    NavController navController = Navigation.findNavController(requireView());
+                    navController.navigate(R.id.communityFeedFragment);
+                })
+                .setNegativeButton("Later", null)
+                .show();
     }
 }

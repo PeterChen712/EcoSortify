@@ -12,57 +12,55 @@ import androidx.fragment.app.Fragment;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.glean.R;
 import com.example.glean.adapter.NewsAdapter;
 import com.example.glean.api.NewsApiService;
-import com.example.glean.util.ApiConfig;  // Fixed import statement
 import com.example.glean.databinding.FragmentNewsBinding;
 import com.example.glean.db.AppDatabase;
 import com.example.glean.model.NewsEntity;
-import com.example.glean.model.NewsItem;
 import com.example.glean.model.NewsResponse;
+import com.example.glean.model.NewsItem;
+import com.example.glean.util.ApiConfig;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import okhttp3.OkHttpClient;
-import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
-public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClickListener {
+public class NewsFragment extends Fragment implements 
+        NewsAdapter.OnNewsItemClickListener,
+        SwipeRefreshLayout.OnRefreshListener {
 
     private FragmentNewsBinding binding;
-    private NewsAdapter adapter;
-    private List<NewsItem> newsList = new ArrayList<>();
+    private NewsAdapter newsAdapter;
+    private List<NewsEntity> newsList;   // Keep this for database operations
+    private List<NewsItem> newsItemList; // Add this for the adapter
     private AppDatabase db;
     private ExecutorService executor;
-    private NewsApiService newsService;
-    private boolean isLoading = false;
+    private NewsApiService newsApiService;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        newsList = new ArrayList<>();
+        newsItemList = new ArrayList<>();  // Initialize the new list
         db = AppDatabase.getInstance(requireContext());
-        executor = Executors.newSingleThreadExecutor();
+        executor = Executors.newFixedThreadPool(2);
         
-        // Initialize Retrofit with ApiConfig
+        // Initialize Retrofit for News API
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(ApiConfig.NEWS_API_BASE_URL)
+                .baseUrl("https://newsapi.org/v2/")
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
-        
-        newsService = retrofit.create(NewsApiService.class);
+        newsApiService = retrofit.create(NewsApiService.class);
     }
 
     @Nullable
@@ -76,215 +74,281 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         
-        // Setup RecyclerView
-        binding.rvNews.setLayoutManager(new LinearLayoutManager(requireContext()));
-        adapter = new NewsAdapter(newsList, this);
-        binding.rvNews.setAdapter(adapter);
+        setupUI();
+        loadCachedNews();
         
-        // Setup SwipeRefreshLayout
-        binding.swipeRefresh.setOnRefreshListener(this::fetchNews);
+        // Load online news if available
+        if (isOnline()) {
+            loadOnlineNews();
+        }
+    }
+
+    private void setupUI() {
+        // Setup RecyclerView with newsItemList instead of newsList
+        newsAdapter = new NewsAdapter(newsItemList, this);
+        binding.rvNews.setLayoutManager(new LinearLayoutManager(requireContext()));
+        binding.rvNews.setAdapter(newsAdapter);
+        
+        // Setup SwipeRefresh
+        binding.swipeRefresh.setOnRefreshListener(this);
         binding.swipeRefresh.setColorSchemeResources(
-                R.color.colorPrimary,
-                R.color.colorPrimaryDark,
-                R.color.colorAccent
+                R.color.primary,
+                R.color.primary_dark,
+                R.color.accent
         );
         
-        // Load cached news first, then fetch from API
-        loadCachedNews();
+        // Setup category filters
+        binding.chipAll.setOnClickListener(v -> filterNews("all"));
+        binding.chipEnvironment.setOnClickListener(v -> filterNews("environment"));
+        binding.chipRecycling.setOnClickListener(v -> filterNews("recycling"));
+        binding.chipClimate.setOnClickListener(v -> filterNews("climate"));
     }
-    
+
     private void loadCachedNews() {
-        binding.swipeRefresh.setRefreshing(true);
-        
         executor.execute(() -> {
-            List<NewsEntity> cachedNews = db.newsDao().getAllNews().getValue();
+            List<NewsEntity> cachedNews = db.newsDao().getAllNewsSync(); // Using synchronous method
             
             requireActivity().runOnUiThread(() -> {
-                if (cachedNews != null && !cachedNews.isEmpty()) {
+                if (!cachedNews.isEmpty()) {
                     newsList.clear();
-                    
-                    for (NewsEntity entity : cachedNews) {
-                        newsList.add(new NewsItem(
-                                entity.getId(),
-                                entity.getTitle(),
-                                entity.getPreview(),
-                                entity.getImageUrl(),
-                                entity.getDate(),
-                                entity.getSource()
-                        ));
-                    }
-                    
-                    adapter.notifyDataSetChanged();
-                    binding.swipeRefresh.setRefreshing(false);
+                    newsList.addAll(cachedNews);
+                    updateAdapterList();  // Convert entities to items
+                    newsAdapter.notifyDataSetChanged();
+                    binding.tvEmptyState.setVisibility(View.GONE);
+                } else {
+                    binding.tvEmptyState.setVisibility(View.VISIBLE);
+                    binding.tvEmptyState.setText("No cached news available.\nPull to refresh when online.");
                 }
-                
-                // Fetch latest news from API
-                fetchNews();
             });
         });
     }
-    
-    private void fetchNews() {
-        if (isLoading) return;
-        isLoading = true;
-        
+
+    private void loadOnlineNews() {
         binding.progressBar.setVisibility(View.VISIBLE);
         
-        // Use ApiConfig for API key and other parameters
-        newsService.getNews(
-                ApiConfig.DEFAULT_NEWS_QUERY, 
-                ApiConfig.getNewsApiKey(),
-                ApiConfig.NEWS_LANGUAGE, 
-                ApiConfig.NEWS_SORT_BY, 
-                ApiConfig.NEWS_PAGE_SIZE
-        ).enqueue(new Callback<NewsResponse>() {
+        // Load environmental news
+        String query = "environment OR recycling OR sustainability OR climate change OR plastic pollution";
+        String apiKey = ApiConfig.getNewsApiKey();
+        
+        if (apiKey == null || apiKey.isEmpty()) {
+            binding.progressBar.setVisibility(View.GONE);
+            binding.swipeRefresh.setRefreshing(false);
+            Toast.makeText(requireContext(), "News API key not configured", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Call<NewsResponse> call = newsApiService.getEnvironmentalNews(
+                query, apiKey, "en", "publishedAt", 50, 
+                "bbc.co.uk,reuters.com,cnn.com,theguardian.com"
+        );
+
+        call.enqueue(new Callback<NewsResponse>() {
             @Override
             public void onResponse(Call<NewsResponse> call, Response<NewsResponse> response) {
+                binding.progressBar.setVisibility(View.GONE);
+                binding.swipeRefresh.setRefreshing(false);
+                
                 if (response.isSuccessful() && response.body() != null) {
-                    processNewsResponse(response.body());
+                    List<NewsResponse.Article> articles = response.body().getArticles();
+                    if (articles != null && !articles.isEmpty()) {
+                        cacheAndDisplayNews(articles);
+                    }
                 } else {
-                    onApiError("Error: " + response.code());
+                    Toast.makeText(requireContext(), "Failed to load news", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(Call<NewsResponse> call, Throwable t) {
-                onApiError("Network error: " + t.getMessage());
+                binding.progressBar.setVisibility(View.GONE);
+                binding.swipeRefresh.setRefreshing(false);
+                Toast.makeText(requireContext(), "Network error: " + t.getMessage(), 
+                               Toast.LENGTH_SHORT).show();
             }
         });
     }
-    
-    private void processNewsResponse(NewsResponse response) {
-        if (response.getArticles() == null || response.getArticles().isEmpty()) {
-            onApiError("No news found");
-            return;
-        }
-        
-        // Convert API response to our model
-        List<NewsItem> apiNews = new ArrayList<>();
-        List<NewsEntity> entitiesToSave = new ArrayList<>();
-        
-        SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US);
-        SimpleDateFormat outputFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
-        
-        int id = 1;
-        for (NewsResponse.Article article : response.getArticles()) {
-            if (article.getTitle() == null || article.getDescription() == null) continue;
-            
-            String dateStr = article.getPublishedAt();
-            String formattedDate = dateStr;
-            
-            try {
-                Date date = inputFormat.parse(dateStr);
-                formattedDate = outputFormat.format(date);
-            } catch (ParseException e) {
-                e.printStackTrace();
-            }
-            
-            NewsItem item = new NewsItem(
-                    id++,
-                    article.getTitle(),
-                    article.getDescription(),
-                    article.getUrlToImage(),
-                    formattedDate,
-                    article.getSource() != null ? article.getSource().getName() : "Unknown"
-            );
-            
-            apiNews.add(item);
-            
-            // Create database entity
-            NewsEntity entity = new NewsEntity();
-            entity.setId(item.getId());
-            entity.setTitle(item.getTitle());
-            entity.setPreview(item.getContent());
-            entity.setImageUrl(item.getImageUrl());
-            entity.setDate(item.getDate());
-            entity.setSource(item.getCategory());
-            entity.setFullContent(article.getContent() != null ? article.getContent() : item.getContent());
-            entity.setUrl(article.getUrl());
-            
-            entitiesToSave.add(entity);
-        }
-        
-        // Update UI with new data
-        newsList.clear();
-        newsList.addAll(apiNews);
-        
-        // Cache in database
+
+    private void cacheAndDisplayNews(List<NewsResponse.Article> articles) {
         executor.execute(() -> {
-            db.newsDao().deleteAll();
-            for (NewsEntity entity : entitiesToSave) {
-                db.newsDao().insert(entity);
-            }
-        });
-        
-        requireActivity().runOnUiThread(() -> {
-            adapter.notifyDataSetChanged();
-            binding.swipeRefresh.setRefreshing(false);
-            isLoading = false;
-        });
-    }
-    
-    private void onApiError(String errorMessage) {
-        requireActivity().runOnUiThread(() -> {
-            binding.swipeRefresh.setRefreshing(false);
-            isLoading = false;
-            Toast.makeText(requireContext(), errorMessage, Toast.LENGTH_SHORT).show();
+            // Clear old cached news
+            db.newsDao().deleteAllNews();
             
-            // If we don't have any cached news, show fallback data
-            if (newsList.isEmpty()) {
-                loadFallbackNews();
+            // Convert and cache new articles
+            List<NewsEntity> newsEntities = new ArrayList<>();
+            for (NewsResponse.Article article : articles) {
+                if (article.getTitle() != null && !article.getTitle().equals("[Removed]")) {
+                    NewsEntity newsEntity = new NewsEntity();
+                    newsEntity.setTitle(article.getTitle());
+                    newsEntity.setPreview(article.getDescription());
+                    newsEntity.setFullContent(article.getContent());
+                    newsEntity.setDate(article.getPublishedAt());
+                    newsEntity.setSource(article.getSource() != null ? article.getSource().getName() : "Unknown");
+                    newsEntity.setImageUrl(article.getUrlToImage());
+                    newsEntity.setUrl(article.getUrl());
+                    newsEntity.setCategory(determineCategory(article.getTitle(), article.getDescription()));
+                    newsEntity.setCreatedAt(System.currentTimeMillis());
+                    
+                    newsEntities.add(newsEntity);
+                }
             }
+            
+            // Insert to database
+            long[] ids = db.newsDao().insertNews(newsEntities);
+            
+            // Update IDs
+            for (int i = 0; i < newsEntities.size() && i < ids.length; i++) {
+                newsEntities.get(i).setId((int) ids[i]);
+            }
+            
+            // Update UI
+            requireActivity().runOnUiThread(() -> {
+                newsList.clear();
+                newsList.addAll(newsEntities);
+                updateAdapterList(); // Add this line to convert entities to items
+                newsAdapter.notifyDataSetChanged();
+                binding.tvEmptyState.setVisibility(View.GONE);
+            });
         });
     }
-    
-    private void loadFallbackNews() {
-        // Fallback to static data if API fails and no cache
-        newsList.add(new NewsItem(
-                1,
-                "The Impact of Plogging on Local Communities",
-                "Discover how plogging is transforming local communities and reducing waste...",
-                "https://example.com/images/news1.jpg",
-                "2023-05-01",
-                "Environmental News"
-        ));
-        newsList.add(new NewsItem(
-                2,
-                "5 Ways to Reduce Plastic Use in Your Daily Life",
-                "Simple tips to cut down on plastic consumption and make a difference...",
-                "https://example.com/images/news2.jpg",
-                "2023-04-25",
-                "Tips & Tricks"
-        ));
-        newsList.add(new NewsItem(
-                3,
-                "Global Plogging Day: Join the Movement",
-                "Mark your calendars! Global Plogging Day is coming up...",
-                "https://example.com/images/news3.jpg",
-                "2023-04-20",
-                "Events"
-        ));
+
+    private String determineCategory(String title, String description) {
+        String text = (title + " " + description).toLowerCase();
         
-        adapter.notifyDataSetChanged();
+        if (text.contains("recycle") || text.contains("plastic") || text.contains("waste")) {
+            return "recycling";
+        } else if (text.contains("climate") || text.contains("carbon") || text.contains("emission")) {
+            return "climate";
+        } else {
+            return "environment";
+        }
     }
-    
+
+    private void filterNews(String category) {
+        // Reset all chips
+        binding.chipAll.setChecked(false);
+        binding.chipEnvironment.setChecked(false);
+        binding.chipRecycling.setChecked(false);
+        binding.chipClimate.setChecked(false);
+        
+        // Set selected chip
+        switch (category) {
+            case "all":
+                binding.chipAll.setChecked(true);
+                break;
+            case "environment":
+                binding.chipEnvironment.setChecked(true);
+                break;
+            case "recycling":
+                binding.chipRecycling.setChecked(true);
+                break;
+            case "climate":
+                binding.chipClimate.setChecked(true);
+                break;
+        }
+        
+        executor.execute(() -> {
+            List<NewsEntity> filteredNews;
+            if ("all".equals(category)) {
+                filteredNews = db.newsDao().getAllNewsSync(); // Changed from getAllNews() to getAllNewsSync()
+            } else {
+                filteredNews = db.newsDao().getNewsByCategory(category);
+            }
+            
+            requireActivity().runOnUiThread(() -> {
+                newsList.clear();
+                newsList.addAll(filteredNews);
+                updateAdapterList(); // Convert entities to items
+                newsAdapter.notifyDataSetChanged();
+                
+                if (filteredNews.isEmpty()) {
+                    binding.tvEmptyState.setVisibility(View.VISIBLE);
+                    binding.tvEmptyState.setText("No news found for this category");
+                } else {
+                    binding.tvEmptyState.setVisibility(View.GONE);
+                }
+            });
+        });
+    }
+
+    private boolean isOnline() {
+        try {
+            android.net.ConnectivityManager cm = (android.net.ConnectivityManager) 
+                requireContext().getSystemService(android.content.Context.CONNECTIVITY_SERVICE);
+            android.net.NetworkInfo netInfo = cm.getActiveNetworkInfo();
+            return netInfo != null && netInfo.isConnectedOrConnecting();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     @Override
-    public void onNewsItemClick(NewsItem newsItem) {
+    public void onRefresh() {
+        if (isOnline()) {
+            loadOnlineNews();
+        } else {
+            binding.swipeRefresh.setRefreshing(false);
+            Toast.makeText(requireContext(), "No internet connection", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    public void onNewsClick(NewsEntity news, int position) {
         NavController navController = Navigation.findNavController(requireView());
         Bundle args = new Bundle();
-        args.putInt("NEWS_ID", newsItem.getId());
+        args.putInt("NEWS_ID", news.getId());
         navController.navigate(R.id.action_newsFragment_to_newsDetailFragment, args);
     }
-    
+
+    public void onNewsShare(NewsEntity news, int position) {
+        android.content.Intent shareIntent = new android.content.Intent(android.content.Intent.ACTION_SEND);
+        shareIntent.setType("text/plain");
+        shareIntent.putExtra(android.content.Intent.EXTRA_TEXT, 
+                news.getTitle() + "\n\n" + news.getUrl());
+        startActivity(android.content.Intent.createChooser(shareIntent, "Share news"));
+    }
+
+    @Override
+    public void onNewsItemClick(NewsItem newsItem) {
+        // Create equivalent NewsEntity if needed
+        NewsEntity newsEntity = new NewsEntity();
+        newsEntity.setId(newsItem.getId());
+        newsEntity.setTitle(newsItem.getTitle());
+        newsEntity.setUrl(newsItem.getUrl()); // Fixed: should be getUrl(), not getImageUrl()
+        newsEntity.setImageUrl(newsItem.getImageUrl()); // Add this line
+        // Set other properties as needed
+        
+        // Use existing navigation logic
+        NavController navController = Navigation.findNavController(requireView());
+        Bundle args = new Bundle();
+        args.putInt("NEWS_ID", newsEntity.getId());
+        navController.navigate(R.id.action_newsFragment_to_newsDetailFragment, args);
+    }
+
+    // Add this helper method to convert NewsEntity objects to NewsItem objects
+    private void updateAdapterList() {
+        newsItemList.clear();
+        for (NewsEntity entity : newsList) {
+            NewsItem item = new NewsItem();
+            item.setId(entity.getId());
+            item.setTitle(entity.getTitle());
+            item.setImageUrl(entity.getImageUrl());
+            item.setUrl(entity.getUrl());
+            // Copy other properties as needed
+            
+            newsItemList.add(item);
+        }
+    }
+
     @Override
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;
     }
-    
+
     @Override
     public void onDestroy() {
         super.onDestroy();
-        executor.shutdown();
+        if (executor != null) {
+            executor.shutdown();
+        }
     }
 }

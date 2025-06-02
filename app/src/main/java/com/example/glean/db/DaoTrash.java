@@ -32,6 +32,9 @@ public interface DaoTrash {
     @Query("SELECT * FROM trash WHERE recordId = :recordId ORDER BY timestamp DESC")
     LiveData<List<TrashEntity>> getTrashByRecordId(int recordId);
     
+    @Query("SELECT * FROM trash WHERE recordId = :recordId ORDER BY timestamp DESC")
+    List<TrashEntity> getTrashByRecordIdSync(int recordId);
+    
     @Query("SELECT * FROM trash WHERE trashType = :trashType ORDER BY timestamp DESC")
     LiveData<List<TrashEntity>> getTrashByType(String trashType);
     

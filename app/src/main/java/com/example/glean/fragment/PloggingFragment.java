@@ -17,6 +17,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog; // Add this import
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.NavController;
@@ -576,26 +577,54 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
 
     private void initializeGoogleServices() {
         try {
-            // Initialize location services with error handling
-            fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireContext());
-            
-            // Check Google Play Services availability
+            // Check Google Play Services availability first
             GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
             int resultCode = apiAvailability.isGooglePlayServicesAvailable(requireContext());
             
-            if (resultCode != ConnectionResult.SUCCESS) {
+            if (resultCode == ConnectionResult.SUCCESS) {
+                // Initialize location services only if Play Services is available
+                fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireContext());
+                Log.d("PloggingFragment", "Google Play Services initialized successfully");
+            } else {
+                Log.e("PloggingFragment", "Google Play Services not available: " + resultCode);
                 if (apiAvailability.isUserResolvableError(resultCode)) {
                     apiAvailability.getErrorDialog(requireActivity(), resultCode, 
                         PLAY_SERVICES_RESOLUTION_REQUEST).show();
                 } else {
-                    Toast.makeText(requireContext(), 
-                        "Google Play Services not available", Toast.LENGTH_LONG).show();
+                    showFallbackMessage();
                 }
             }
         } catch (Exception e) {
-            Log.e("PloggingFragment", "Error initializing Google services", e);
-            Toast.makeText(requireContext(), 
-                "Location services unavailable", Toast.LENGTH_SHORT).show();
+            Log.e("PloggingFragment", "Critical error initializing Google services", e);
+            showFallbackMessage();
         }
+    }
+
+    private void showFallbackMessage() {
+        if (getContext() != null) {
+            new AlertDialog.Builder(requireContext())
+                .setTitle("Location Services Unavailable")
+                .setMessage("This device doesn't support the required location services. Some features may be limited.")
+                .setPositiveButton("Continue", (dialog, which) -> {
+                    // Continue with limited functionality
+                    setupFallbackMode();
+                })
+                .setNegativeButton("Exit", (dialog, which) -> {
+                    requireActivity().finish();
+                })
+                .show();
+        }
+    }
+
+    private void setupFallbackMode() {
+        // Implement fallback functionality without Google Play Services
+        binding.btnStartStop.setEnabled(false);
+        binding.btnStartStop.setText("Location Services Required");
+        
+        // Also disable other buttons that require location services
+        binding.btnCollectTrash.setEnabled(false);
+        binding.btnFinish.setEnabled(false);
+        
+        Toast.makeText(requireContext(), "Running in limited mode", Toast.LENGTH_LONG).show();
     }
 }

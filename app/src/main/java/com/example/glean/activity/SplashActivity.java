@@ -1,4 +1,4 @@
-package com.example.glean;
+package com.example.glean.activity; // UBAH dari com.example.glean
 
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -8,7 +8,7 @@ import android.preference.PreferenceManager;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.example.glean.activity.AuthActivity;
+import com.example.glean.R;
 import com.example.glean.databinding.ActivitySplashBinding;
 
 public class SplashActivity extends AppCompatActivity {

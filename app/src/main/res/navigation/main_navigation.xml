@@ -2,7 +2,7 @@
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/main_navigation"
+    android:id="@+id/nav_graph"
     app:startDestination="@id/homeFragment">
 
     <fragment
@@ -58,25 +58,63 @@
             app:destination="@id/challengeFragment" />
     </fragment>
 
+    <!-- Community Feed Fragment -->
+    <fragment
+        android:id="@+id/communityFeedFragment"
+        android:name="com.example.glean.fragment.CommunityFeedFragment"
+        android:label="Community"
+        tools:layout="@layout/fragment_community_feed">
+        
+        <action
+            android:id="@+id/action_communityFeedFragment_to_postDetailFragment"
+            app:destination="@id/postDetailFragment" />
+            
+        <action
+            android:id="@+id/action_communityFeedFragment_to_createPostFragment"
+            app:destination="@id/createPostFragment" />
+    </fragment>
+    
+    <!-- Post Detail Fragment -->
+    <fragment
+        android:id="@+id/postDetailFragment"
+        android:name="com.example.glean.fragment.PostDetailFragment"
+        android:label="Post Details"
+        tools:layout="@layout/fragment_post_detail">
+        
+        <argument
+            android:name="POST_ID"
+            app:argType="string" />
+    </fragment>
+    
+    <!-- Create Post Fragment -->
+    <fragment
+        android:id="@+id/createPostFragment"
+        android:name="com.example.glean.fragment.CreatePostFragment"
+        android:label="Create Post"
+        tools:layout="@layout/fragment_create_post" />
+    
+    <!-- Enhanced News Fragment with online features -->
     <fragment
         android:id="@+id/newsFragment"
         android:name="com.example.glean.fragment.NewsFragment"
         android:label="News"
         tools:layout="@layout/fragment_news">
+        
         <action
             android:id="@+id/action_newsFragment_to_newsDetailFragment"
             app:destination="@id/newsDetailFragment" />
     </fragment>
-
+    
+    <!-- News Detail Fragment -->
     <fragment
         android:id="@+id/newsDetailFragment"
         android:name="com.example.glean.fragment.NewsDetailFragment"
-        android:label="News Detail"
+        android:label="News Details"
         tools:layout="@layout/fragment_news_detail">
+        
         <argument
             android:name="NEWS_ID"
-            app:argType="integer"
-            android:defaultValue="-1" />
+            app:argType="integer" />
     </fragment>
 
     <fragment

@@ -10,7 +10,7 @@ import android.os.Build;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 
-import com.example.glean.MainActivity;
+import com.example.glean.activity.MainActivity;
 import com.example.glean.R;
 import com.example.glean.fragment.ChallengeFragment;
 import com.example.glean.fragment.PloggingFragment;

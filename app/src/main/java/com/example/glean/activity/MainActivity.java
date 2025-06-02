@@ -1,4 +1,4 @@
-package com.example.glean;
+package com.example.glean.activity;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -11,22 +11,27 @@ import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.NavigationUI;
 
-import com.example.glean.activity.AuthActivity;
+import com.example.glean.R;
 import com.example.glean.databinding.ActivityMainBinding;
-import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.example.glean.helper.FirebaseHelper;
 
 public class MainActivity extends AppCompatActivity {
 
     private ActivityMainBinding binding;
+    private FirebaseHelper firebaseHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+        
+        // Initialize Firebase Helper
+        firebaseHelper = new FirebaseHelper(this);
+        
         EdgeToEdge.enable(this);
 
-        // Check if user is logged in
+        // Check if user is logged in (local database)
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         int userId = prefs.getInt("USER_ID", -1);
         
@@ -38,12 +43,19 @@ public class MainActivity extends AppCompatActivity {
         }
         
         // Setup bottom navigation
+        setupNavigation();
+        
+        // Initialize Firebase if user wants online features
+        checkOnlineFeatures();
+    }
+    
+    private void setupNavigation() {
         NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.nav_host_fragment);
         NavController navController = navHostFragment.getNavController();
         NavigationUI.setupWithNavController(binding.bottomNavigation, navController);
         
-        // Make sure the BottomNavigationView setup uses the correct menu
+        // Updated navigation for 5-item menu (removed community)
         binding.bottomNavigation.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
             if (itemId == R.id.homeFragment) {
@@ -64,5 +76,31 @@ public class MainActivity extends AppCompatActivity {
             }
             return false;
         });
+    }
+    
+    private void checkOnlineFeatures() {
+        if (firebaseHelper.isOnline()) {
+            // Enable online features
+            enableOnlineMode();
+        } else {
+            // Disable online features, show offline mode
+            enableOfflineMode();
+        }
+    }
+    
+    private void enableOnlineMode() {
+        // Enable online features in existing fragments
+        // Community access through Profile fragment
+    }
+    
+    private void enableOfflineMode() {
+        // Disable online-only features
+        // Show offline indicators in UI
+    }
+    
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        binding = null;
     }
 }

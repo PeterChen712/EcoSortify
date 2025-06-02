@@ -57,8 +57,9 @@ public class TrashMapFragment extends Fragment implements OnMapReadyCallback, Go
     private Map<Marker, TrashEntity> markerTrashMap = new HashMap<>();
     private String currentFilter = "All";
     
-    // Tambahkan variabel untuk marker lokasi saat ini
+    // Add these missing variables
     private Marker currentLocationMarker;
+    private LocationCallback locationCallback; // Add this line
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -752,13 +753,49 @@ public class TrashMapFragment extends Fragment implements OnMapReadyCallback, Go
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        binding = null; // Prevent memory leaks
+        
+        try {
+            // Stop location updates
+            if (fusedLocationClient != null && locationCallback != null) {
+                fusedLocationClient.removeLocationUpdates(locationCallback);
+            }
+            
+            // Clear map resources
+            if (mMap != null) {
+                mMap.clear();
+                mMap.setOnMapClickListener(null);
+                mMap.setOnInfoWindowClickListener(null);
+                mMap = null;
+            }
+            
+            // Clear binding
+            binding = null;
+            
+        } catch (Exception e) {
+            Log.e("Fragment", "Error in cleanup", e);
+        }
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        executor.shutdown();
+        
+        try {
+            // Shutdown executors
+            if (executor != null && !executor.isShutdown()) {
+                executor.shutdown();
+                try {
+                    if (!executor.awaitTermination(1, java.util.concurrent.TimeUnit.SECONDS)) {
+                        executor.shutdownNow();
+                    }
+                } catch (InterruptedException e) {
+                    executor.shutdownNow();
+                    Thread.currentThread().interrupt();
+                }
+            }
+        } catch (Exception e) {
+            Log.e("Fragment", "Error shutting down executor", e);
+        }
     }
 
     private void requestNewLocation() {

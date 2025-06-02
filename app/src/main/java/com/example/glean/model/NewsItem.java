@@ -3,64 +3,83 @@ package com.example.glean.model;
 public class NewsItem {
     private int id;
     private String title;
-    private String content;
     private String imageUrl;
+    private String url;
+    private String content;
+    private String source;
     private String date;
     private String category;
 
-    public NewsItem(int id, String title, String content, String imageUrl, String date, String category) {
-        this.id = id;
-        this.title = title;
-        this.content = content;
-        this.imageUrl = imageUrl;
-        this.date = date;
-        this.category = category;
+    // Constructors
+    public NewsItem() {
+        // Default constructor
     }
 
-    // Getters
+    public NewsItem(int id, String title, String imageUrl) {
+        this.id = id;
+        this.title = title;
+        this.imageUrl = imageUrl;
+    }
+
+    // Getters and setters
     public int getId() {
         return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
     }
 
     public String getTitle() {
         return title;
     }
 
-    public String getContent() {
-        return content;
+    public void setTitle(String title) {
+        this.title = title;
     }
 
     public String getImageUrl() {
         return imageUrl;
     }
 
-    public String getDate() {
-        return date;
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
-    public String getCategory() {
-        return category;
+    public String getUrl() {
+        return url;
     }
 
-    // Setters
-    public void setId(int id) {
-        this.id = id;
+    public void setUrl(String url) {
+        this.url = url;
     }
 
-    public void setTitle(String title) {
-        this.title = title;
+    public String getContent() {
+        return content;
     }
 
     public void setContent(String content) {
         this.content = content;
     }
 
-    public void setImageUrl(String imageUrl) {
-        this.imageUrl = imageUrl;
+    public String getSource() {
+        return source;
+    }
+
+    public void setSource(String source) {
+        this.source = source;
+    }
+
+    public String getDate() {
+        return date;
     }
 
     public void setDate(String date) {
         this.date = date;
+    }
+
+    public String getCategory() {
+        return category;
     }
 
     public void setCategory(String category) {

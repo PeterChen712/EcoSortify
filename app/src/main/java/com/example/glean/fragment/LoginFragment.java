@@ -15,7 +15,8 @@ import androidx.fragment.app.Fragment;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 
-import com.example.glean.MainActivity;
+
+import com.example.glean.activity.MainActivity;
 import com.example.glean.R;
 import com.example.glean.databinding.FragmentLoginBinding;
 import com.example.glean.db.AppDatabase;

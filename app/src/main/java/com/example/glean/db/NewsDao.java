@@ -13,7 +13,6 @@ import java.util.List;
 
 @Dao
 public interface NewsDao {
-    
     @Insert
     long insert(NewsEntity news);
     
@@ -30,32 +29,20 @@ public interface NewsDao {
     NewsEntity getNewsByIdSync(int newsId);
     
     @Query("SELECT * FROM news ORDER BY createdAt DESC")
-    LiveData<List<NewsEntity>> getAllNews();
+    LiveData<List<NewsEntity>> getAllNews(); 
     
     @Query("SELECT * FROM news ORDER BY createdAt DESC")
-    List<NewsEntity> getAllNewsSync();
-    
-    @Query("DELETE FROM news")
-    void deleteAll();
+    List<NewsEntity> getAllNewsSync(); 
     
     @Query("SELECT * FROM news WHERE category = :category ORDER BY createdAt DESC")
-    LiveData<List<NewsEntity>> getNewsByCategory(String category);
+    List<NewsEntity> getNewsByCategory(String category);
     
-    @Query("SELECT * FROM news WHERE title LIKE '%' || :query || '%' OR preview LIKE '%' || :query || '%' ORDER BY createdAt DESC")
-    LiveData<List<NewsEntity>> searchNews(String query);
+    @Insert
+    long[] insertNews(List<NewsEntity> news);
     
-    @Query("SELECT * FROM news WHERE source = :source ORDER BY createdAt DESC")
-    LiveData<List<NewsEntity>> getNewsBySource(String source);
+    @Delete
+    void deleteNews(NewsEntity news);
     
-    @Query("SELECT DISTINCT category FROM news WHERE category IS NOT NULL AND category != '' ORDER BY category")
-    LiveData<List<String>> getAllCategories();
-    
-    @Query("SELECT DISTINCT source FROM news WHERE source IS NOT NULL AND source != '' ORDER BY source")
-    LiveData<List<String>> getAllSources();
-    
-    @Query("DELETE FROM news WHERE id = :newsId")
-    void deleteNewsById(int newsId);
-    
-    @Query("SELECT COUNT(*) FROM news")
-    int getNewsCount();
+    @Query("DELETE FROM news")
+    void deleteAllNews();
 }

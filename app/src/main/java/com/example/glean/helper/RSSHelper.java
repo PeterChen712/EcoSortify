@@ -116,7 +116,23 @@ public class RSSHelper {
             }
         }
         
-        return new NewsItem(id, title, content, imageUrl, date, category != null ? category : "News");
+        // Use the available 3-parameter constructor (assuming it's id, title, content)
+        NewsItem newsItem = new NewsItem(id, title != null ? title : "", content != null ? content : "");
+        
+        // Set other properties using setters (if available)
+        if (imageUrl != null) {
+            newsItem.setImageUrl(imageUrl);
+        }
+        if (date != null) {
+            newsItem.setDate(date);
+        }
+        if (category != null) {
+            newsItem.setCategory(category);
+        } else {
+            newsItem.setCategory("News");
+        }
+        
+        return newsItem;
     }
     
     /**

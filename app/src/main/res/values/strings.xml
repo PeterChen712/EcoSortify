@@ -1,3 +1,6 @@
 <resources>
     <string name="app_name">Glean</string>
+    <string name="add_trash_shortcut_short_label">Add Trash</string>
+    <string name="add_trash_shortcut_long_label">Report new trash</string>
+    <!-- Add other strings as needed -->
 </resources>
