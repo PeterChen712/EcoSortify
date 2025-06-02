@@ -12,10 +12,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.ImageView;
-import android.widget.ProgressBar;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -56,16 +52,6 @@ public class TrashMLFragment extends Fragment {
     
     // Gemini API for AI classification
     private GeminiHelper geminiHelper;
-    
-    // UI Elements - using findViewById as fallback
-    private Button btnTakePhoto;
-    private Button btnClassify;
-    private Button btnSave;
-    private Button btnBack;
-    private ImageView imageView;
-    private TextView textViewInstructions;
-    private TextView textViewResult;
-    private ProgressBar progressBar;
     
     private File photoFile;
     private Bitmap capturedImage;
@@ -110,119 +96,133 @@ public class TrashMLFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         
-        // Initialize UI elements using findViewById as fallback
-        initializeUIElements();
-        
-        // Set click listeners
-        if (btnTakePhoto != null) {
-            btnTakePhoto.setOnClickListener(v -> checkPermissionsAndTakePhoto());
-        }
-        
-        if (btnClassify != null) {
-            btnClassify.setOnClickListener(v -> classifyTrash());
-            btnClassify.setEnabled(false); // Initially disabled
-        }
-        
-        if (btnSave != null) {
-            btnSave.setOnClickListener(v -> saveTrashItem());
-            btnSave.setEnabled(false); // Initially disabled
-        }
-        
-        if (btnBack != null) {
-            btnBack.setOnClickListener(v -> navigateBack());
-        }
+        // Initialize UI dengan safe binding
+        setupUIElements();
         
         // Set initial instructions
-        updateInstructionText("Tap 'Take Photo' to capture a trash image for AI classification.");
+        updateInstructionText("📸 Tap 'Take Photo' to capture a trash image for AI classification.");
     }
     
-    private void initializeUIElements() {
-        // Try to get UI elements from binding first, then use findViewById
-        View rootView = binding.getRoot();
-        
-        // Buttons
-        btnTakePhoto = getButtonSafely(rootView, "btnTakePhoto", "button_take_photo", "btn_take_photo");
-        btnClassify = getButtonSafely(rootView, "btnClassify", "button_classify", "btn_classify");
-        btnSave = getButtonSafely(rootView, "btnSave", "button_save", "btn_save");
-        btnBack = getButtonSafely(rootView, "btnBack", "button_back", "btn_back");
-        
-        // ImageView
-        imageView = getImageViewSafely(rootView, "ivImage", "imageView", "ivTrashImage", "ivPhoto", "image_view");
-        
-        // TextViews
-        textViewInstructions = getTextViewSafely(rootView, "tvInstructions", "tvInstruction", "tvStatus", "tvInfo");
-        textViewResult = getTextViewSafely(rootView, "tvClassificationResult", "tvResult", "text_result");
-        
-        // ProgressBar
-        progressBar = getProgressBarSafely(rootView, "progressBar", "progress_bar", "loading");
+    private void setupUIElements() {
+        try {
+            // Setup buttons dengan safe access
+            setupTakePhotoButton();
+            setupClassifyButton();
+            setupSaveButton();
+            setupBackButton();
+            
+            Log.d(TAG, "UI elements setup completed successfully");
+        } catch (Exception e) {
+            Log.e(TAG, "Error setting up UI elements: " + e.getMessage());
+            Toast.makeText(requireContext(), "UI setup error, using fallback mode", Toast.LENGTH_SHORT).show();
+        }
     }
     
-    private Button getButtonSafely(View rootView, String... possibleIds) {
+    private void setupTakePhotoButton() {
+        try {
+            // Try multiple possible button IDs
+            View takePhotoBtn = findViewSafely("btnTakePhoto", "button_take_photo", "btn_take_photo", "takePhotoButton");
+            if (takePhotoBtn != null) {
+                takePhotoBtn.setOnClickListener(v -> checkPermissionsAndTakePhoto());
+                Log.d(TAG, "Take photo button setup successfully");
+            } else {
+                Log.w(TAG, "Take photo button not found in layout");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error setting up take photo button: " + e.getMessage());
+        }
+    }
+    
+    private void setupClassifyButton() {
+        try {
+            View classifyBtn = findViewSafely("btnClassify", "button_classify", "btn_classify", "classifyButton");
+            if (classifyBtn != null) {
+                classifyBtn.setOnClickListener(v -> classifyTrash());
+                classifyBtn.setEnabled(false); // Initially disabled
+                Log.d(TAG, "Classify button setup successfully");
+            } else {
+                Log.w(TAG, "Classify button not found in layout");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error setting up classify button: " + e.getMessage());
+        }
+    }
+    
+    private void setupSaveButton() {
+        try {
+            View saveBtn = findViewSafely("btnSave", "button_save", "btn_save", "saveButton");
+            if (saveBtn != null) {
+                saveBtn.setOnClickListener(v -> saveTrashItem());
+                saveBtn.setEnabled(false); // Initially disabled
+                Log.d(TAG, "Save button setup successfully");
+            } else {
+                Log.w(TAG, "Save button not found in layout");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error setting up save button: " + e.getMessage());
+        }
+    }
+    
+    private void setupBackButton() {
+        try {
+            View backBtn = findViewSafely("btnBack", "button_back", "btn_back", "backButton");
+            if (backBtn != null) {
+                backBtn.setOnClickListener(v -> navigateBack());
+                Log.d(TAG, "Back button setup successfully");
+            } else {
+                // Try to use toolbar back button or activity back
+                Log.d(TAG, "Back button not found, will use system back");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error setting up back button: " + e.getMessage());
+        }
+    }
+    
+    private View findViewSafely(String... possibleIds) {
+        if (binding == null || binding.getRoot() == null) {
+            return null;
+        }
+        
         for (String id : possibleIds) {
             try {
                 int resId = getResources().getIdentifier(id, "id", requireContext().getPackageName());
                 if (resId != 0) {
-                    View view = rootView.findViewById(resId);
-                    if (view instanceof Button) {
-                        return (Button) view;
+                    View view = binding.getRoot().findViewById(resId);
+                    if (view != null) {
+                        return view;
                     }
                 }
             } catch (Exception e) {
-                Log.d(TAG, "Button not found with id: " + id);
+                Log.d(TAG, "View not found with id: " + id);
             }
         }
         return null;
     }
     
-    private ImageView getImageViewSafely(View rootView, String... possibleIds) {
-        for (String id : possibleIds) {
-            try {
-                int resId = getResources().getIdentifier(id, "id", requireContext().getPackageName());
-                if (resId != 0) {
-                    View view = rootView.findViewById(resId);
-                    if (view instanceof ImageView) {
-                        return (ImageView) view;
-                    }
-                }
-            } catch (Exception e) {
-                Log.d(TAG, "ImageView not found with id: " + id);
+    private void updateInstructionText(String instruction) {
+        try {
+            // Try to find instruction TextView
+            View instructionView = findViewSafely("tvInstructions", "tvInstruction", "tvStatus", "tvInfo", "textInstructions");
+            if (instructionView instanceof android.widget.TextView) {
+                ((android.widget.TextView) instructionView).setText(instruction);
+                return;
             }
-        }
-        return null;
-    }
-    
-    private TextView getTextViewSafely(View rootView, String... possibleIds) {
-        for (String id : possibleIds) {
-            try {
-                int resId = getResources().getIdentifier(id, "id", requireContext().getPackageName());
-                if (resId != 0) {
-                    View view = rootView.findViewById(resId);
-                    if (view instanceof TextView) {
-                        return (TextView) view;
-                    }
-                }
-            } catch (Exception e) {
-                Log.d(TAG, "TextView not found with id: " + id);
+            
+            // Try to find result TextView as fallback
+            View resultView = findViewSafely("tvClassificationResult", "tvResult", "textResult", "tvDescription");
+            if (resultView instanceof android.widget.TextView) {
+                ((android.widget.TextView) resultView).setText(instruction);
+                resultView.setVisibility(View.VISIBLE);
+                return;
             }
+            
+            // Fallback to Toast
+            Toast.makeText(requireContext(), instruction, Toast.LENGTH_SHORT).show();
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error updating instruction text: " + e.getMessage());
+            Toast.makeText(requireContext(), instruction, Toast.LENGTH_SHORT).show();
         }
-        return null;
-    }
-    
-    private ProgressBar getProgressBarSafely(View rootView, String... possibleIds) {
-        for (String id : possibleIds) {
-            try {
-                int resId = getResources().getIdentifier(id, "id", requireContext().getPackageName());
-                if (resId != 0) {
-                    View view = rootView.findViewById(resId);
-                    if (view instanceof ProgressBar) {
-                        return (ProgressBar) view;
-                    }
-                }
-            } catch (Exception e) {
-                Log.d(TAG, "ProgressBar not found with id: " + id);
-            }
-        }
-        return null;
     }
     
     private void checkPermissionsAndTakePhoto() {
@@ -236,16 +236,14 @@ public class TrashMLFragment extends Fragment {
     private void takePhoto() {
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         if (takePictureIntent.resolveActivity(requireActivity().getPackageManager()) != null) {
-            // Create the File where the photo should go
             try {
                 photoFile = createImageFile();
             } catch (IOException ex) {
                 Log.e(TAG, "Error occurred while creating the File", ex);
-                Toast.makeText(requireContext(), "Error creating image file", Toast.LENGTH_SHORT).show();
+                updateInstructionText("❌ Error creating image file");
                 return;
             }
             
-            // Continue only if the File was successfully created
             if (photoFile != null) {
                 Uri photoURI = FileProvider.getUriForFile(requireContext(),
                         "com.example.glean.fileprovider", photoFile);
@@ -253,23 +251,16 @@ public class TrashMLFragment extends Fragment {
                 startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
             }
         } else {
-            Toast.makeText(requireContext(), "No camera app found", Toast.LENGTH_SHORT).show();
+            updateInstructionText("❌ No camera app found");
         }
     }
     
     private File createImageFile() throws IOException {
-        // Create an image file name
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
-        String imageFileName = "JPEG_" + timeStamp + "_";
+        String imageFileName = "GLEAN_TRASH_" + timeStamp + "_";
         File storageDir = requireContext().getExternalFilesDir("Pictures");
         
-        File image = File.createTempFile(
-                imageFileName,  /* prefix */
-                ".jpg",         /* suffix */
-                storageDir      /* directory */
-        );
-        
-        // Save a file: path for use with ACTION_VIEW intents
+        File image = File.createTempFile(imageFileName, ".jpg", storageDir);
         currentPhotoPath = image.getAbsolutePath();
         return image;
     }
@@ -279,81 +270,77 @@ public class TrashMLFragment extends Fragment {
         super.onActivityResult(requestCode, resultCode, data);
         
         if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == requireActivity().RESULT_OK) {
-            // Load the full-size image
             if (photoFile != null && photoFile.exists()) {
                 capturedImage = BitmapFactory.decodeFile(photoFile.getAbsolutePath());
                 
                 if (capturedImage != null) {
-                    // Display the image
                     displayCapturedImage();
-                    
-                    // Enable classify button
-                    if (btnClassify != null) {
-                        btnClassify.setEnabled(true);
-                    }
-                    
-                    // Update instructions
-                    updateInstructionText("Photo captured! Tap 'Classify Trash' to analyze with AI.");
+                    enableButton("btnClassify", "button_classify", "btn_classify");
+                    updateInstructionText("✅ Photo captured! Tap 'Classify Trash' to analyze with AI.");
                 } else {
-                    Toast.makeText(requireContext(), "Failed to load captured image", Toast.LENGTH_SHORT).show();
+                    updateInstructionText("❌ Failed to load captured image");
                 }
             }
         }
     }
     
     private void displayCapturedImage() {
-        if (imageView != null && capturedImage != null) {
-            try {
-                Glide.with(this)
-                        .load(capturedImage)
-                        .placeholder(android.R.drawable.ic_menu_camera)
-                        .error(android.R.drawable.ic_menu_close_clear_cancel)
-                        .centerCrop()
-                        .into(imageView);
-            } catch (Exception e) {
-                Log.e(TAG, "Error displaying image with Glide", e);
-                // Fallback to direct bitmap setting
-                imageView.setImageBitmap(capturedImage);
+        try {
+            // Find ImageView
+            View imageView = findViewSafely("ivImage", "imageView", "ivTrashImage", "ivPhoto", "capturedImageView");
+            
+            if (imageView instanceof android.widget.ImageView && capturedImage != null) {
+                try {
+                    // Use Glide with enhanced error handling
+                    Glide.with(this)
+                            .load(capturedImage)
+                            .placeholder(R.drawable.ic_placeholder)
+                            .error(R.drawable.ic_error)
+                            .centerCrop()
+                            .into((android.widget.ImageView) imageView);
+                    
+                    Log.d(TAG, "Image displayed successfully with Glide");
+                } catch (Exception e) {
+                    Log.e(TAG, "Glide error, using direct bitmap: " + e.getMessage());
+                    ((android.widget.ImageView) imageView).setImageBitmap(capturedImage);
+                }
+            } else {
+                Log.w(TAG, "ImageView not found or image is null");
+                updateInstructionText("📷 Image captured but cannot display");
             }
-        } else {
-            Log.w(TAG, "ImageView not found or capturedImage is null");
-            Toast.makeText(requireContext(), "Image captured but cannot display", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Log.e(TAG, "Error displaying image: " + e.getMessage());
         }
     }
     
-    private void updateInstructionText(String instruction) {
-        if (textViewInstructions != null) {
-            textViewInstructions.setText(instruction);
-        } else if (textViewResult != null) {
-            textViewResult.setText(instruction);
-            textViewResult.setVisibility(View.VISIBLE);
-        } else {
-            // Fallback to Toast if no TextView is available
-            Toast.makeText(requireContext(), instruction, Toast.LENGTH_SHORT).show();
+    private void enableButton(String... buttonIds) {
+        View button = findViewSafely(buttonIds);
+        if (button != null) {
+            button.setEnabled(true);
+        }
+    }
+    
+    private void disableButton(String... buttonIds) {
+        View button = findViewSafely(buttonIds);
+        if (button != null) {
+            button.setEnabled(false);
         }
     }
     
     private void classifyTrash() {
         if (capturedImage == null) {
-            Toast.makeText(requireContext(), "Please take a photo first", Toast.LENGTH_SHORT).show();
+            updateInstructionText("❌ Please take a photo first");
             return;
         }
         
         if (geminiHelper == null || !geminiHelper.isApiKeyConfigured()) {
-            Toast.makeText(requireContext(), "AI classification not available", Toast.LENGTH_SHORT).show();
+            updateInstructionText("❌ AI classification not available");
             return;
         }
         
-        // Show loading
-        if (progressBar != null) {
-            progressBar.setVisibility(View.VISIBLE);
-        }
-        
-        if (btnClassify != null) {
-            btnClassify.setEnabled(false);
-        }
-        
-        // Update status
+        // Show loading state
+        showProgressBar(true);
+        disableButton("btnClassify", "button_classify", "btn_classify");
         updateInstructionText("🤖 Analyzing image with AI...");
         
         // Classify using Gemini AI
@@ -361,33 +348,20 @@ public class TrashMLFragment extends Fragment {
             @Override
             public void onSuccess(String trashType, float confidence, String description) {
                 requireActivity().runOnUiThread(() -> {
-                    if (progressBar != null) {
-                        progressBar.setVisibility(View.GONE);
-                    }
-                    
-                    if (btnClassify != null) {
-                        btnClassify.setEnabled(true);
-                    }
+                    showProgressBar(false);
+                    enableButton("btnClassify", "button_classify", "btn_classify");
                     
                     // Display results
                     String resultText = String.format(Locale.getDefault(),
-                            "🎯 Classification Result:\n\n" +
-                            "Type: %s\n" +
-                            "Confidence: %.1f%%\n" +
-                            "Description: %s",
+                            "🎯 AI Classification Result:\n\n" +
+                            "📋 Type: %s\n" +
+                            "📊 Confidence: %.1f%%\n" +
+                            "📝 Description: %s\n\n" +
+                            "Ready to save!",
                             trashType, confidence * 100, description);
                     
-                    // Update result text
-                    if (textViewResult != null) {
-                        textViewResult.setText(resultText);
-                        textViewResult.setVisibility(View.VISIBLE);
-                    } else {
-                        updateInstructionText(resultText);
-                    }
-                    
-                    if (btnSave != null) {
-                        btnSave.setEnabled(true);
-                    }
+                    updateResultText(resultText);
+                    enableButton("btnSave", "button_save", "btn_save");
                     
                     Log.d(TAG, "Gemini classification successful: " + trashType + " (" + confidence + ")");
                 });
@@ -396,42 +370,52 @@ public class TrashMLFragment extends Fragment {
             @Override
             public void onError(String error) {
                 requireActivity().runOnUiThread(() -> {
-                    if (progressBar != null) {
-                        progressBar.setVisibility(View.GONE);
-                    }
+                    showProgressBar(false);
+                    enableButton("btnClassify", "button_classify", "btn_classify");
                     
-                    if (btnClassify != null) {
-                        btnClassify.setEnabled(true);
-                    }
-                    
-                    String errorText = "❌ Classification failed: " + error;
-                    
-                    if (textViewResult != null) {
-                        textViewResult.setText(errorText);
-                        textViewResult.setVisibility(View.VISIBLE);
-                    } else {
-                        updateInstructionText(errorText);
-                    }
+                    String errorText = "❌ Classification failed: " + error + "\n\nTry again or check your internet connection.";
+                    updateResultText(errorText);
                     
                     Log.e(TAG, "Gemini classification failed: " + error);
-                    Toast.makeText(requireContext(), "Classification failed: " + error, Toast.LENGTH_LONG).show();
                 });
             }
         });
     }
     
+    private void updateResultText(String resultText) {
+        try {
+            View resultView = findViewSafely("tvClassificationResult", "tvResult", "textResult", "tvDescription");
+            if (resultView instanceof android.widget.TextView) {
+                ((android.widget.TextView) resultView).setText(resultText);
+                resultView.setVisibility(View.VISIBLE);
+            } else {
+                updateInstructionText(resultText);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error updating result text: " + e.getMessage());
+            updateInstructionText(resultText);
+        }
+    }
+    
+    private void showProgressBar(boolean show) {
+        try {
+            View progressBar = findViewSafely("progressBar", "progress_bar", "loading", "progressIndicator");
+            if (progressBar != null) {
+                progressBar.setVisibility(show ? View.VISIBLE : View.GONE);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error controlling progress bar: " + e.getMessage());
+        }
+    }
+    
     private void saveTrashItem() {
         if (capturedImage == null || currentPhotoPath == null) {
-            Toast.makeText(requireContext(), "No image to save", Toast.LENGTH_SHORT).show();
+            updateInstructionText("❌ No image to save");
             return;
         }
         
         // Get classification result
-        String resultText = "";
-        if (textViewResult != null) {
-            resultText = textViewResult.getText().toString();
-        }
-        
+        String resultText = getResultText();
         String trashType = "Unknown";
         float confidence = 0.0f;
         String description = "";
@@ -441,13 +425,14 @@ public class TrashMLFragment extends Fragment {
             try {
                 String[] lines = resultText.split("\n");
                 for (String line : lines) {
-                    if (line.startsWith("Type: ")) {
-                        trashType = line.substring(6).trim();
-                    } else if (line.startsWith("Confidence: ")) {
-                        String confStr = line.substring(12).replace("%", "").trim();
+                    line = line.trim();
+                    if (line.startsWith("📋 Type: ") || line.startsWith("Type: ")) {
+                        trashType = line.substring(line.indexOf(": ") + 2).trim();
+                    } else if (line.startsWith("📊 Confidence: ") || line.startsWith("Confidence: ")) {
+                        String confStr = line.substring(line.indexOf(": ") + 2).replace("%", "").trim();
                         confidence = Float.parseFloat(confStr) / 100.0f;
-                    } else if (line.startsWith("Description: ")) {
-                        description = line.substring(13).trim();
+                    } else if (line.startsWith("📝 Description: ") || line.startsWith("Description: ")) {
+                        description = line.substring(line.indexOf(": ") + 2).trim();
                     }
                 }
             } catch (Exception e) {
@@ -457,6 +442,18 @@ public class TrashMLFragment extends Fragment {
         
         // Get current location and save
         getCurrentLocationAndSave(trashType, confidence, description);
+    }
+    
+    private String getResultText() {
+        try {
+            View resultView = findViewSafely("tvClassificationResult", "tvResult", "textResult", "tvDescription");
+            if (resultView instanceof android.widget.TextView) {
+                return ((android.widget.TextView) resultView).getText().toString();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting result text: " + e.getMessage());
+        }
+        return "";
     }
     
     private void getCurrentLocationAndSave(String trashType, float confidence, String description) {
@@ -470,6 +467,7 @@ public class TrashMLFragment extends Fragment {
                 if (location != null) {
                     latitude = location.getLatitude();
                     longitude = location.getLongitude();
+                    Log.d(TAG, "Location obtained: " + latitude + ", " + longitude);
                 }
                 
                 saveToDatabase(trashType, confidence, description, latitude, longitude);
@@ -499,38 +497,42 @@ public class TrashMLFragment extends Fragment {
                 long trashId = db.trashDao().insert(trash);
                 
                 requireActivity().runOnUiThread(() -> {
-                    Toast.makeText(requireContext(), "Trash item saved successfully!", Toast.LENGTH_SHORT).show();
-                    updateInstructionText("✅ Trash item saved! Take another photo or go back.");
+                    updateInstructionText("✅ Trash item saved successfully!\n\nContributing to cleaner environment! 🌱");
                     resetForNewCapture();
                     
                     // Navigate back after delay
-                    binding.getRoot().postDelayed(this::navigateBack, 1500);
+                    binding.getRoot().postDelayed(this::navigateBack, 2000);
                 });
+                
+                Log.d(TAG, "Trash item saved with ID: " + trashId);
                 
             } catch (Exception e) {
                 Log.e(TAG, "Error saving trash item", e);
                 requireActivity().runOnUiThread(() -> {
-                    Toast.makeText(requireContext(), "Failed to save trash item", Toast.LENGTH_SHORT).show();
+                    updateInstructionText("❌ Failed to save trash item. Please try again.");
                 });
             }
         });
     }
     
     private void resetForNewCapture() {
-        capturedImage = null;
-        currentPhotoPath = null;
-        photoFile = null;
-        
-        if (btnClassify != null) {
-            btnClassify.setEnabled(false);
-        }
-        
-        if (btnSave != null) {
-            btnSave.setEnabled(false);
-        }
-        
-        if (imageView != null) {
-            imageView.setImageResource(android.R.drawable.ic_menu_camera);
+        try {
+            capturedImage = null;
+            currentPhotoPath = null;
+            photoFile = null;
+            
+            disableButton("btnClassify", "button_classify", "btn_classify");
+            disableButton("btnSave", "button_save", "btn_save");
+            
+            // Clear image display
+            View imageView = findViewSafely("ivImage", "imageView", "ivTrashImage", "ivPhoto");
+            if (imageView instanceof android.widget.ImageView) {
+                ((android.widget.ImageView) imageView).setImageResource(R.drawable.ic_placeholder);
+            }
+            
+            Log.d(TAG, "UI reset for new capture");
+        } catch (Exception e) {
+            Log.e(TAG, "Error resetting for new capture: " + e.getMessage());
         }
     }
     
@@ -539,8 +541,12 @@ public class TrashMLFragment extends Fragment {
             NavController navController = Navigation.findNavController(requireView());
             navController.navigateUp();
         } catch (Exception e) {
-            Log.e(TAG, "Navigation error", e);
-            requireActivity().onBackPressed();
+            Log.e(TAG, "Navigation error: " + e.getMessage());
+            try {
+                requireActivity().onBackPressed();
+            } catch (Exception ex) {
+                Log.e(TAG, "Back press error: " + ex.getMessage());
+            }
         }
     }
     
@@ -552,8 +558,7 @@ public class TrashMLFragment extends Fragment {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 takePhoto();
             } else {
-                Toast.makeText(requireContext(), "Camera permission required to take photos", Toast.LENGTH_SHORT).show();
-                updateInstructionText("❌ Camera permission required. Please grant permission and try again.");
+                updateInstructionText("❌ Camera permission required. Please grant permission in settings and try again.");
             }
         }
     }

@@ -4,7 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:background="@android:color/white">
 
     <TextView
         android:id="@+id/tv_title"
@@ -15,6 +16,7 @@
         android:textSize="24sp"
         android:textStyle="bold"
         android:textColor="@android:color/black"
+        android:layout_marginBottom="8dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -23,7 +25,7 @@
         android:id="@+id/profile_image_container"
         android:layout_width="120dp"
         android:layout_height="120dp"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="16dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/tv_title">
@@ -35,6 +37,9 @@
             android:background="@android:color/darker_gray"
             android:contentDescription="Profile Picture"
             android:scaleType="centerCrop"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?android:attr/selectableItemBackgroundBorderless"
             tools:src="@drawable/profile_placeholder" />
 
         <ImageView
@@ -51,7 +56,7 @@
         android:id="@+id/tv_name"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="12dp"
         android:gravity="center"
         android:textColor="@android:color/black"
         android:textSize="20sp"
@@ -85,16 +90,19 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/tv_email"
-        tools:text="Member since: 2023-01-01" />
+        tools:text="Member since: Jan 2024" />
 
     <!-- Stats Section -->
     <LinearLayout
         android:id="@+id/layout_stats"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="20dp"
         android:orientation="horizontal"
-        android:weightSum="3"
+        android:weightSum="4"
+        android:background="@drawable/stats_background"
+        android:padding="16dp"
+        android:elevation="2dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/tv_member_since">
@@ -174,6 +182,31 @@
 
         </LinearLayout>
 
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tv_total_distance"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@android:color/black"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                tools:text="12.5" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="KM"
+                android:textColor="@android:color/darker_gray"
+                android:textSize="12sp" />
+
+        </LinearLayout>
+
     </LinearLayout>
 
     <!-- Badges Section -->
@@ -181,8 +214,8 @@
         android:id="@+id/tv_badges_title"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:text="Badges"
+        android:layout_marginTop="20dp"
+        android:text="🏆 Badges"
         android:textSize="18sp"
         android:textStyle="bold"
         android:textColor="@android:color/black"
@@ -196,6 +229,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:nestedScrollingEnabled="false"
+        android:minHeight="60dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/tv_badges_title"
@@ -207,50 +241,70 @@
         android:id="@+id/layout_buttons"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="20dp"
         android:orientation="vertical"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/rv_badges">
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_edit_profile"
             android:layout_width="match_parent"
-            android:layout_height="48dp"
+            android:layout_height="52dp"
             android:layout_marginBottom="8dp"
-            android:background="#4CAF50"
-            android:text="Edit Profile"
+            android:backgroundTint="#4CAF50"
+            android:text="✏️ Edit Profile"
             android:textColor="@android:color/white"
-            android:textSize="16sp" />
+            android:textSize="16sp"
+            android:drawableStart="@android:drawable/ic_menu_edit"
+            android:drawablePadding="8dp"
+            app:cornerRadius="8dp"
+            app:elevation="2dp"
+            style="@style/Widget.MaterialComponents.Button" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_customize"
             android:layout_width="match_parent"
-            android:layout_height="48dp"
+            android:layout_height="52dp"
             android:layout_marginBottom="8dp"
-            android:background="#FF9800"
-            android:text="Customize Profile"
+            android:backgroundTint="#FF9800"
+            android:text="🎨 Customize Profile"
             android:textColor="@android:color/white"
-            android:textSize="16sp" />
+            android:textSize="16sp"
+            android:drawableStart="@android:drawable/ic_menu_gallery"
+            android:drawablePadding="8dp"
+            app:cornerRadius="8dp"
+            app:elevation="2dp"
+            style="@style/Widget.MaterialComponents.Button" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_settings"
             android:layout_width="match_parent"
-            android:layout_height="48dp"
+            android:layout_height="52dp"
             android:layout_marginBottom="8dp"
-            android:background="#2196F3"
-            android:text="Settings"
+            android:backgroundTint="#2196F3"
+            android:text="⚙️ Settings"
             android:textColor="@android:color/white"
-            android:textSize="16sp" />
+            android:textSize="16sp"
+            android:drawableStart="@android:drawable/ic_menu_manage"
+            android:drawablePadding="8dp"
+            app:cornerRadius="8dp"
+            app:elevation="2dp"
+            style="@style/Widget.MaterialComponents.Button" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_logout"
             android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:background="#F44336"
-            android:text="Logout"
+            android:layout_height="52dp"
+            android:backgroundTint="#F44336"
+            android:text="🚪 Logout"
             android:textColor="@android:color/white"
-            android:textSize="16sp" />
+            android:textSize="16sp"
+            android:drawableStart="@android:drawable/ic_lock_power_off"
+            android:drawablePadding="8dp"
+            app:cornerRadius="8dp"
+            app:elevation="2dp"
+            style="@style/Widget.MaterialComponents.Button" />
 
     </LinearLayout>
 
