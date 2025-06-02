@@ -13,11 +13,11 @@ import androidx.fragment.app.Fragment;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 
+import com.bumptech.glide.Glide;
 import com.example.glean.R;
 import com.example.glean.databinding.FragmentAddTrashBinding;
 import com.example.glean.db.AppDatabase;
 import com.example.glean.model.TrashEntity;
-import com.squareup.picasso.Picasso;
 
 import java.io.File;
 import java.util.concurrent.ExecutorService;
@@ -81,20 +81,29 @@ public class AddTrashFragment extends Fragment {
             
             if (trashEntity != null) {
                 requireActivity().runOnUiThread(() -> {
-                    // Load image
+                    // Load image using Glide
                     if (trashEntity.getPhotoPath() != null && !trashEntity.getPhotoPath().isEmpty()) {
                         File imageFile = new File(trashEntity.getPhotoPath());
                         if (imageFile.exists()) {
-                            Picasso.get()
+                            Glide.with(this)
                                     .load(imageFile)
-                                    .placeholder(android.R.drawable.ic_menu_gallery)
-                                    .error(android.R.drawable.ic_menu_gallery)
+                                    .placeholder(R.drawable.ic_placeholder)
+                                    .error(R.drawable.ic_error)
+                                    .centerCrop()
                                     .into(binding.ivTrashPhoto);
                         } else {
-                            binding.ivTrashPhoto.setImageResource(android.R.drawable.ic_menu_gallery);
+                            // Set default placeholder
+                            Glide.with(this)
+                                    .load(R.drawable.ic_trash_placeholder)
+                                    .placeholder(R.drawable.ic_placeholder)
+                                    .into(binding.ivTrashPhoto);
                         }
                     } else {
-                        binding.ivTrashPhoto.setImageResource(android.R.drawable.ic_menu_gallery);
+                        // Set default placeholder when no image
+                        Glide.with(this)
+                                .load(R.drawable.ic_trash_placeholder)
+                                .placeholder(R.drawable.ic_placeholder)
+                                .into(binding.ivTrashPhoto);
                     }
                     
                     // Set ML suggestion

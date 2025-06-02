@@ -1,175 +1,73 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/white">
+    android:padding="16dp">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
 
         <!-- Header -->
         <LinearLayout
-            android:id="@+id/layout_header"
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:padding="16dp"
             android:gravity="center_vertical"
-            android:background="#4CAF50"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
+            android:layout_marginBottom="16dp">
 
-            <ImageButton
+            <Button
                 android:id="@+id/btn_back"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Back"
-                android:src="@drawable/ic_arrow_back"
-                android:tint="@android:color/white" />
+                android:text="←"
+                android:textSize="18sp"
+                style="@style/Widget.Material3.Button.OutlinedButton" />
 
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginStart="16dp"
-                android:text="AI Trash Classification"
-                android:textColor="@android:color/white"
+                android:text="🤖 AI Trash Classification"
                 android:textSize="20sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                android:gravity="center"
+                android:layout_marginStart="8dp" />
 
         </LinearLayout>
 
-        <!-- Instructions -->
-        <androidx.cardview.widget.CardView
-            android:id="@+id/card_instructions"
-            android:layout_width="0dp"
+        <!-- Session Info -->
+        <TextView
+            android:id="@+id/tv_session_info"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_margin="16dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="4dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/layout_header">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="How to use:"
-                    android:textColor="@android:color/black"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="1. Take a clear photo of the trash item\n2. Tap 'Classify' to analyze with AI\n3. Review the classification results\n4. Save to add to your plogging record"
-                    android:textColor="@android:color/darker_gray"
-                    android:textSize="14sp" />
-
-            </LinearLayout>
-
-        </androidx.cardview.widget.CardView>
-
-        <!-- Camera Section -->
-        <androidx.cardview.widget.CardView
-            android:id="@+id/card_camera"
-            android:layout_width="0dp"
-            android:layout_height="250dp"
-            android:layout_margin="16dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="4dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/card_instructions">
-
-            <FrameLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent">
-
-                <ImageView
-                    android:id="@+id/iv_trash_image"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:background="@android:color/darker_gray"
-                    android:contentDescription="Trash Image"
-                    android:scaleType="centerCrop"
-                    android:src="@drawable/ic_camera_placeholder" />
-
-                <TextView
-                    android:id="@+id/tv_camera_prompt"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:text="Tap 'Take Picture' to capture trash"
-                    android:textColor="@android:color/white"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:background="#80000000"
-                    android:padding="8dp" />
-
-            </FrameLayout>
-
-        </androidx.cardview.widget.CardView>
-
-        <!-- Take Picture Button -->
-        <Button
-            android:id="@+id/btn_take_picture"
-            android:layout_width="0dp"
-            android:layout_height="48dp"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="16dp"
-            android:layout_marginEnd="16dp"
-            android:background="#2196F3"
-            android:text="Take Picture"
-            android:textColor="@android:color/white"
-            android:textSize="16sp"
-            android:drawableStart="@drawable/ic_camera"
-            android:drawablePadding="8dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/card_camera" />
+            android:text="Active Plogging Session"
+            android:textSize="14sp"
+            android:padding="8dp"
+            android:background="?attr/colorSurfaceVariant"
+            android:layout_marginBottom="16dp"
+            android:visibility="gone" />
 
         <!-- Location Info -->
         <TextView
-            android:id="@+id/tv_location"
-            android:layout_width="0dp"
+            android:id="@+id/tv_location_info"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="16dp"
-            android:layout_marginEnd="16dp"
-            android:drawableStart="@drawable/ic_location"
-            android:drawablePadding="8dp"
-            android:gravity="center_vertical"
-            android:text="Getting location..."
-            android:textColor="@android:color/darker_gray"
+            android:text="📍 Getting location..."
             android:textSize="14sp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/btn_take_picture" />
+            android:padding="8dp"
+            android:background="?attr/colorSurfaceVariant"
+            android:layout_marginBottom="16dp"
+            android:visibility="gone" />
 
-        <!-- Classification Results -->
-        <androidx.cardview.widget.CardView
-            android:id="@+id/card_results"
-            android:layout_width="0dp"
+        <!-- Camera Section -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_margin="16dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="4dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/tv_location">
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="12dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -178,97 +76,141 @@
                 android:padding="16dp">
 
                 <TextView
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Classification Results"
-                    android:textColor="@android:color/black"
+                    android:text="📸 Step 1: Take Photo"
                     android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tv_predicted_class"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:textColor="@android:color/black"
-                    android:textSize="14sp"
                     android:textStyle="bold"
-                    tools:text="Predicted: Plastic Bottle" />
+                    android:layout_marginBottom="8dp" />
 
-                <TextView
-                    android:id="@+id/tv_confidence"
-                    android:layout_width="wrap_content"
+                <Button
+                    android:id="@+id/btn_take_photo"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:textColor="#4CAF50"
-                    android:textSize="14sp"
-                    tools:text="Confidence: 95.2%" />
+                    android:text="📷 Take Photo"
+                    android:textSize="16sp"
+                    style="@style/Widget.Material3.Button" />
 
-                <TextView
-                    android:id="@+id/tv_results"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                <ImageView
+                    android:id="@+id/image_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="200dp"
                     android:layout_marginTop="8dp"
-                    android:textColor="@android:color/darker_gray"
-                    android:textSize="12sp"
-                    tools:text="Plastic Bottle: 95.2%\nMetal Can: 3.1%\nGlass: 1.7%" />
+                    android:scaleType="centerCrop"
+                    android:background="?attr/colorSurfaceVariant"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/tv_status"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Take a photo of trash to begin classification"
+                    android:textSize="14sp"
+                    android:gravity="center"
+                    android:layout_marginTop="8dp"
+                    android:visibility="visible" />
 
             </LinearLayout>
 
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
-        <!-- Action Buttons -->
-        <LinearLayout
-            android:id="@+id/layout_buttons"
-            android:layout_width="0dp"
+        <!-- AI Classification Section -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="16dp"
-            android:layout_marginEnd="16dp"
             android:layout_marginBottom="16dp"
-            android:orientation="horizontal"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/card_results">
+            app:cardCornerRadius="12dp">
 
-            <Button
-                android:id="@+id/btn_classify"
-                android:layout_width="0dp"
-                android:layout_height="48dp"
-                android:layout_weight="1"
-                android:layout_marginEnd="8dp"
-                android:background="#FF9800"
-                android:text="Classify"
-                android:textColor="@android:color/white"
-                android:textSize="16sp"
-                android:enabled="false" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
 
-            <Button
-                android:id="@+id/btn_save"
-                android:layout_width="0dp"
-                android:layout_height="48dp"
-                android:layout_weight="1"
-                android:layout_marginStart="8dp"
-                android:background="#4CAF50"
-                android:text="Save"
-                android:textColor="@android:color/white"
-                android:textSize="16sp"
-                android:enabled="false" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="🤖 Step 2: AI Classification"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="8dp" />
 
-        </LinearLayout>
+                <Button
+                    android:id="@+id/btn_classify"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="🔍 Classify with Gemini AI"
+                    android:textSize="16sp"
+                    android:enabled="false"
+                    style="@style/Widget.Material3.Button.OutlinedButton" />
 
-        <!-- Progress Bar -->
-        <ProgressBar
-            android:id="@+id/progress_bar"
-            android:layout_width="wrap_content"
+                <ProgressBar
+                    android:id="@+id/progress_bar"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginTop="8dp"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/tv_classification_result"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:padding="12dp"
+                    android:background="?attr/colorSurfaceVariant"
+                    android:textSize="14sp"
+                    android:visibility="gone" />
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Save Section -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:visibility="gone"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:cardCornerRadius="12dp">
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
 
-</androidx.core.widget.NestedScrollView>
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="💾 Step 3: Save Result"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="8dp" />
+
+                <Button
+                    android:id="@+id/btn_save"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="✅ Save Trash Data"
+                    android:textSize="16sp"
+                    android:enabled="false"
+                    style="@style/Widget.Material3.Button" />
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Instructions -->
+        <TextView
+            android:id="@+id/tvInstructions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            android:text="Tap 'Take Photo' to capture a trash image for AI classification."
+            android:textSize="14sp"
+            android:textColor="?attr/colorOnSurface"
+            android:gravity="center"
+            android:padding="8dp" />
+
+    </LinearLayout>
+
+</ScrollView>

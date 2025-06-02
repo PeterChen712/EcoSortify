@@ -15,30 +15,30 @@ android {
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-
-        // Mengambil API key dari gradle.properties
-        manifestPlaceholders = [
-            MAPS_API_KEY: "${MAPS_API_KEY}"
-        ]
-
-        // This will now work correctly after enabling buildConfig
+        
+        // Build config fields for API keys
         buildConfigField "String", "MAPS_API_KEY", "\"${MAPS_API_KEY}\""
-        buildConfigField "String", "NEWS_API_KEY", "\"${getLocalProperty('NEWS_API_KEY', '')}\""
-        buildConfigField "String", "BACKUP_API_KEY", "\"${getLocalProperty('BACKUP_API_KEY', '')}\""
+        buildConfigField "String", "GEMINI_API_KEY", "\"${GEMINI_API_KEY}\""
+        buildConfigField "String", "NEWS_API_KEY", "\"${NEWS_API_KEY}\""
+        
+        // Manifest placeholders for API keys
+        manifestPlaceholders = [
+            MAPS_API_KEY: "${MAPS_API_KEY}",
+            GEMINI_API_KEY: "${GEMINI_API_KEY}",
+            NEWS_API_KEY: "${NEWS_API_KEY}"
+        ]
     }
 
     buildTypes {
-        debug {
-            // Add this line
-            manifestPlaceholders = [BACKUP_API_KEY: "your_backup_api_key_here"]
-        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            // Add this line
-            manifestPlaceholders = [BACKUP_API_KEY: "your_backup_api_key_here"]
+        }
+        debug {
+            // Debug specific config if needed
         }
     }
+    
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_11
         targetCompatibility JavaVersion.VERSION_11
@@ -46,22 +46,12 @@ android {
     
     buildFeatures {
         viewBinding true
-        buildConfig true  // Enable BuildConfig generation
+        buildConfig true
     }
-}
-
-// Function to get properties from local.properties
-def getLocalProperty(String key, String defaultValue) {
-    Properties properties = new Properties()
-    def localPropertiesFile = project.rootProject.file('local.properties')
-    if (localPropertiesFile.exists()) {
-        properties.load(localPropertiesFile.newDataInputStream())
-    }
-    return properties.getProperty(key, defaultValue)
 }
 
 dependencies {
-    // AndroidX libraries
+    // Core AndroidX libraries
     implementation libs.appcompat
     implementation libs.material
     implementation libs.activity
@@ -76,87 +66,55 @@ dependencies {
     annotationProcessor 'androidx.room:room-compiler:2.6.1'
     
     // Lifecycle & ViewModel
-    implementation 'androidx.lifecycle:lifecycle-viewmodel:2.7.0'
-    implementation 'androidx.lifecycle:lifecycle-livedata:2.7.0'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0'
+    implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.7.0'
     
-    // SwipeRefreshLayout
+    // UI Components
     implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
+    implementation 'androidx.cardview:cardview:1.0.0'
+    implementation 'androidx.work:work-runtime:2.9.0'
     
-    // Retrofit for network calls
+    // Networking
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
-    implementation 'com.squareup.okhttp3:logging-interceptor:4.9.1'
+    implementation 'com.squareup.okhttp3:logging-interceptor:4.12.0'
     
-    implementation 'com.squareup.picasso:picasso:2.71828'
+    // Image Loading
+    implementation 'com.github.bumptech.glide:glide:4.16.0'
+    implementation 'jp.wasabeef:glide-transformations:4.3.0'
+    implementation 'de.hdodenhof:circleimageview:3.1.0'
     
-    // Google Play Services for Maps
+    // Google Play Services
     implementation 'com.google.android.gms:play-services-maps:18.2.0'
     implementation 'com.google.android.gms:play-services-location:21.2.0'
     implementation 'com.google.android.gms:play-services-base:18.2.0'
+    implementation 'com.google.android.gms:play-services-auth:21.0.0'
     
-    // TensorFlow Lite - Add these dependencies
-    implementation 'org.tensorflow:tensorflow-lite:2.15.0'
-    implementation 'org.tensorflow:tensorflow-lite-support:0.4.4'
-    implementation 'org.tensorflow:tensorflow-lite-metadata:0.4.4'
-    
-    // MPAndroidChart for statistics
-    implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
-    
-    // Testing dependencies
-    testImplementation 'junit:junit:4.13.2'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
-
-    // Firebase BOM
+    // Firebase BOM (manages all Firebase versions)
     implementation platform('com.google.firebase:firebase-bom:32.8.1')
-    
-    // Firebase services
     implementation 'com.google.firebase:firebase-auth'
     implementation 'com.google.firebase:firebase-firestore'
     implementation 'com.google.firebase:firebase-storage'
     implementation 'com.google.firebase:firebase-messaging'
     implementation 'com.google.firebase:firebase-analytics'
     
-    // Google Sign-In
-    implementation 'com.google.android.gms:play-services-auth:21.0.0'
-    
-    // Networking for News API
-    implementation 'com.squareup.retrofit2:retrofit:2.9.0'
-    implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
-    implementation 'com.squareup.okhttp3:logging-interceptor:4.12.0'
-    
-    // Image loading
-    implementation 'com.github.bumptech.glide:glide:4.16.0'
-    implementation 'de.hdodenhof:circleimageview:3.1.0'
-    
-    // Additional UI components
-    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
-    
-    // Additional dependencies for enhanced features
-    implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.7.0'
-    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0'
-    implementation 'androidx.work:work-runtime:2.9.0'
-    
-    // Enhanced UI components
-    implementation 'com.google.android.material:material:1.5.0'
-    implementation 'androidx.cardview:cardview:1.0.0'
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-    
-    // Image loading and processing
-    implementation 'com.github.bumptech.glide:glide:4.16.0'
-    implementation 'jp.wasabeef:glide-transformations:4.3.0'
+    // Charts
+    implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
     
     // JSON parsing
     implementation 'com.google.code.gson:gson:2.10.1'
     
     // Permission handling
     implementation 'pub.devrel:easypermissions:3.0.0'
-}
-
-// Add to resolve dependency conflicts
-configurations.all {
-    resolutionStrategy {
-        force 'com.google.android.gms:play-services-basement:18.3.0'
-        force 'com.google.firebase:firebase-common:20.4.2'
-    }
+    
+    // Gemini API - ONLY AI Classification Solution
+    implementation 'com.google.ai.client.generativeai:generativeai:0.7.0'
+    
+    // Image processing
+    implementation 'androidx.exifinterface:exifinterface:1.3.6'
+    
+    // Testing
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
 }

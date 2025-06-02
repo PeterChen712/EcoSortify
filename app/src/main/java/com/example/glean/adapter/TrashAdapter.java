@@ -6,9 +6,10 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
+import com.example.glean.R;
 import com.example.glean.databinding.ItemTrashBinding;
 import com.example.glean.model.TrashEntity;
-import com.squareup.picasso.Picasso;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -21,6 +22,7 @@ public class TrashAdapter extends RecyclerView.Adapter<TrashAdapter.TrashViewHol
     private final List<TrashEntity> trashList;
     private final OnTrashClickListener listener;
 
+    // Interface for click handling
     public interface OnTrashClickListener {
         void onTrashItemClick(TrashEntity trash);
     }
@@ -65,10 +67,30 @@ public class TrashAdapter extends RecyclerView.Adapter<TrashAdapter.TrashViewHol
             }
             binding.tvTrashType.setText(trashType);
 
-            // Set description if available
+            // Set description with ML info if available
             String description = trash.getDescription();
+            String displayText = "";
+            
+            // Add user description if available
             if (description != null && !description.isEmpty()) {
-                binding.tvDescription.setText(description);
+                displayText = description;
+            }
+            
+            // Add ML prediction info if available
+            if (trash.getMlLabel() != null && !trash.getMlLabel().isEmpty() && trash.getConfidence() > 0) {
+                String mlInfo = String.format(Locale.getDefault(),
+                    "AI: %s (%.1f%%)", trash.getMlLabel(), trash.getConfidence() * 100);
+                
+                if (!displayText.isEmpty()) {
+                    displayText += "\n" + mlInfo;
+                } else {
+                    displayText = mlInfo;
+                }
+            }
+            
+            // Set final description text
+            if (!displayText.isEmpty()) {
+                binding.tvDescription.setText(displayText);
                 binding.tvDescription.setVisibility(ViewGroup.VISIBLE);
             } else {
                 binding.tvDescription.setVisibility(ViewGroup.GONE);
@@ -93,35 +115,25 @@ public class TrashAdapter extends RecyclerView.Adapter<TrashAdapter.TrashViewHol
             if (imagePath != null && !imagePath.isEmpty()) {
                 File imageFile = new File(imagePath);
                 if (imageFile.exists()) {
-                    Picasso.get()
+                    Glide.with(binding.ivTrashImage.getContext())
                             .load(imageFile)
-                            .placeholder(android.R.drawable.ic_menu_gallery)
-                            .error(android.R.drawable.ic_menu_gallery)
+                            .placeholder(R.drawable.ic_placeholder)
+                            .error(R.drawable.ic_error)
+                            .centerCrop()
                             .into(binding.ivTrashImage);
                 } else {
-                    binding.ivTrashImage.setImageResource(android.R.drawable.ic_menu_gallery);
+                    // Use Glide for consistent placeholder handling
+                    Glide.with(binding.ivTrashImage.getContext())
+                            .load(R.drawable.ic_trash_placeholder)
+                            .placeholder(R.drawable.ic_placeholder)
+                            .into(binding.ivTrashImage);
                 }
             } else {
-                binding.ivTrashImage.setImageResource(android.R.drawable.ic_menu_gallery);
-            }
-
-            // Set ML prediction info if available
-            if (trash.getMlLabel() != null && !trash.getMlLabel().isEmpty()) {
-                String mlInfo = String.format(Locale.getDefault(),
-                    "ML: %s (%.1f%%)", trash.getMlLabel(), trash.getConfidence() * 100);
-                binding.tvMlPrediction.setText(mlInfo);
-                binding.tvMlPrediction.setVisibility(ViewGroup.VISIBLE);
-            } else {
-                binding.tvMlPrediction.setVisibility(ViewGroup.GONE);
-            }
-
-            // Set classification status
-            if (trashType.equals("Unknown")) {
-                binding.tvStatus.setText("Needs Classification");
-                binding.tvStatus.setTextColor(itemView.getContext().getColor(android.R.color.holo_red_dark));
-            } else {
-                binding.tvStatus.setText("Classified");
-                binding.tvStatus.setTextColor(itemView.getContext().getColor(android.R.color.holo_green_dark));
+                // Use Glide for consistent placeholder handling
+                Glide.with(binding.ivTrashImage.getContext())
+                        .load(R.drawable.ic_trash_placeholder)
+                        .placeholder(R.drawable.ic_placeholder)
+                        .into(binding.ivTrashImage);
             }
 
             // Set click listener

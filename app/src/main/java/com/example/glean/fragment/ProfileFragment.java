@@ -20,6 +20,7 @@ import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.GridLayoutManager;
 
+import com.bumptech.glide.Glide;
 import com.example.glean.R;
 import com.example.glean.adapter.BadgeAdapter;
 import com.example.glean.databinding.FragmentProfileBinding;
@@ -27,9 +28,7 @@ import com.example.glean.databinding.DialogEditProfileBinding;
 import com.example.glean.databinding.DialogSettingsBinding;
 import com.example.glean.db.AppDatabase;
 import com.example.glean.model.UserEntity;
-import com.example.glean.util.CircleTransform;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
-import com.squareup.picasso.Picasso;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -108,16 +107,21 @@ public class ProfileFragment extends Fragment {
                     // Load user statistics from database
                     loadUserStatistics();
                     
-                    // Load profile image if exists
+                    // Load profile image if exists using Glide with circleCrop
                     profileImagePath = user.getProfileImagePath();
                     if (profileImagePath != null && !profileImagePath.isEmpty()) {
-                        Picasso.get()
+                        Glide.with(this)
                                 .load(new File(profileImagePath))
-                                .transform(new CircleTransform())
                                 .placeholder(R.drawable.profile_placeholder)
+                                .error(R.drawable.profile_placeholder)
+                                .circleCrop()
                                 .into(binding.ivProfilePic);
                     } else {
-                        binding.ivProfilePic.setImageResource(R.drawable.profile_placeholder);
+                        // Set default placeholder with circular crop
+                        Glide.with(this)
+                                .load(R.drawable.profile_placeholder)
+                                .circleCrop()
+                                .into(binding.ivProfilePic);
                     }
                     
                     // Setup badges - use empty list for now since badges field doesn't exist
@@ -211,10 +215,12 @@ public class ProfileFragment extends Fragment {
                 && data != null && data.getData() != null) {
             selectedImageUri = data.getData();
             
-            // Display the selected image using Picasso
-            Picasso.get()
+            // Display the selected image using Glide with circleCrop
+            Glide.with(this)
                     .load(selectedImageUri)
-                    .transform(new CircleTransform())
+                    .placeholder(R.drawable.profile_placeholder)
+                    .error(R.drawable.profile_placeholder)
+                    .circleCrop()
                     .into(binding.ivProfilePic);
             
             // Save the image path to the user profile
@@ -445,6 +451,8 @@ public class ProfileFragment extends Fragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        executor.shutdown();
+        if (executor != null && !executor.isShutdown()) {
+            executor.shutdown();
+        }
     }
 }

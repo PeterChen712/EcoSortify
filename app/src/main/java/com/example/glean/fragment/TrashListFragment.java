@@ -136,6 +136,8 @@ public class TrashListFragment extends Fragment implements TrashAdapter.OnTrashC
     @Override
     public void onDestroy() {
         super.onDestroy();
-        executor.shutdown();
+        if (executor != null && !executor.isShutdown()) {
+            executor.shutdown();
+        }
     }
 }

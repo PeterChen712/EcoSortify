@@ -13,10 +13,11 @@ import androidx.fragment.app.Fragment;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 
+import com.bumptech.glide.Glide;
+import com.example.glean.R;
 import com.example.glean.databinding.FragmentNewsDetailBinding;
 import com.example.glean.db.AppDatabase;
 import com.example.glean.model.NewsEntity;
-import com.squareup.picasso.Picasso;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -97,13 +98,14 @@ public class NewsDetailFragment extends Fragment {
         }
         binding.tvContent.setText(content);
         
-        // Load image if available
+        // Load image if available using Glide
         if (newsItem.getImageUrl() != null && !newsItem.getImageUrl().isEmpty()) {
             binding.ivNewsImage.setVisibility(View.VISIBLE);
-            Picasso.get()
+            Glide.with(this)
                     .load(newsItem.getImageUrl())
-                    .placeholder(android.R.drawable.ic_menu_gallery)
-                    .error(android.R.drawable.ic_menu_report_image)
+                    .placeholder(R.drawable.ic_placeholder)
+                    .error(R.drawable.ic_error)
+                    .centerCrop()
                     .into(binding.ivNewsImage);
         } else {
             binding.ivNewsImage.setVisibility(View.GONE);
@@ -115,8 +117,14 @@ public class NewsDetailFragment extends Fragment {
     
     private void openInBrowser() {
         if (newsItem != null && newsItem.getUrl() != null && !newsItem.getUrl().isEmpty()) {
-            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(newsItem.getUrl()));
-            startActivity(intent);
+            try {
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(newsItem.getUrl()));
+                startActivity(intent);
+            } catch (Exception e) {
+                // Handle case where no browser is available
+                binding.tvErrorMessage.setVisibility(View.VISIBLE);
+                binding.tvErrorMessage.setText("No browser app found to open the link");
+            }
         }
     }
     
@@ -132,14 +140,20 @@ public class NewsDetailFragment extends Fragment {
             shareText += "Read more: " + newsItem.getUrl() + "\n\n";
         }
         
-        shareText += "Shared from GleanGo";
+        shareText += "Shared from Glean - Environmental News & Plogging App";
         
         Intent shareIntent = new Intent(Intent.ACTION_SEND);
         shareIntent.setType("text/plain");
         shareIntent.putExtra(Intent.EXTRA_SUBJECT, newsItem.getTitle());
         shareIntent.putExtra(Intent.EXTRA_TEXT, shareText);
         
-        startActivity(Intent.createChooser(shareIntent, "Share Environmental News"));
+        try {
+            startActivity(Intent.createChooser(shareIntent, "Share Environmental News"));
+        } catch (Exception e) {
+            // Handle case where no sharing apps are available
+            binding.tvErrorMessage.setVisibility(View.VISIBLE);
+            binding.tvErrorMessage.setText("No sharing apps available");
+        }
     }
     
     private void navigateBack() {
@@ -156,6 +170,8 @@ public class NewsDetailFragment extends Fragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        executor.shutdown();
+        if (executor != null && !executor.isShutdown()) {
+            executor.shutdown();
+        }
     }
 }

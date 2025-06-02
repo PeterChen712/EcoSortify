@@ -7,34 +7,34 @@ import com.example.glean.BuildConfig;
  */
 public class ApiConfig {
     
-    // API Keys
-    public static String getNewsApiKey() {
-        // In production, store in BuildConfig or encrypted preferences
-        return BuildConfig.NEWS_API_KEY; // Define in build.gradle
-    }
-    
+    // Maps API Key
     public static String getMapsApiKey() {
         return BuildConfig.MAPS_API_KEY;
     }
     
-    public static String getBackupApiKey() {
-        return BuildConfig.BACKUP_API_KEY;
+    // Gemini API Key
+    public static String getGeminiApiKey() {
+        return BuildConfig.GEMINI_API_KEY;
     }
     
-    // API Endpoints
-    public static final String NEWS_BASE_URL = "https://newsapi.org/v2/";
+    // News API Key
+    public static String getNewsApiKey() {
+        return BuildConfig.NEWS_API_KEY;
+    }
     
-    // Default configurations
-    public static final int DEFAULT_PAGE_SIZE = 20;
-    public static final String DEFAULT_LANGUAGE = "en";
-    public static final String DEFAULT_SORT_BY = "publishedAt";
+    // Check if API keys are configured
+    public static boolean isMapsApiConfigured() {
+        String key = getMapsApiKey();
+        return key != null && !key.isEmpty() && !key.equals("your_maps_api_key_here");
+    }
     
-    // Cache settings
-    public static final long CACHE_MAX_AGE = 60 * 60; // 1 hour
-    public static final long CACHE_STALE_AGE = 60 * 60 * 24 * 7; // 1 week
+    public static boolean isGeminiApiConfigured() {
+        String key = getGeminiApiKey();
+        return key != null && !key.isEmpty() && !key.equals("your_gemini_api_key_here");
+    }
     
-    // Request timeouts
-    public static final int CONNECT_TIMEOUT = 30; // seconds
-    public static final int READ_TIMEOUT = 30; // seconds
-    public static final int WRITE_TIMEOUT = 30; // seconds
+    public static boolean isNewsApiConfigured() {
+        String key = getNewsApiKey();
+        return key != null && !key.isEmpty() && !key.equals("your_news_api_key_here");
+    }
 }

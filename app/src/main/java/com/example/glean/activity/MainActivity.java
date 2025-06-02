@@ -36,7 +36,6 @@ public class MainActivity extends AppCompatActivity {
         int userId = prefs.getInt("USER_ID", -1);
         
         if (userId == -1) {
-            // User is not logged in, redirect to auth activity
             startActivity(new Intent(this, AuthActivity.class));
             finish();
             return;

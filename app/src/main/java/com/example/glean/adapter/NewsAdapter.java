@@ -6,9 +6,10 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
+import com.example.glean.R;
 import com.example.glean.databinding.ItemNewsBinding;
 import com.example.glean.model.NewsItem;
-import com.squareup.picasso.Picasso;
 
 import java.util.List;
 
@@ -66,19 +67,28 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
             // Set category/source
             binding.tvCategory.setText(newsItem.getCategory());
             
-            // Load image with Picasso
+            // Load image with Glide
             if (newsItem.getImageUrl() != null && !newsItem.getImageUrl().isEmpty()) {
-                Picasso.get()
+                Glide.with(binding.ivNewsThumbnail.getContext())
                         .load(newsItem.getImageUrl())
-                        .placeholder(android.R.drawable.ic_menu_gallery)
-                        .error(android.R.drawable.ic_menu_gallery)
+                        .placeholder(R.drawable.ic_placeholder)
+                        .error(R.drawable.ic_error)
+                        .centerCrop()
                         .into(binding.ivNewsThumbnail);
             } else {
-                binding.ivNewsThumbnail.setImageResource(android.R.drawable.ic_menu_gallery);
+                // Set default placeholder when no image - use existing placeholder
+                Glide.with(binding.ivNewsThumbnail.getContext())
+                        .load(R.drawable.ic_news_placeholder)
+                        .placeholder(R.drawable.ic_placeholder)
+                        .into(binding.ivNewsThumbnail);
             }
             
             // Set click listener
-            binding.cardNews.setOnClickListener(v -> listener.onNewsItemClick(newsItem));
+            binding.cardNews.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onNewsItemClick(newsItem);
+                }
+            });
         }
     }
 }

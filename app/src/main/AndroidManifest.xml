@@ -10,8 +10,10 @@
     <!-- Camera & Storage Permissions -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" 
-        android:maxSdkVersion="28" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+        android:maxSdkVersion="28"
+        tools:ignore="ScopedStorage" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" 
+        android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     
     <!-- Network & Services -->
@@ -22,6 +24,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <!-- Hardware features -->
     <uses-feature 
@@ -47,18 +50,17 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Glean"
-        android:requestLegacyExternalStorage="true"
         android:hardwareAccelerated="true"
         android:largeHeap="true"
-        tools:targetApi="34">
+        tools:targetApi="34"
+        tools:ignore="GoogleAppIndexingWarning">
 
         <!-- Splash Activity - Launcher -->
         <activity
             android:name=".activity.SplashActivity"
             android:exported="true"
             android:theme="@style/Theme.Glean.Splash"
-            android:screenOrientation="portrait"
-            android:launchMode="singleTop">
+            android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -69,41 +71,20 @@
         <activity
             android:name=".activity.AuthActivity"
             android:exported="false"
-            android:theme="@style/Theme.Glean.Auth"
-            android:screenOrientation="portrait"
-            android:windowSoftInputMode="adjustResize" />
+            android:screenOrientation="portrait" />
 
         <!-- Main Activity with Bottom Navigation -->
         <activity
             android:name=".activity.MainActivity"
             android:exported="false"
-            android:theme="@style/Theme.Glean"
-            android:screenOrientation="portrait"
-            android:launchMode="singleTask"
-            android:windowSoftInputMode="adjustPan" />
+            android:screenOrientation="portrait" />
 
         <!-- Background Location Service -->
         <service
             android:name=".service.LocationService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="location"
-            android:stopWithTask="false" />
-
-        <!-- Notification Service -->
-        <service
-            android:name=".service.NotificationService"
-            android:enabled="true"
-            android:exported="false" />
-
-        <!-- Firebase Cloud Messaging Service -->
-        <service
-            android:name=".service.FirebaseMessagingService"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="com.google.firebase.MESSAGING_EVENT" />
-            </intent-filter>
-        </service>
+            android:foregroundServiceType="location" />
 
         <!-- Google Maps API Key -->
         <meta-data
@@ -126,95 +107,6 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-        <!-- Content Provider for sharing -->
-        <provider
-            android:name="androidx.startup.InitializationProvider"
-            android:authorities="com.example.glean.androidx-startup"
-            android:exported="false"
-            tools:node="merge">
-            <!-- WorkManager Initialization -->
-            <meta-data
-                android:name="androidx.work.WorkManagerInitializer"
-                android:value="androidx.startup"
-                tools:node="remove" />
-        </provider>
-
-        <!-- Deep Links untuk sharing -->
-        <activity-alias
-            android:name=".ShareActivity"
-            android:targetActivity=".activity.MainActivity"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.SEND" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="text/plain" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.SEND" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="image/*" />
-            </intent-filter>
-        </activity-alias>
-
-        <!-- App Shortcuts untuk Android 7.1+ -->
-        <meta-data
-            android:name="android.app.shortcuts"
-            android:resource="@xml/shortcuts" />
-
-        <!-- Network Security Config -->
-        <meta-data
-            android:name="android.security.net.config"
-            android:resource="@xml/network_security_config" />
-
-        <!-- Firebase Configuration (jika diperlukan di masa depan) -->
-        <!-- 
-        <meta-data
-            android:name="firebase_crashlytics_collection_enabled"
-            android:value="false" />
-        <meta-data
-            android:name="firebase_analytics_collection_enabled"
-            android:value="false" />
-        -->
-
     </application>
-
-    <!-- Queries untuk Android 11+ Package Visibility -->
-    <queries>
-        <!-- Camera apps -->
-        <intent>
-            <action android:name="android.media.action.IMAGE_CAPTURE" />
-        </intent>
-        
-        <!-- Map apps -->
-        <intent>
-            <action android:name="android.intent.action.VIEW" />
-            <data android:scheme="geo" />
-        </intent>
-        
-        <!-- Social sharing apps -->
-        <intent>
-            <action android:name="android.intent.action.SEND" />
-            <data android:mimeType="text/plain" />
-        </intent>
-        <intent>
-            <action android:name="android.intent.action.SEND" />
-            <data android:mimeType="image/*" />
-        </intent>
-        
-        <!-- Web browser -->
-        <intent>
-            <action android:name="android.intent.action.VIEW" />
-            <data android:scheme="http" />
-        </intent>
-        <intent>
-            <action android:name="android.intent.action.VIEW" />
-            <data android:scheme="https" />
-        </intent>
-        
-        <!-- Settings app -->
-        <intent>
-            <action android:name="android.settings.APPLICATION_DETAILS_SETTINGS" />
-        </intent>
-    </queries>
 
 </manifest>
