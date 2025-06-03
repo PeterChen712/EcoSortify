@@ -10,6 +10,7 @@ import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
@@ -21,6 +22,7 @@ import com.example.glean.model.RecordEntity;
 import com.example.glean.model.UserEntity;
 import com.github.mikephil.charting.components.Description;
 import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.BarData;
 import com.github.mikephil.charting.data.BarDataSet;
 import com.github.mikephil.charting.data.BarEntry;
@@ -157,7 +159,7 @@ public class StatsFragment extends Fragment {
         // Calculate statistics from recordList
         int totalRuns = recordList.size();
         int totalPlogs = recordList.size(); // In a plogging app, runs = plogs
-        int totalPoints = user != null ? user.getPoints() : 0;
+        int totalPoints = user != null ? user.getTotalPoints() : 0;
         
         // Calculate total distance
         float totalDistance = 0;
@@ -185,10 +187,6 @@ public class StatsFragment extends Fragment {
     
     private void updateCharts() {
         if (recordList.isEmpty()) {
-            // Show empty state
-            binding.tvNoData.setVisibility(View.VISIBLE);
-            binding.barChartDistance.setVisibility(View.GONE);
-            binding.lineChartProgress.setVisibility(View.GONE);
             binding.pieChartTrashTypes.setVisibility(View.GONE);
             return;
         }
@@ -209,129 +207,146 @@ public class StatsFragment extends Fragment {
         
         // Get last 7 records or fewer if not enough
         int recordCount = Math.min(recordList.size(), 7);
-        List<RecordEntity> recentRecords = recordList.subList(Math.max(0, recordList.size() - recordCount), recordList.size());
         
-        // Sort by date
-        Collections.sort(recentRecords, (r1, r2) -> r1.getDate().compareTo(r2.getDate()));
-          for (int i = 0; i < recentRecords.size(); i++) {
-            RecordEntity record = recentRecords.get(i);
-            entries.add(new BarEntry(i, record.getTotalDistance() / 1000)); // Convert to km
+        for (int i = 0; i < recordCount; i++) {
+            RecordEntity record = recordList.get(recordList.size() - recordCount + i);
+            // FIXED: Use getTotalDistance() instead of getDistance() and convert to km
+            float distanceKm = record.getTotalDistance() / 1000f;
+            entries.add(new BarEntry(i, distanceKm));
             
-            // Format date for label
-            String dateStr = record.getDate();
-            if (dateStr != null && !dateStr.trim().isEmpty()) {
-                try {
-                    SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-                    SimpleDateFormat outputFormat = new SimpleDateFormat("MM/dd", Locale.getDefault());
-                    Date date = inputFormat.parse(dateStr);
-                    dateStr = outputFormat.format(date);
-                } catch (ParseException e) {
-                    // Use original string or default
-                    dateStr = "Run " + (i + 1);
-                }
-            } else {
-                // Use default label if date is null or empty
-                dateStr = "Run " + (i + 1);
-            }
-            
-            labels.add(dateStr);
+            // Format date for label - use startTime since getDate() returns String
+            SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd", Locale.getDefault());
+            labels.add(dateFormat.format(new Date(record.getStartTime())));
+        }
+        
+        if (entries.isEmpty()) {
+            // Show empty state
+            return;
         }
         
         BarDataSet dataSet = new BarDataSet(entries, "Distance (km)");
-        dataSet.setColors(ColorTemplate.MATERIAL_COLORS);
-        dataSet.setValueTextColor(Color.BLACK);
-        dataSet.setValueTextSize(10f);
+        dataSet.setColor(ContextCompat.getColor(requireContext(), R.color.environmental_green));
+        dataSet.setValueTextColor(ContextCompat.getColor(requireContext(), R.color.text_primary));
+        dataSet.setValueTextSize(12f);
         
         BarData barData = new BarData(dataSet);
-        barData.setBarWidth(0.6f);
+        barData.setBarWidth(0.8f);
         
-        binding.barChartDistance.getXAxis().setValueFormatter(new IndexAxisValueFormatter(labels));
-        binding.barChartDistance.setData(barData);
-        binding.barChartDistance.animateY(1000);
-        binding.barChartDistance.invalidate();
+        // Configure chart if it exists
+        if (binding.barChartDistance != null) {
+            binding.barChartDistance.setData(barData);
+            binding.barChartDistance.getDescription().setEnabled(false);
+            binding.barChartDistance.setFitBars(true);
+            binding.barChartDistance.animateY(1000);
+            binding.barChartDistance.invalidate();
+        }
     }
     
     private void updateProgressLineChart() {
-        // Calculate points earned from each record (simplified approach)
-        Map<String, Integer> monthlyPoints = new HashMap<>();
-        List<String> monthLabels = new ArrayList<>();
+        if (binding.lineChartProgress == null) return;
         
-        Calendar cal = Calendar.getInstance();
-        SimpleDateFormat monthFormat = new SimpleDateFormat("MMM", Locale.getDefault());
-        SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-        
-        // Initialize last 6 months with 0
-        for (int i = 5; i >= 0; i--) {
-            Calendar tempCal = (Calendar) cal.clone();
-            tempCal.add(Calendar.MONTH, -i);
-            String monthKey = String.format(Locale.getDefault(), "%d-%02d", 
-                    tempCal.get(Calendar.YEAR), tempCal.get(Calendar.MONTH) + 1);
-            String monthLabel = monthFormat.format(tempCal.getTime());
-            monthlyPoints.put(monthKey, 0);
-            monthLabels.add(monthLabel);
-        }
-          // Sum points by month (estimate 10 points per trash collected)
-        for (RecordEntity record : recordList) {
-            try {
-                String dateStr = record.getDate();
-                
-                // Skip if date is null or empty
-                if (dateStr == null || dateStr.trim().isEmpty()) {
-                    continue;
+        try {
+            // Clear any existing data
+            binding.lineChartProgress.clear();
+            
+            if (recordList == null || recordList.isEmpty()) {
+                binding.lineChartProgress.setNoDataText("No progress data available");
+                binding.lineChartProgress.invalidate();
+                return;
+            }
+            
+            // Prepare data entries for the line chart
+            ArrayList<Entry> entries = new ArrayList<>();
+            
+            // Group records by date and calculate cumulative progress
+            Map<String, Integer> dailyTrashCount = new HashMap<>();
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+            
+            for (RecordEntity record : recordList) {
+                // FIXED: Use getStartTime() instead of getTimestamp() since that method doesn't exist
+                String dateKey = dateFormat.format(new Date(record.getStartTime()));
+                dailyTrashCount.put(dateKey, dailyTrashCount.getOrDefault(dateKey, 0) + record.getTrashCount());
+            }
+            
+            // Sort dates and create cumulative entries
+            List<String> sortedDates = new ArrayList<>(dailyTrashCount.keySet());
+            Collections.sort(sortedDates);
+            
+            int cumulativeCount = 0;
+            for (int i = 0; i < sortedDates.size(); i++) {
+                cumulativeCount += dailyTrashCount.get(sortedDates.get(i));
+                entries.add(new Entry(i, cumulativeCount));
+            }
+            
+            if (entries.isEmpty()) {
+                binding.lineChartProgress.setNoDataText("No progress data available");
+                binding.lineChartProgress.invalidate();
+                return;
+            }
+            
+            // Create dataset
+            LineDataSet dataSet = new LineDataSet(entries, "Cumulative Trash Collected");
+            dataSet.setColor(Color.GREEN);
+            dataSet.setCircleColor(Color.GREEN);
+            dataSet.setLineWidth(3f);
+            dataSet.setCircleRadius(5f);
+            dataSet.setValueTextSize(10f);
+            dataSet.setValueTextColor(Color.BLACK);
+            dataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+            dataSet.setDrawFilled(true);
+            dataSet.setFillColor(Color.GREEN);
+            dataSet.setFillAlpha(30);
+            
+            // Create LineData and set to chart
+            LineData lineData = new LineData(dataSet);
+            binding.lineChartProgress.setData(lineData);
+            
+            // Customize chart appearance
+            binding.lineChartProgress.getDescription().setEnabled(false);
+            binding.lineChartProgress.setTouchEnabled(true);
+            binding.lineChartProgress.setDragEnabled(true);
+            binding.lineChartProgress.setScaleEnabled(true);
+            binding.lineChartProgress.setPinchZoom(true);
+            
+            // Customize X-axis
+            XAxis xAxis = binding.lineChartProgress.getXAxis();
+            xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
+            xAxis.setGranularity(1f);
+            xAxis.setValueFormatter(new ValueFormatter() {
+                @Override
+                public String getFormattedValue(float value) {
+                    int index = (int) value;
+                    if (index >= 0 && index < sortedDates.size()) {
+                        try {
+                            Date date = dateFormat.parse(sortedDates.get(index));
+                            SimpleDateFormat displayFormat = new SimpleDateFormat("MM/dd", Locale.getDefault());
+                            return displayFormat.format(date);
+                        } catch (ParseException e) {
+                            return "";
+                        }
+                    }
+                    return "";
                 }
-                
-                Date recordDate = inputFormat.parse(dateStr);
-                Calendar tempCal = Calendar.getInstance();
-                tempCal.setTime(recordDate);
-                String monthKey = String.format(Locale.getDefault(), "%d-%02d", 
-                        tempCal.get(Calendar.YEAR), tempCal.get(Calendar.MONTH) + 1);
-                
-                if (monthlyPoints.containsKey(monthKey)) {
-                    int estimatedPoints = record.getTrashCount() * 10; // 10 points per trash
-                    monthlyPoints.put(monthKey, monthlyPoints.get(monthKey) + estimatedPoints);
-                }
-            } catch (ParseException | NullPointerException e) {
-                // Skip this record if date parsing fails
-                continue;
+            });
+            
+            // Customize Y-axis
+            YAxis leftAxis = binding.lineChartProgress.getAxisLeft();
+            leftAxis.setAxisMinimum(0f);
+            leftAxis.setGranularity(1f);
+            
+            YAxis rightAxis = binding.lineChartProgress.getAxisRight();
+            rightAxis.setEnabled(false);
+            
+            // Refresh chart
+            binding.lineChartProgress.animateX(1000);
+            binding.lineChartProgress.invalidate();
+            
+        } catch (Exception e) {
+            if (binding.lineChartProgress != null) {
+                binding.lineChartProgress.setNoDataText("Error loading progress data");
+                binding.lineChartProgress.invalidate();
             }
         }
-        
-        // Create entries
-        List<Entry> entries = new ArrayList<>();
-        Calendar tempCal = (Calendar) cal.clone();
-        
-        for (int i = 0; i < 6; i++) {
-            tempCal.add(Calendar.MONTH, -(5-i));
-            String monthKey = String.format(Locale.getDefault(), "%d-%02d", 
-                    tempCal.get(Calendar.YEAR), tempCal.get(Calendar.MONTH) + 1);
-            tempCal = (Calendar) cal.clone(); // Reset calendar
-            
-            int points = monthlyPoints.getOrDefault(monthKey, 0);
-            entries.add(new Entry(i, points));
-        }
-        
-        LineDataSet dataSet = new LineDataSet(entries, "Monthly Points");
-        dataSet.setColor(Color.BLUE);
-        dataSet.setCircleColor(Color.BLUE);
-        dataSet.setLineWidth(2f);
-        dataSet.setCircleRadius(4f);
-        dataSet.setDrawValues(true);
-        dataSet.setValueTextSize(10f);
-        dataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
-        dataSet.setDrawFilled(true);
-        dataSet.setFillColor(Color.BLUE);
-        dataSet.setFillAlpha(50);
-        
-        LineData lineData = new LineData(dataSet);
-        
-        binding.lineChartProgress.getXAxis().setValueFormatter(new IndexAxisValueFormatter(monthLabels));
-        binding.lineChartProgress.getXAxis().setPosition(XAxis.XAxisPosition.BOTTOM);
-        binding.lineChartProgress.getXAxis().setGranularity(1f);
-        binding.lineChartProgress.getXAxis().setDrawGridLines(false);
-        binding.lineChartProgress.getAxisRight().setEnabled(false);
-        binding.lineChartProgress.setData(lineData);
-        binding.lineChartProgress.animateX(1000);
-        binding.lineChartProgress.invalidate();
     }
     
     private void updateTrashTypePieChart() {
