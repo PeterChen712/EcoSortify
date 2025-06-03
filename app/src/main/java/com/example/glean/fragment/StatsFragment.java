@@ -213,20 +213,25 @@ public class StatsFragment extends Fragment {
         
         // Sort by date
         Collections.sort(recentRecords, (r1, r2) -> r1.getDate().compareTo(r2.getDate()));
-        
-        for (int i = 0; i < recentRecords.size(); i++) {
+          for (int i = 0; i < recentRecords.size(); i++) {
             RecordEntity record = recentRecords.get(i);
             entries.add(new BarEntry(i, record.getTotalDistance() / 1000)); // Convert to km
             
             // Format date for label
             String dateStr = record.getDate();
-            try {
-                SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-                SimpleDateFormat outputFormat = new SimpleDateFormat("MM/dd", Locale.getDefault());
-                Date date = inputFormat.parse(dateStr);
-                dateStr = outputFormat.format(date);
-            } catch (ParseException e) {
-                // Use as is
+            if (dateStr != null && !dateStr.trim().isEmpty()) {
+                try {
+                    SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+                    SimpleDateFormat outputFormat = new SimpleDateFormat("MM/dd", Locale.getDefault());
+                    Date date = inputFormat.parse(dateStr);
+                    dateStr = outputFormat.format(date);
+                } catch (ParseException e) {
+                    // Use original string or default
+                    dateStr = "Run " + (i + 1);
+                }
+            } else {
+                // Use default label if date is null or empty
+                dateStr = "Run " + (i + 1);
             }
             
             labels.add(dateStr);
@@ -265,11 +270,17 @@ public class StatsFragment extends Fragment {
             monthlyPoints.put(monthKey, 0);
             monthLabels.add(monthLabel);
         }
-        
-        // Sum points by month (estimate 10 points per trash collected)
+          // Sum points by month (estimate 10 points per trash collected)
         for (RecordEntity record : recordList) {
             try {
-                Date recordDate = inputFormat.parse(record.getDate());
+                String dateStr = record.getDate();
+                
+                // Skip if date is null or empty
+                if (dateStr == null || dateStr.trim().isEmpty()) {
+                    continue;
+                }
+                
+                Date recordDate = inputFormat.parse(dateStr);
                 Calendar tempCal = Calendar.getInstance();
                 tempCal.setTime(recordDate);
                 String monthKey = String.format(Locale.getDefault(), "%d-%02d", 
@@ -279,8 +290,9 @@ public class StatsFragment extends Fragment {
                     int estimatedPoints = record.getTrashCount() * 10; // 10 points per trash
                     monthlyPoints.put(monthKey, monthlyPoints.get(monthKey) + estimatedPoints);
                 }
-            } catch (ParseException e) {
-                // Skip this record
+            } catch (ParseException | NullPointerException e) {
+                // Skip this record if date parsing fails
+                continue;
             }
         }
         
