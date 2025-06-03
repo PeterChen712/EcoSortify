@@ -16,6 +16,7 @@ import android.net.NetworkInfo;
 import android.net.NetworkRequest;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
@@ -73,6 +74,10 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
     private static final int PLAY_SERVICES_RESOLUTION_REQUEST = 1003;
     private static final int STORAGE_PERMISSION_REQUEST_CODE = 1004;
 
+    // Auto-finish timeout constants
+    private static final long AUTO_FINISH_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+    private static final long WARNING_TIMEOUT_MS = 4 * 60 * 1000; // 4 minutes (1 minute warning)
+
     private FragmentPloggingBinding binding;
     private GoogleMap mMap;
     private FusedLocationProviderClient fusedLocationClient;
@@ -80,7 +85,7 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
     private boolean isTracking = false;
     private float totalDistance = 0;
     private Location lastLocation;
-    
+
     private AppDatabase db;
     private int userId;
     private ExecutorService executor;
@@ -100,11 +105,17 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
     private Button btnRetryConnection;
     private Button btnOpenSettings;
     private Button btnContinueOffline;
-
     private int currentTrashCount = 0;
     private int currentPoints = 0;
-    
+
     private boolean wasTrackingBeforeNetworkLoss = false;
+
+    // Auto-finish timer variables
+    private Handler autoFinishHandler;
+    private Runnable autoFinishRunnable;
+    private Runnable warningRunnable;
+    private long networkLossStartTime = 0;
+    private boolean hasShownWarning = false;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -113,7 +124,10 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
         userId = prefs.getInt("USER_ID", -1);
         executor = Executors.newSingleThreadExecutor();
-        
+
+        // Initialize auto-finish handler
+        autoFinishHandler = new Handler(Looper.getMainLooper());
+
         initializeNetworkMonitoring();
         initializeGoogleServices();
     }
@@ -141,12 +155,14 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
 
         updateUIForTrackingState(isTracking);
         updateUIForNetworkState(isNetworkAvailable);
-
         binding.btnStartStop.setOnClickListener(v -> toggleTracking());
         binding.btnCollectTrash.setOnClickListener(v -> navigateToTrashCollection());
         binding.btnFinish.setOnClickListener(v -> finishPlogging());
 
         checkNetworkStatus();
+
+        // Restore auto-finish timer if needed
+        checkAndRestoreAutoFinishTimer();
     }
 
     private void initializeNoInternetViews() {
@@ -158,7 +174,7 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         btnRetryConnection.setOnClickListener(v -> {
             btnRetryConnection.setText("🔄 Checking...");
             btnRetryConnection.setEnabled(false);
-            
+
             binding.getRoot().postDelayed(() -> {
                 checkNetworkStatus();
                 btnRetryConnection.setText("🔄 Try Again");
@@ -183,11 +199,11 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
     public void onResume() {
         super.onResume();
         registerNetworkCallbacks();
-        
+
         restoreTrackingSession();
-        
+
         updateTrashDataFromDatabase();
-        
+
         if (isTracking && fusedLocationClient != null && trackingCallback == null) {
             startContinuousLocationTracking();
         }
@@ -200,14 +216,14 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                     DaoTrash trashDao = db.trashDao();
                     int trashCount = trashDao.getTrashCountByRecordIdSync(currentRecordId);
                     int totalPoints = trashDao.getTotalPointsByRecordIdSync(currentRecordId);
-                    
+
                     requireActivity().runOnUiThread(() -> {
                         currentTrashCount = trashCount;
                         currentPoints = totalPoints;
                         updateTrashUIAlternative();
                     });
                 } catch (Exception e) {
-                    
+
                 }
             });
         }
@@ -215,23 +231,23 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
 
     private void updateTrashUIAlternative() {
         if (binding == null) return;
-        
+
         if (binding.tvTrashCount != null) {
             binding.tvTrashCount.setText(String.valueOf(currentTrashCount));
         }
-        
+
         if (binding.tvDistance != null) {
             if (currentTrashCount > 0 || currentPoints > 0) {
-                String combinedText = String.format(Locale.getDefault(), 
-                    "%.2f km | 🗑️ %d | ⭐ %d", 
-                    totalDistance / 1000f, currentTrashCount, currentPoints);
+                String combinedText = String.format(Locale.getDefault(),
+                        "%.2f km | 🗑️ %d | ⭐ %d",
+                        totalDistance / 1000f, currentTrashCount, currentPoints);
                 binding.tvDistance.setText(combinedText);
             } else {
-                binding.tvDistance.setText(String.format(Locale.getDefault(), 
-                    "%.2f km", totalDistance / 1000f));
+                binding.tvDistance.setText(String.format(Locale.getDefault(),
+                        "%.2f km", totalDistance / 1000f));
             }
         }
-        
+
         if (binding.btnCollectTrash != null) {
             if (isTracking) {
                 String buttonText;
@@ -255,14 +271,30 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         }
 
         if (isTracking) {
-            pauseTracking();
+            showStopConfirmationDialog();
         } else {
             if (hasActiveSession()) {
-                continueTracking();
+                resumeTracking();
             } else {
                 startTracking();
             }
         }
+    }
+
+    private void showStopConfirmationDialog() {
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("🛑 Stop Plogging?")
+                .setMessage("Do you want to stop the current plogging session?\n\n" +
+                        "⚠️ Note: You can finish the session to save your progress, or continue tracking.")
+                .setPositiveButton("Stop", (dialog, which) -> {
+                    internalPauseTracking();
+                    showNetworkStatusMessage("🛑 Plogging stopped. Tap 'Start Plogging' to resume or 'Finish' to complete.", false);
+                })
+                .setNegativeButton("Cancel", null)
+                .setNeutralButton("Finish Session", (dialog, which) -> {
+                    finishPlogging();
+                })
+                .show();
     }
 
     private void startTracking() {
@@ -284,13 +316,13 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
 
             requireActivity().runOnUiThread(() -> {
                 isTracking = true;
-                
+
                 currentTrashCount = 0;
                 currentPoints = 0;
                 totalDistance = 0f;
-                
+
                 saveTrackingSession(true, currentRecordId, System.currentTimeMillis(), 0f);
-                
+
                 updateUIForTrackingState(true);
                 updateTrashUIAlternative();
 
@@ -299,10 +331,10 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
 
                 startContinuousLocationTracking();
 
-                String statusMessage = isNetworkAvailable ? 
-                    "🏃‍♂️ Plogging started with full GPS accuracy!" :
-                    "🏃‍♂️ Plogging started in offline mode!";
-                    
+                String statusMessage = isNetworkAvailable ?
+                        "🏃‍♂️ Plogging started with full GPS accuracy!" :
+                        "🏃‍♂️ Plogging started in offline mode!";
+
                 showNetworkStatusMessage(statusMessage, false);
             });
         });
@@ -316,13 +348,13 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         }
     }
 
-    private void pauseTracking() {
+    private void internalPauseTracking() {
         isTracking = false;
-        
+
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
         long sessionStartTime = prefs.getLong("SESSION_START_TIME", System.currentTimeMillis());
         saveTrackingSession(false, currentRecordId, sessionStartTime, totalDistance);
-        
+
         updateUIForTrackingState(false);
 
         binding.chronometer.stop();
@@ -335,21 +367,19 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         Intent serviceIntent = new Intent(requireContext(), LocationService.class);
         serviceIntent.setAction(LocationService.ACTION_STOP_TRACKING);
         requireActivity().startService(serviceIntent);
-        
-        showNetworkStatusMessage("⏸️ Plogging paused. Tap Continue to resume.", false);
     }
 
     private void stopTracking() {
         isTracking = false;
-        
+
         saveTrackingSession(false, -1, 0, 0f);
-        
+
         currentRecordId = -1;
         totalDistance = 0f;
         currentTrashCount = 0;
         currentPoints = 0;
         wasTrackingBeforeNetworkLoss = false;
-        
+
         updateUIForTrackingState(false);
         updateTrashUIAlternative();
 
@@ -364,11 +394,11 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         Intent serviceIntent = new Intent(requireContext(), LocationService.class);
         serviceIntent.setAction(LocationService.ACTION_STOP_TRACKING);
         requireActivity().startService(serviceIntent);
-        
-        showNetworkStatusMessage("🛑 Plogging stopped completely.", false);
+
+        showNetworkStatusMessage("🛑 Plogging session ended.", false);
     }
 
-    private void continueTracking() {
+    private void resumeTracking() {
         if (currentRecordId == -1) {
             showNetworkStatusMessage("❌ No active session found", true);
             return;
@@ -390,8 +420,8 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
             startContinuousLocationTracking();
 
             String statusMessage = String.format(Locale.getDefault(),
-                "▶️ Plogging resumed! Distance: %.2f km, Trash: %d items, Points: %d",
-                totalDistance / 1000f, currentTrashCount, currentPoints);
+                    "▶️ Plogging resumed! Distance: %.2f km, Trash: %d items, Points: %d",
+                    totalDistance / 1000f, currentTrashCount, currentPoints);
             showNetworkStatusMessage(statusMessage, false);
         });
 
@@ -406,18 +436,18 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
 
     private void finishPlogging() {
         new MaterialAlertDialogBuilder(requireContext())
-            .setTitle("🏁 Finish Plogging?")
-            .setMessage("Are you sure you want to finish this plogging session? This action cannot be undone.")
-            .setPositiveButton("Yes, Finish", (dialog, which) -> {
-                finishPloggingConfirmed();
-            })
-            .setNegativeButton("Cancel", null)
-            .show();
+                .setTitle("🏁 Finish Plogging?")
+                .setMessage("Are you sure you want to finish this plogging session? This action cannot be undone.")
+                .setPositiveButton("Yes, Finish", (dialog, which) -> {
+                    finishPloggingConfirmed();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     private void finishPloggingConfirmed() {
         if (isTracking) {
-            pauseTracking();
+            internalPauseTracking();
         }
 
         if (currentRecordId != -1) {
@@ -434,41 +464,41 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                         record.setEndTime(System.currentTimeMillis());
                         record.setTotalDistance(totalDistance);
                         record.setTrashCount(finalTrashCount);
-                        
+
                         db.recordDao().update(record);
-                        
+
                         updateUserPoints(finalPoints);
-                        
+
                         requireActivity().runOnUiThread(() -> {
                             stopTracking();
-                            
+
                             String completionMessage = String.format(Locale.getDefault(),
-                                "🎉 Plogging Complete!\n" +
-                                "📍 Distance: %.2f km\n" +
-                                "🗑️ Trash: %d items\n" +
-                                "⭐ Points: %d",
-                                totalDistance / 1000f, finalTrashCount, finalPoints);
+                                    "🎉 Plogging Complete!\n" +
+                                            "📍 Distance: %.2f km\n" +
+                                            "🗑️ Trash: %d items\n" +
+                                            "⭐ Points: %d",
+                                    totalDistance / 1000f, finalTrashCount, finalPoints);
 
                             new MaterialAlertDialogBuilder(requireContext())
-                                .setTitle("Plogging Selesai")
-                                .setMessage(completionMessage)
-                                .setPositiveButton("OK", (dialog, which) -> {
-                                    try {
-                                        NavController navController = Navigation.findNavController(requireView());
-                                        Bundle args = new Bundle();
-                                        args.putInt("RECORD_ID", record.getId());
-                                        navController.navigate(R.id.action_ploggingFragment_to_summaryFragment, args);
-                                    } catch (Exception e) {
-                                        Toast.makeText(requireContext(), completionMessage, Toast.LENGTH_LONG).show();
-                                    }
-                                })
-                                .setNegativeButton("Tampilkan di Peta", (dialog, which) -> {
-                                    showRouteOnMap(currentRecordId);
-                                })
-                                .setNeutralButton("Simpan ke Galeri", (dialog, which) -> {
-                                    savePloggingResultToGallery(completionMessage);
-                                })
-                                .show();
+                                    .setTitle("Plogging Selesai")
+                                    .setMessage(completionMessage)
+                                    .setPositiveButton("OK", (dialog, which) -> {
+                                        try {
+                                            NavController navController = Navigation.findNavController(requireView());
+                                            Bundle args = new Bundle();
+                                            args.putInt("RECORD_ID", record.getId());
+                                            navController.navigate(R.id.action_ploggingFragment_to_summaryFragment, args);
+                                        } catch (Exception e) {
+                                            Toast.makeText(requireContext(), completionMessage, Toast.LENGTH_LONG).show();
+                                        }
+                                    })
+                                    .setNegativeButton("Tampilkan di Peta", (dialog, which) -> {
+                                        showRouteOnMap(currentRecordId);
+                                    })
+                                    .setNeutralButton("Simpan ke Galeri", (dialog, which) -> {
+                                        savePloggingResultToGallery(completionMessage);
+                                    })
+                                    .show();
                         });
                     }
                 } catch (Exception e) {
@@ -491,7 +521,7 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                         db.userDao().update(user);
                     }
                 } catch (Exception e) {
-                    
+
                 }
             });
         }
@@ -499,16 +529,16 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
 
     private void restoreTrackingSession() {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
-        
+
         boolean wasTracking = prefs.getBoolean("IS_TRACKING", false);
         int activeRecordId = prefs.getInt("ACTIVE_RECORD_ID", -1);
         long sessionStartTime = prefs.getLong("SESSION_START_TIME", 0);
         float sessionDistance = prefs.getFloat("SESSION_DISTANCE", 0f);
-        
+
         if (activeRecordId != -1) {
             currentRecordId = activeRecordId;
             totalDistance = sessionDistance;
-            
+
             if (wasTracking) {
                 isTracking = true;
                 wasTrackingBeforeNetworkLoss = true;
@@ -516,22 +546,22 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                 isTracking = false;
                 wasTrackingBeforeNetworkLoss = false;
             }
-            
+
             executor.execute(() -> {
                 try {
                     int trashCount = db.trashDao().getTrashCountByRecordIdSync(currentRecordId);
                     int points = db.trashDao().getTotalPointsByRecordIdSync(currentRecordId);
-                    
+
                     requireActivity().runOnUiThread(() -> {
                         currentTrashCount = trashCount;
                         currentPoints = points;
                         updateTrashUIAlternative();
                     });
                 } catch (Exception e) {
-                    
+
                 }
             });
-            
+
             if (sessionStartTime > 0 && binding != null) {
                 long elapsedTime = System.currentTimeMillis() - sessionStartTime;
                 binding.chronometer.setBase(SystemClock.elapsedRealtime() - elapsedTime);
@@ -539,13 +569,13 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                     binding.chronometer.start();
                 }
             }
-            
+
             updateUIForTrackingState(isTracking);
-            
+
             String statusMessage = String.format(Locale.getDefault(),
-                "🏃‍♂️ Session %s! Distance: %.2f km, Trash: %d items, Points: %d",
-                isTracking ? "resumed" : "available",
-                totalDistance / 1000f, currentTrashCount, currentPoints);
+                    "🏃‍♂️ Session %s! Distance: %.2f km, Trash: %d items, Points: %d",
+                    isTracking ? "active" : "available",
+                    totalDistance / 1000f, currentTrashCount, currentPoints);
             showNetworkStatusMessage(statusMessage, false);
         } else {
             isTracking = false;
@@ -556,7 +586,7 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
             wasTrackingBeforeNetworkLoss = false;
             updateUIForTrackingState(false);
             updateTrashUIAlternative();
-            
+
             if (binding != null && binding.chronometer != null) {
                 binding.chronometer.stop();
                 binding.chronometer.setBase(SystemClock.elapsedRealtime());
@@ -568,7 +598,7 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         if (isTracking && currentRecordId != -1) {
             try {
                 showNetworkStatusMessage("📸 Opening trash collection...", false);
-                
+
                 NavController navController = Navigation.findNavController(requireView());
                 Bundle args = new Bundle();
                 args.putInt("RECORD_ID", currentRecordId);
@@ -585,23 +615,24 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
 
     private void updateUIForTrackingState(boolean tracking) {
         if (binding == null) return;
-        
+
         if (tracking) {
-            binding.btnStartStop.setText("Pause Tracking");
-            binding.btnStartStop.setBackgroundColor(getResources().getColor(android.R.color.holo_orange_dark));
+            binding.btnStartStop.setText("Stop Tracking");
+            binding.btnStartStop.setBackgroundColor(getResources().getColor(android.R.color.holo_red_dark));
             binding.btnCollectTrash.setEnabled(true);
             binding.btnFinish.setEnabled(true);
         } else {
             if (hasActiveSession()) {
-                binding.btnStartStop.setText("Continue Plogging");
+                binding.btnStartStop.setText("Resume Plogging");
                 binding.btnStartStop.setBackgroundColor(getResources().getColor(android.R.color.holo_blue_bright));
+                binding.btnFinish.setEnabled(true);
             } else {
                 String buttonText = isPloggingEnabled ? "Start Plogging" : "Internet Required";
                 binding.btnStartStop.setText(buttonText);
                 binding.btnStartStop.setBackgroundColor(getResources().getColor(android.R.color.holo_green_dark));
+                binding.btnFinish.setEnabled(false);
             }
             binding.btnCollectTrash.setEnabled(false);
-            binding.btnFinish.setEnabled(hasActiveSession());
         }
     }
 
@@ -609,7 +640,7 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
         int activeRecordId = prefs.getInt("ACTIVE_RECORD_ID", -1);
         boolean hasSession = activeRecordId != -1;
-        
+
         return hasSession;
     }
 
@@ -622,7 +653,7 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
 
             if (routePoints != null && !routePoints.isEmpty()) {
                 mMap.clear();
-                
+
                 if (routePoints.size() > 0) {
                     LatLng startPoint = routePoints.get(0);
                     mMap.addMarker(new MarkerOptions()
@@ -631,7 +662,7 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                             .snippet("Plogging session started here")
                             .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
                 }
-                
+
                 if (routePoints.size() > 1) {
                     LatLng endPoint = routePoints.get(routePoints.size() - 1);
                     mMap.addMarker(new MarkerOptions()
@@ -640,24 +671,24 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                             .snippet("Plogging session finished here")
                             .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
                 }
-                
+
                 if (routePoints.size() > 0) {
                     double minLat = routePoints.get(0).latitude;
                     double maxLat = routePoints.get(0).latitude;
                     double minLng = routePoints.get(0).longitude;
                     double maxLng = routePoints.get(0).longitude;
-                    
+
                     for (LatLng point : routePoints) {
                         minLat = Math.min(minLat, point.latitude);
                         maxLat = Math.max(maxLat, point.latitude);
                         minLng = Math.min(minLng, point.longitude);
                         maxLng = Math.max(maxLng, point.longitude);
                     }
-                    
+
                     LatLng center = new LatLng((minLat + maxLat) / 2, (minLng + maxLng) / 2);
                     mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(center, 15f));
                 }
-                
+
                 Toast.makeText(requireContext(), "🗺️ Route displayed on map", Toast.LENGTH_LONG).show();
             } else {
                 Toast.makeText(requireContext(), "No route data available", Toast.LENGTH_SHORT).show();
@@ -672,12 +703,12 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 savePloggingImageAndroid10Plus(completionMessage);
             } else {
-                if (ActivityCompat.checkSelfPermission(requireContext(), 
+                if (ActivityCompat.checkSelfPermission(requireContext(),
                         Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
                     savePloggingImageLegacy(completionMessage);
                 } else {
-                    requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 
-                                     STORAGE_PERMISSION_REQUEST_CODE);
+                    requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                            STORAGE_PERMISSION_REQUEST_CODE);
                 }
             }
         } catch (Exception e) {
@@ -689,30 +720,30 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
     private void savePloggingImageAndroid10Plus(String completionMessage) {
         try {
             android.graphics.Bitmap bitmap = createPloggingSummaryBitmap(completionMessage);
-            
+
             if (bitmap != null) {
                 android.content.ContentValues values = new android.content.ContentValues();
-                values.put(android.provider.MediaStore.Images.Media.DISPLAY_NAME, 
-                          "Plogging_Result_" + System.currentTimeMillis() + ".jpg");
+                values.put(android.provider.MediaStore.Images.Media.DISPLAY_NAME,
+                        "Plogging_Result_" + System.currentTimeMillis() + ".jpg");
                 values.put(android.provider.MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
-                values.put(android.provider.MediaStore.Images.Media.RELATIVE_PATH, 
-                          android.os.Environment.DIRECTORY_PICTURES + "/Glean/");
-                
+                values.put(android.provider.MediaStore.Images.Media.RELATIVE_PATH,
+                        android.os.Environment.DIRECTORY_PICTURES + "/Glean/");
+
                 android.net.Uri uri = requireContext().getContentResolver()
                         .insert(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
-                
+
                 if (uri != null) {
                     try (java.io.OutputStream outputStream = requireContext().getContentResolver()
                             .openOutputStream(uri)) {
                         bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 95, outputStream);
-                        
+
                         requireActivity().runOnUiThread(() -> {
-                            Toast.makeText(requireContext(), "📸 Plogging result saved to gallery!", 
-                                         Toast.LENGTH_LONG).show();
+                            Toast.makeText(requireContext(), "📸 Plogging result saved to gallery!",
+                                    Toast.LENGTH_LONG).show();
                         });
                     }
                 }
-                
+
                 bitmap.recycle();
             }
         } catch (Exception e) {
@@ -725,31 +756,31 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
     private void savePloggingImageLegacy(String completionMessage) {
         try {
             android.graphics.Bitmap bitmap = createPloggingSummaryBitmap(completionMessage);
-            
+
             if (bitmap != null) {
                 java.io.File picturesDir = android.os.Environment
                         .getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_PICTURES);
                 java.io.File gleanDir = new java.io.File(picturesDir, "Glean");
-                
+
                 if (!gleanDir.exists()) {
                     gleanDir.mkdirs();
                 }
-                
-                java.io.File imageFile = new java.io.File(gleanDir, 
+
+                java.io.File imageFile = new java.io.File(gleanDir,
                         "Plogging_Result_" + System.currentTimeMillis() + ".jpg");
-                
+
                 try (java.io.FileOutputStream outputStream = new java.io.FileOutputStream(imageFile)) {
                     bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 95, outputStream);
-                    
+
                     android.media.MediaScannerConnection.scanFile(requireContext(),
                             new String[]{imageFile.getAbsolutePath()}, null, null);
-                    
+
                     requireActivity().runOnUiThread(() -> {
-                        Toast.makeText(requireContext(), "📸 Plogging result saved to gallery!", 
-                                     Toast.LENGTH_LONG).show();
+                        Toast.makeText(requireContext(), "📸 Plogging result saved to gallery!",
+                                Toast.LENGTH_LONG).show();
                     });
                 }
-                
+
                 bitmap.recycle();
             }
         } catch (Exception e) {
@@ -763,47 +794,47 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         try {
             int width = 800;
             int height = 600;
-            
-            android.graphics.Bitmap bitmap = android.graphics.Bitmap.createBitmap(width, height, 
+
+            android.graphics.Bitmap bitmap = android.graphics.Bitmap.createBitmap(width, height,
                     android.graphics.Bitmap.Config.ARGB_8888);
             android.graphics.Canvas canvas = new android.graphics.Canvas(bitmap);
-            
+
             canvas.drawColor(android.graphics.Color.WHITE);
-            
+
             android.graphics.Paint textPaint = new android.graphics.Paint();
             textPaint.setColor(android.graphics.Color.BLACK);
             textPaint.setTextSize(24f);
             textPaint.setAntiAlias(true);
             textPaint.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-            
+
             android.graphics.Paint titlePaint = new android.graphics.Paint();
             titlePaint.setColor(android.graphics.Color.parseColor("#4CAF50"));
             titlePaint.setTextSize(32f);
             titlePaint.setAntiAlias(true);
             titlePaint.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-            
+
             canvas.drawText("🌱 Glean Plogging Result", 50, 80, titlePaint);
-            
+
             String[] lines = completionMessage.split("\n");
             int yPosition = 150;
-            
+
             for (String line : lines) {
                 canvas.drawText(line, 50, yPosition, textPaint);
                 yPosition += 40;
             }
-            
+
             SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
             String timestamp = "Generated on: " + sdf.format(new Date());
-            
+
             android.graphics.Paint timestampPaint = new android.graphics.Paint();
             timestampPaint.setColor(android.graphics.Color.GRAY);
             timestampPaint.setTextSize(18f);
             timestampPaint.setAntiAlias(true);
-            
+
             canvas.drawText(timestamp, 50, height - 50, timestampPaint);
-            
+
             canvas.drawText("Generated by Glean App", 50, height - 20, timestampPaint);
-            
+
             return bitmap;
         } catch (Exception e) {
             return null;
@@ -820,41 +851,41 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                     .setFastestInterval(500)
                     .setNumUpdates(10)
                     .setSmallestDisplacement(0.1f);
-        
+
             LocationCallback ultraPrecisionCallback = new LocationCallback() {
                 private int updateCount = 0;
                 private Location bestLocation = null;
                 private float bestAccuracy = Float.MAX_VALUE;
-                
+
                 @Override
                 public void onLocationResult(LocationResult locationResult) {
                     if (locationResult == null || locationResult.getLocations().isEmpty()) {
                         return;
                     }
-                    
+
                     for (Location location : locationResult.getLocations()) {
                         updateCount++;
-                        
+
                         if (location.getAccuracy() < bestAccuracy) {
                             bestLocation = location;
                             bestAccuracy = location.getAccuracy();
-                            
+
                             if (mMap != null) {
                                 LatLng currentLatLng = new LatLng(location.getLatitude(), location.getLongitude());
-                                
+
                                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 22f), 2000, null);
-                                
+
                                 addCurrentLocationMarker(currentLatLng, location.getAccuracy());
-                                
+
                                 lastLocation = location;
                             }
                         }
-                        
+
                         if (location.getAccuracy() < 5f && updateCount >= 3) {
                             fusedLocationClient.removeLocationUpdates(this);
                             break;
                         }
-                        
+
                         if (updateCount >= 10) {
                             fusedLocationClient.removeLocationUpdates(this);
                             break;
@@ -862,50 +893,50 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                     }
                 }
             };
-            
+
             fusedLocationClient.getLastLocation()
                     .addOnSuccessListener(requireActivity(), location -> {
                         if (location != null && location.getAccuracy() < 20f) {
                             LatLng currentLatLng = new LatLng(location.getLatitude(), location.getLongitude());
                             mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 20f));
-                            
+
                             addCurrentLocationMarker(currentLatLng, location.getAccuracy());
-                            
+
                             lastLocation = location;
                         }
-                        
-                        if (ActivityCompat.checkSelfPermission(requireContext(), 
+
+                        if (ActivityCompat.checkSelfPermission(requireContext(),
                                 Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                            fusedLocationClient.requestLocationUpdates(locationRequest, 
-                                                                      ultraPrecisionCallback, 
-                                                                      Looper.getMainLooper());
+                            fusedLocationClient.requestLocationUpdates(locationRequest,
+                                    ultraPrecisionCallback,
+                                    Looper.getMainLooper());
                         }
                     })
                     .addOnFailureListener(e -> {
-                        if (ActivityCompat.checkSelfPermission(requireContext(), 
+                        if (ActivityCompat.checkSelfPermission(requireContext(),
                                 Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                            fusedLocationClient.requestLocationUpdates(locationRequest, 
-                                                                      ultraPrecisionCallback, 
-                                                                      Looper.getMainLooper());
+                            fusedLocationClient.requestLocationUpdates(locationRequest,
+                                    ultraPrecisionCallback,
+                                    Looper.getMainLooper());
                         }
                     });
-                
+
         } catch (SecurityException e) {
-            
+
         }
     }
 
     private void addCurrentLocationMarker(LatLng location, float accuracy) {
         if (mMap == null) return;
-        
+
         if (currentLocationMarker != null) {
             currentLocationMarker.remove();
         }
-        
+
         String title = "🚶 Posisi Saya";
-        String snippet = String.format(Locale.getDefault(), 
-            "Akurasi GPS: ±%.1fm\nSiap untuk plogging!", accuracy);
-        
+        String snippet = String.format(Locale.getDefault(),
+                "Akurasi GPS: ±%.1fm\nSiap untuk plogging!", accuracy);
+
         currentLocationMarker = mMap.addMarker(new MarkerOptions()
                 .position(location)
                 .title(title)
@@ -923,20 +954,20 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                     .setInterval(2000)
                     .setFastestInterval(1000)
                     .setSmallestDisplacement(1f);
-                
+
             trackingCallback = new LocationCallback() {
                 @Override
                 public void onLocationResult(LocationResult locationResult) {
                     if (locationResult == null || !isTracking) return;
-                    
+
                     Location location = locationResult.getLastLocation();
                     if (location != null && mMap != null) {
                         LatLng currentLatLng = new LatLng(location.getLatitude(), location.getLongitude());
-                        
+
                         routePoints.add(currentLatLng);
-                        
+
                         addCurrentLocationMarker(currentLatLng, location.getAccuracy());
-                        
+
                         if (lastLocation != null) {
                             float distance = lastLocation.distanceTo(location);
                             totalDistance += distance;
@@ -946,41 +977,41 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                             boolean shouldSave = System.currentTimeMillis() - lastSaveTime > 10000 || totalDistance - prefs.getFloat("LAST_SAVED_DISTANCE", 0) > 10;
 
                             if (shouldSave) {
-                                saveTrackingSession(true, currentRecordId, 
-                                    PreferenceManager.getDefaultSharedPreferences(requireContext())
-                                        .getLong("SESSION_START_TIME", System.currentTimeMillis()), 
-                                    totalDistance);
-                                
+                                saveTrackingSession(true, currentRecordId,
+                                        PreferenceManager.getDefaultSharedPreferences(requireContext())
+                                                .getLong("SESSION_START_TIME", System.currentTimeMillis()),
+                                        totalDistance);
+
                                 prefs.edit().putLong("LAST_SAVE_TIME", System.currentTimeMillis())
-                                             .putFloat("LAST_SAVED_DISTANCE", totalDistance)
-                                             .apply();
-                              }
-                            
+                                        .putFloat("LAST_SAVED_DISTANCE", totalDistance)
+                                        .apply();
+                            }
+
                             requireActivity().runOnUiThread(() -> {
                                 updateTrashUIAlternative();
                             });
                         }
-                        
+
                         lastLocation = location;
                     }
                 }
             };
-            
-            if (ActivityCompat.checkSelfPermission(requireContext(), 
+
+            if (ActivityCompat.checkSelfPermission(requireContext(),
                     Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                fusedLocationClient.requestLocationUpdates(continuousRequest, 
-                                                          trackingCallback, 
-                                                          Looper.getMainLooper());
+                fusedLocationClient.requestLocationUpdates(continuousRequest,
+                        trackingCallback,
+                        Looper.getMainLooper());
             }
         } catch (SecurityException e) {
-            
+
         }
     }
 
     private void saveTrackingSession(boolean isTracking, int recordId, long startTime, float distance) {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
         SharedPreferences.Editor editor = prefs.edit();
-        
+
         editor.putBoolean("IS_TRACKING", isTracking);
         editor.putInt("ACTIVE_RECORD_ID", recordId);
         editor.putLong("SESSION_START_TIME", startTime);
@@ -993,7 +1024,7 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         super.onDestroyView();
         hideNetworkWarning();
         unregisterNetworkCallbacks();
-        
+
         binding = null;
     }
 
@@ -1002,6 +1033,13 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         super.onDestroy();
         if (executor != null && !executor.isShutdown()) {
             executor.shutdown();
+        }
+
+        // Cancel auto-finish timers when fragment is destroyed
+        cancelAutoFinishTimer();
+
+        if (autoFinishHandler != null) {
+            autoFinishHandler.removeCallbacksAndMessages(null);
         }
     }
 
@@ -1013,7 +1051,7 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                 binding.tvNetworkStatus.setText("🌐 Connected");
                 binding.tvNetworkStatus.setTextColor(getResources().getColor(android.R.color.holo_green_dark));
                 binding.tvNetworkStatus.setVisibility(View.VISIBLE);
-                
+
                 binding.tvNetworkStatus.postDelayed(() -> {
                     if (binding != null && binding.tvNetworkStatus != null) {
                         binding.tvNetworkStatus.setVisibility(View.GONE);
@@ -1029,14 +1067,14 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
 
     private void enablePloggingFeatures() {
         isPloggingEnabled = true;
-        
+
         if (binding != null) {
             binding.btnStartStop.setEnabled(true);
             binding.btnCollectTrash.setEnabled(isTracking);
             binding.btnFinish.setEnabled(hasActiveSession());
-            
+
             updateUIForTrackingState(isTracking);
-            
+
             binding.btnStartStop.setAlpha(1.0f);
             binding.btnCollectTrash.setAlpha(isTracking ? 1.0f : 0.6f);
             binding.btnFinish.setAlpha(hasActiveSession() ? 1.0f : 0.6f);
@@ -1057,12 +1095,12 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         new MaterialAlertDialogBuilder(requireContext())
                 .setTitle("📱 Offline Mode")
                 .setMessage("You can use basic plogging features offline, but some functionality will be limited:\n\n" +
-                          "✅ GPS tracking\n" +
-                          "✅ Route recording\n" +
-                          "✅ Distance calculation\n" +
-                          "❌ Map tiles update\n" +
-                          "❌ Enhanced GPS accuracy\n\n" +
-                          "Enable internet for full experience.")
+                        "✅ GPS tracking\n" +
+                        "✅ Route recording\n" +
+                        "✅ Distance calculation\n" +
+                        "❌ Map tiles update\n" +
+                        "❌ Enhanced GPS accuracy\n\n" +
+                        "Enable internet for full experience.")
                 .setPositiveButton("Continue Offline", (dialog, which) -> {
                     enableLimitedPloggingFeatures();
                     dialog.dismiss();
@@ -1074,27 +1112,27 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public void onMapReady(@NonNull GoogleMap googleMap) {
         mMap = googleMap;
-        
+
         mMap.getUiSettings().setZoomControlsEnabled(true);
         mMap.getUiSettings().setCompassEnabled(true);
         mMap.getUiSettings().setMyLocationButtonEnabled(true);
-        
-        if (ActivityCompat.checkSelfPermission(requireContext(), 
+
+        if (ActivityCompat.checkSelfPermission(requireContext(),
                 Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             mMap.setMyLocationEnabled(true);
-            
+
             fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
-            
+
             requestUltraHighPrecisionLocation();
         } else {
-            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 
-                             LOCATION_PERMISSION_REQUEST_CODE);
+            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    LOCATION_PERMISSION_REQUEST_CODE);
         }
     }
 
     private void initializeNetworkMonitoring() {
         connectivityManager = (ConnectivityManager) requireContext().getSystemService(Context.CONNECTIVITY_SERVICE);
-        
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             networkCallback = new ConnectivityManager.NetworkCallback() {
                 @Override
@@ -1113,8 +1151,8 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                 public void onCapabilitiesChanged(@NonNull Network network, @NonNull NetworkCapabilities networkCapabilities) {
                     super.onCapabilitiesChanged(network, networkCapabilities);
                     boolean hasInternet = networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
-                                        networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
-                    
+                            networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
+
                     requireActivity().runOnUiThread(() -> {
                         if (hasInternet && !isNetworkAvailable) {
                             onNetworkAvailable();
@@ -1137,7 +1175,7 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
     private void initializeGoogleServices() {
         GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
         int resultCode = apiAvailability.isGooglePlayServicesAvailable(requireContext());
-        
+
         if (resultCode == ConnectionResult.SUCCESS) {
             fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
         } else if (apiAvailability.isUserResolvableError(resultCode)) {
@@ -1149,21 +1187,21 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
 
     private void registerNetworkCallbacks() {
         if (connectivityManager == null) return;
-        
+
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && networkCallback != null) {
                 NetworkRequest.Builder builder = new NetworkRequest.Builder()
                         .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
                         .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
                         .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR);
-                
+
                 connectivityManager.registerNetworkCallback(builder.build(), networkCallback);
             } else if (networkReceiver != null) {
                 IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
                 requireContext().registerReceiver(networkReceiver, filter);
             }
         } catch (Exception e) {
-            
+
         }
     }
 
@@ -1172,37 +1210,37 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
             if (connectivityManager != null && networkCallback != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 connectivityManager.unregisterNetworkCallback(networkCallback);
             }
-            
+
             if (networkReceiver != null) {
                 try {
                     requireContext().unregisterReceiver(networkReceiver);
                 } catch (IllegalArgumentException e) {
-                    
+
                 }
             }
         } catch (Exception e) {
-            
+
         }
     }
 
     private void checkNetworkStatus() {
         if (connectivityManager == null) return;
-        
+
         boolean networkAvailable = false;
-        
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             Network activeNetwork = connectivityManager.getActiveNetwork();
             if (activeNetwork != null) {
                 NetworkCapabilities capabilities = connectivityManager.getNetworkCapabilities(activeNetwork);
                 networkAvailable = capabilities != null &&
-                                 capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
-                                 capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
+                        capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                        capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
             }
         } else {
             NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
             networkAvailable = activeNetworkInfo != null && activeNetworkInfo.isConnected();
         }
-        
+
         if (networkAvailable != isNetworkAvailable) {
             if (networkAvailable) {
                 onNetworkAvailable();
@@ -1215,17 +1253,17 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
     private void onNetworkAvailable() {
         if (!isNetworkAvailable) {
             isNetworkAvailable = true;
-            
+
             hideNoInternetScreen();
             hideNetworkWarning();
             enablePloggingFeatures();
-            
+
             if (wasTrackingBeforeNetworkLoss && hasActiveSession()) {
                 showNetworkStatusMessage("🌐 Internet reconnected! Your session is ready to continue.", false);
             } else {
                 showNetworkStatusMessage("🌐 Internet Connected - Plogging Enabled!", false);
             }
-            
+
             updateUIForNetworkState(true);
         }
     }
@@ -1234,7 +1272,24 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         if (isNetworkAvailable) {
             isNetworkAvailable = false;
             wasTrackingBeforeNetworkLoss = isTracking;
-            
+
+            // Record network loss time and start auto-finish timer
+            networkLossStartTime = System.currentTimeMillis();
+            hasShownWarning = false;
+
+            // Save network loss time to preferences for restoration
+            saveNetworkLossStartTime(networkLossStartTime);
+
+            if (isTracking) {
+                internalPauseTracking();
+                showNetworkStatusMessage("📡 Connection lost! Session paused automatically.", true);
+
+                // Start auto-finish timer only if we have an active session
+                if (hasActiveSession()) {
+                    startAutoFinishTimer();
+                }
+            }
+
             showNoInternetScreen();
             disablePloggingFeatures();
             updateUIForNetworkState(false);
@@ -1257,45 +1312,47 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
 
     private void disablePloggingFeatures() {
         isPloggingEnabled = false;
-        
-        if (isTracking) {
-            isTracking = false;
-            if (fusedLocationClient != null && trackingCallback != null) {
-                fusedLocationClient.removeLocationUpdates(trackingCallback);
-                trackingCallback = null;
-            }
+
+        if (binding != null) {
+            binding.btnStartStop.setEnabled(false);
+            binding.btnCollectTrash.setEnabled(false);
+            binding.btnFinish.setEnabled(false);
+
+            binding.btnStartStop.setAlpha(0.6f);
+            binding.btnCollectTrash.setAlpha(0.6f);
+            binding.btnFinish.setAlpha(0.6f);
         }
     }
 
     private void enableLimitedPloggingFeatures() {
         isPloggingEnabled = true;
-        
+
         hideNoInternetScreen();
-        
+
         if (binding != null) {
             binding.btnStartStop.setEnabled(true);
             binding.btnCollectTrash.setEnabled(isTracking);
             binding.btnFinish.setEnabled(hasActiveSession());
-            
+
             if (hasActiveSession()) {
-                binding.btnStartStop.setText("Continue Plogging (Offline)");
+                binding.btnStartStop.setText("Resume Plogging (Offline)");
                 binding.btnStartStop.setOnClickListener(v -> {
                     if (isTracking) {
-                        pauseTracking();
+                        showStopConfirmationDialog();
                     } else {
-                        continueTracking();
+                        resumeTracking();
                     }
                 });
             } else {
                 binding.btnStartStop.setText("Start Plogging (Offline)");
                 binding.btnStartStop.setOnClickListener(v -> toggleTracking());
             }
-            
+
             binding.btnStartStop.setAlpha(1.0f);
             binding.btnCollectTrash.setAlpha(isTracking ? 1.0f : 0.6f);
             binding.btnFinish.setAlpha(hasActiveSession() ? 1.0f : 0.6f);
         }
-        
+
         Toast.makeText(requireContext(), "📱 Offline mode enabled - Limited functionality", Toast.LENGTH_LONG).show();
     }
 
@@ -1304,45 +1361,156 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
             networkSnackbar.dismiss();
             networkSnackbar = null;
         }
-        
+
         if (networkDialog != null && networkDialog.isShowing()) {
             networkDialog.dismiss();
             networkDialog = null;
         }
+
+        // Cancel auto-finish timers when network is restored
+        cancelAutoFinishTimer();
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        
-        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                if (mMap != null && ActivityCompat.checkSelfPermission(requireContext(), 
-                        Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                    mMap.setMyLocationEnabled(true);
-                    
-                    if (fusedLocationClient == null) {
-                        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
-                    }
-                    
-                    requestUltraHighPrecisionLocation();
-                }
-                
-                Toast.makeText(requireContext(), "Location permission granted", Toast.LENGTH_SHORT).show();
+    // Auto-finish timer methods
+    private void saveNetworkLossStartTime(long startTime) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
+        prefs.edit()
+                .putLong("NETWORK_LOSS_START_TIME", startTime)
+                .putBoolean("HAS_SHOWN_WARNING", hasShownWarning)
+                .apply();
+    }
+
+    private void checkAndRestoreAutoFinishTimer() {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
+        long savedNetworkLossTime = prefs.getLong("NETWORK_LOSS_START_TIME", 0);
+
+        // Only restore timer if we have an active session and network is still down
+        if (savedNetworkLossTime > 0 && !isNetworkAvailable && hasActiveSession()) {
+            networkLossStartTime = savedNetworkLossTime;
+            hasShownWarning = prefs.getBoolean("HAS_SHOWN_WARNING", false);
+
+            long elapsedTime = System.currentTimeMillis() - networkLossStartTime;
+
+            if (elapsedTime >= AUTO_FINISH_TIMEOUT_MS) {
+                // Time already exceeded, auto-finish immediately
+                autoFinishPloggingSession();
             } else {
-                Toast.makeText(requireContext(), "Location permission required for plogging", Toast.LENGTH_LONG).show();
-                
-                if (binding != null) {
-                    binding.btnStartStop.setEnabled(false);
-                    binding.btnStartStop.setText("Location Permission Required");
+                // Calculate remaining time and start timers
+                long remainingTimeToWarning = WARNING_TIMEOUT_MS - elapsedTime;
+                long remainingTimeToFinish = AUTO_FINISH_TIMEOUT_MS - elapsedTime;
+
+                if (remainingTimeToWarning > 0 && !hasShownWarning) {
+                    // Schedule warning
+                    warningRunnable = this::showAutoFinishWarning;
+                    autoFinishHandler.postDelayed(warningRunnable, remainingTimeToWarning);
                 }
-            }
-        } else if (requestCode == STORAGE_PERMISSION_REQUEST_CODE) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                Toast.makeText(requireContext(), "Storage permission granted", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(requireContext(), "Storage permission required to save images", Toast.LENGTH_LONG).show();
+
+                if (remainingTimeToFinish > 0) {
+                    // Schedule auto-finish
+                    autoFinishRunnable = this::autoFinishPloggingSession;
+                    autoFinishHandler.postDelayed(autoFinishRunnable, remainingTimeToFinish);
+                }
             }
         }
     }
+
+    private void startAutoFinishTimer() {
+        // Cancel any existing timers first
+        cancelAutoFinishTimer();
+
+        // Schedule warning at 4 minutes (1 minute before auto-finish)
+        warningRunnable = this::showAutoFinishWarning;
+        autoFinishHandler.postDelayed(warningRunnable, WARNING_TIMEOUT_MS);
+
+        // Schedule auto-finish at 5 minutes
+        autoFinishRunnable = this::autoFinishPloggingSession;
+        autoFinishHandler.postDelayed(autoFinishRunnable, AUTO_FINISH_TIMEOUT_MS);
+
+        Log.d(TAG, "Auto-finish timer started - Warning in 4 min, Auto-finish in 5 min");
+    }
+
+    private void cancelAutoFinishTimer() {
+        if (autoFinishHandler != null) {
+            if (warningRunnable != null) {
+                autoFinishHandler.removeCallbacks(warningRunnable);
+                warningRunnable = null;
+            }
+            if (autoFinishRunnable != null) {
+                autoFinishHandler.removeCallbacks(autoFinishRunnable);
+                autoFinishRunnable = null;
+            }
+        }
+
+        // Clear saved network loss time
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
+        prefs.edit()
+                .remove("NETWORK_LOSS_START_TIME")
+                .remove("HAS_SHOWN_WARNING")
+                .apply();
+
+        networkLossStartTime = 0;
+        hasShownWarning = false;
+
+        Log.d(TAG, "Auto-finish timer cancelled");
+    }
+
+    private void showAutoFinishWarning() {
+        if (hasShownWarning || isNetworkAvailable) return;
+
+        hasShownWarning = true;
+
+        // Save warning state
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
+        prefs.edit().putBoolean("HAS_SHOWN_WARNING", true).apply();
+
+        requireActivity().runOnUiThread(() -> {
+            if (getContext() == null || !isAdded()) return;
+
+            new MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("⚠️ Auto-Finish Warning")
+                    .setMessage("Your plogging session will be automatically finished in 1 minute due to extended network disconnection.\n\n" +
+                            "To prevent this:\n" +
+                            "• Restore internet connection\n" +
+                            "• Or manually finish your session now")
+                    .setPositiveButton("Finish Now", (dialog, which) -> {
+                        cancelAutoFinishTimer();
+                        finishPloggingConfirmed();
+                    })
+                    .setNegativeButton("Wait", null)
+                    .setCancelable(false)
+                    .show();
+        });
+
+        showNetworkStatusMessage("⚠️ Session will auto-finish in 1 minute!", true);
+        Log.d(TAG, "Auto-finish warning shown");
+    }
+
+    private void autoFinishPloggingSession() {
+        if (isNetworkAvailable || !hasActiveSession()) {
+            // Network restored or no active session, cancel auto-finish
+            cancelAutoFinishTimer();
+            return;
+        }
+
+        requireActivity().runOnUiThread(() -> {
+            if (getContext() == null || !isAdded()) return;
+
+            Log.d(TAG, "Auto-finishing plogging session due to network timeout");
+
+            showNetworkStatusMessage("⏰ Session auto-finished due to extended disconnection", true);
+
+            // Show auto-finish notification
+            new MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("⏰ Session Auto-Finished")
+                    .setMessage("Your plogging session has been automatically finished due to 5 minutes of network disconnection.\n\n" +
+                            "Your progress has been saved.")
+                    .setPositiveButton("OK", (dialog, which) -> {
+                        finishPloggingConfirmed();
+                    })
+                    .setCancelable(false)
+                    .show();
+        });
+    }
 }
+
+    // ...existing code...
