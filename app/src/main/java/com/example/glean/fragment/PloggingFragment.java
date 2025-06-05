@@ -37,7 +37,7 @@ import androidx.navigation.Navigation;
 import com.example.glean.R;
 import com.example.glean.databinding.FragmentPloggingBinding;
 import com.example.glean.db.AppDatabase;
-import com.example.glean.dao.DaoTrash;
+import com.example.glean.db.DaoTrash;
 import com.example.glean.model.RecordEntity;
 import com.example.glean.model.UserEntity;
 import com.example.glean.service.LocationService;
@@ -127,6 +127,13 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
 
         // Initialize auto-finish handler
         autoFinishHandler = new Handler(Looper.getMainLooper());
+
+        // Verify user exists, if not create a default user
+        if (userId == -1) {
+            createDefaultUser();
+        } else {
+            verifyUserExists();
+        }
 
         initializeNetworkMonitoring();
         initializeGoogleServices();
@@ -302,41 +309,61 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
             showNetworkStatusMessage("⚠️ Internet connection required for plogging", true);
             return;
         }
-
+        
         executor.execute(() -> {
-            RecordEntity record = new RecordEntity();
-            record.setUserId(userId);
-            record.setStartTime(System.currentTimeMillis());
-            record.setTotalDistance(0);
-            record.setDuration(0);
-            record.setTrashCount(0);
+            try {
+                // First, verify that the user exists in the database
+                UserEntity user = db.userDao().getUserByIdSync(userId);
+                if (user == null) {
+                    // User doesn't exist, show error and return
+                    requireActivity().runOnUiThread(() -> {
+                        Toast.makeText(requireContext(), "User not found. Please login again.", Toast.LENGTH_LONG).show();
+                    });
+                    return;
+                }
+                
+                // Create new record with verified userId
+                RecordEntity record = new RecordEntity();
+                record.setUserId(userId);
+                record.setCreatedAt(System.currentTimeMillis());
+                record.setUpdatedAt(System.currentTimeMillis());
+                record.setDistance(0);
+                record.setDuration(0);
+                record.setPoints(0);
+                record.setDescription("Plogging Session");
 
-            long recordId = db.recordDao().insert(record);
-            currentRecordId = (int) recordId;
+                long recordId = db.recordDao().insert(record);
+                currentRecordId = (int) recordId;
 
-            requireActivity().runOnUiThread(() -> {
-                isTracking = true;
+                requireActivity().runOnUiThread(() -> {
+                    isTracking = true;
 
-                currentTrashCount = 0;
-                currentPoints = 0;
-                totalDistance = 0f;
+                    currentTrashCount = 0;
+                    currentPoints = 0;
+                    totalDistance = 0f;
 
-                saveTrackingSession(true, currentRecordId, System.currentTimeMillis(), 0f);
+                    saveTrackingSession(true, currentRecordId, System.currentTimeMillis(), 0f);
 
-                updateUIForTrackingState(true);
-                updateTrashUIAlternative();
+                    updateUIForTrackingState(true);
+                    updateTrashUIAlternative();
 
-                binding.chronometer.setBase(SystemClock.elapsedRealtime());
-                binding.chronometer.start();
+                    binding.chronometer.setBase(SystemClock.elapsedRealtime());
+                    binding.chronometer.start();
 
-                startContinuousLocationTracking();
+                    startContinuousLocationTracking();
 
-                String statusMessage = isNetworkAvailable ?
-                        "🏃‍♂️ Plogging started with full GPS accuracy!" :
-                        "🏃‍♂️ Plogging started in offline mode!";
+                    String statusMessage = isNetworkAvailable ?
+                            "🏃‍♂️ Plogging started with full GPS accuracy!" :
+                            "🏃‍♂️ Plogging started in offline mode!";
 
-                showNetworkStatusMessage(statusMessage, false);
-            });
+                    showNetworkStatusMessage(statusMessage, false);
+                });
+            } catch (Exception e) {
+                Log.e(TAG, "Error starting tracking", e);
+                requireActivity().runOnUiThread(() -> {
+                    Toast.makeText(requireContext(), "Failed to start plogging session. Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                });
+            }
         });
 
         if (ActivityCompat.checkSelfPermission(requireContext(),
@@ -458,12 +485,10 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                         long elapsedTimeMillis = SystemClock.elapsedRealtime() - binding.chronometer.getBase();
 
                         int finalTrashCount = db.trashDao().getTrashCountByRecordIdSync(currentRecordId);
-                        int finalPoints = db.trashDao().getTotalPointsByRecordIdSync(currentRecordId);
-
-                        record.setDuration(elapsedTimeMillis);
-                        record.setEndTime(System.currentTimeMillis());
-                        record.setTotalDistance(totalDistance);
-                        record.setTrashCount(finalTrashCount);
+                        int finalPoints = db.trashDao().getTotalPointsByRecordIdSync(currentRecordId);                        record.setDuration(elapsedTimeMillis);
+                        record.setUpdatedAt(System.currentTimeMillis());
+                        record.setDistance(totalDistance);
+                        record.setPoints(finalPoints);
 
                         db.recordDao().update(record);
 
@@ -512,12 +537,11 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
 
     private void updateUserPoints(int pointsEarned) {
         if (pointsEarned > 0 && userId != -1) {
-            executor.execute(() -> {
-                try {
+            executor.execute(() -> {                try {
                     UserEntity user = db.userDao().getUserByIdSync(userId);
                     if (user != null) {
-                        int currentPoints = user.getTotalPoints();
-                        user.setTotalPoints(currentPoints + pointsEarned);
+                        int currentPoints = user.getPoints();
+                        user.setPoints(currentPoints + pointsEarned);
                         db.userDao().update(user);
                     }
                 } catch (Exception e) {
@@ -1511,6 +1535,55 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                     .show();
         });
     }
+
+    private void createDefaultUser() {
+        executor.execute(() -> {
+            try {
+                // Create a default user
+                UserEntity defaultUser = new UserEntity("default@glean.app", "default123");
+                defaultUser.setFirstName("Default");
+                defaultUser.setLastName("User");
+                defaultUser.setUsername("defaultuser");
+                
+                long newUserId = db.userDao().insert(defaultUser);
+                
+                requireActivity().runOnUiThread(() -> {
+                    // Save the new user ID to SharedPreferences
+                    SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
+                    prefs.edit().putInt("USER_ID", (int) newUserId).apply();
+                    userId = (int) newUserId;
+                    
+                    Log.d(TAG, "Default user created with ID: " + newUserId);
+                });
+            } catch (Exception e) {
+                Log.e(TAG, "Error creating default user", e);
+                requireActivity().runOnUiThread(() -> {
+                    Toast.makeText(requireContext(), "Error creating user profile", Toast.LENGTH_SHORT).show();
+                });
+            }
+        });
+    }
+    
+    private void verifyUserExists() {
+        executor.execute(() -> {
+            try {
+                UserEntity user = db.userDao().getUserByIdSync(userId);
+                if (user == null) {
+                    // User doesn't exist, create a default one
+                    requireActivity().runOnUiThread(() -> {
+                        Log.w(TAG, "User with ID " + userId + " not found, creating default user");
+                        createDefaultUser();
+                    });
+                } else {
+                    Log.d(TAG, "User verified: " + user.getDisplayName());
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error verifying user", e);
+                requireActivity().runOnUiThread(() -> {
+                    createDefaultUser();
+                });
+            }
+        });
+    }
 }
 
-    // ...existing code...

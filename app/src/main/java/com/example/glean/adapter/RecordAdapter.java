@@ -56,37 +56,46 @@ public class RecordAdapter extends RecyclerView.Adapter<RecordAdapter.RecordView
         }
 
         public void bind(RecordEntity record, OnRecordClickListener listener) {
-            // Format date
-            binding.tvDate.setText(record.getDate());
+            // Format and set date from createdAt timestamp
+            SimpleDateFormat dateFormat = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
+            String formattedDate = dateFormat.format(new Date(record.getCreatedAt()));
+            binding.tvDate.setText(formattedDate);
             
-            // Format location - use notes or a placeholder since getLocation() doesn't exist
-            String location = record.getNotes() != null && !record.getNotes().isEmpty() 
-                ? record.getNotes() 
+            // Set location - use description or a placeholder
+            String location = record.getDescription() != null && !record.getDescription().isEmpty() 
+                ? record.getDescription() 
                 : "Plogging Session";
             binding.tvLocation.setText(location);
             
-            // Format distance - use totalDistance instead of getDistance()
-            float distanceKm = record.getTotalDistance() / 1000f;
+            // Format distance - use distance field (in meters, convert to km)
+            float distanceKm = record.getDistance() / 1000f;
             binding.tvDistance.setText(String.format(Locale.getDefault(), "%.2f km", distanceKm));
             
-            // Format duration - convert milliseconds to seconds first
+            // Format duration - convert milliseconds to minutes/seconds
             long durationSeconds = record.getDuration() / 1000;
             int hours = (int) (durationSeconds / 3600);
             int minutes = (int) ((durationSeconds % 3600) / 60);
             int seconds = (int) (durationSeconds % 60);
+            
             String durationStr;
             if (hours > 0) {
                 durationStr = String.format(Locale.getDefault(), "%d hr %d min", hours, minutes);
-            } else {
+            } else if (minutes > 0) {
                 durationStr = String.format(Locale.getDefault(), "%d min %d sec", minutes, seconds);
+            } else {
+                durationStr = String.format(Locale.getDefault(), "%d sec", seconds);
             }
             binding.tvDuration.setText(durationStr);
             
-            // Format points - use trashCount as points since getPlogPoints() doesn't exist
-            binding.tvPoints.setText(String.valueOf(record.getTrashCount()));
+            // Set points - use points field directly
+            binding.tvPoints.setText(String.valueOf(record.getPoints()));
             
             // Set click listener
-            binding.cardActivity.setOnClickListener(v -> listener.onRecordClick(record));
+            binding.cardActivity.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onRecordClick(record);
+                }
+            });
         }
     }
 }

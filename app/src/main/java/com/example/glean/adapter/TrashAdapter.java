@@ -20,9 +20,7 @@ import java.util.Locale;
 public class TrashAdapter extends RecyclerView.Adapter<TrashAdapter.TrashViewHolder> {
 
     private final List<TrashEntity> trashList;
-    private final OnTrashClickListener listener;
-
-    // Interface for click handling
+    private final OnTrashClickListener listener;    // Interface for click handling
     public interface OnTrashClickListener {
         void onTrashItemClick(TrashEntity trash);
     }

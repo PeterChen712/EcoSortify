@@ -159,14 +159,14 @@ public class StatsFragment extends Fragment {
         // Calculate statistics from recordList
         int totalRuns = recordList.size();
         int totalPlogs = recordList.size(); // In a plogging app, runs = plogs
-        int totalPoints = user != null ? user.getTotalPoints() : 0;
+        int totalPoints = user != null ? user.getPoints() : 0;
         
         // Calculate total distance
         float totalDistance = 0;
         long totalDuration = 0;
         
         for (RecordEntity record : recordList) {
-            totalDistance += record.getTotalDistance();
+            totalDistance += record.getDistance();
             totalDuration += record.getDuration();
         }
         
@@ -210,13 +210,13 @@ public class StatsFragment extends Fragment {
         
         for (int i = 0; i < recordCount; i++) {
             RecordEntity record = recordList.get(recordList.size() - recordCount + i);
-            // FIXED: Use getTotalDistance() instead of getDistance() and convert to km
-            float distanceKm = record.getTotalDistance() / 1000f;
+            // Fixed: Use getDistance() and convert to km
+            float distanceKm = record.getDistance() / 1000f;
             entries.add(new BarEntry(i, distanceKm));
             
-            // Format date for label - use startTime since getDate() returns String
+            // Format date for label - use createdAt since getStartTime() doesn't exist
             SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd", Locale.getDefault());
-            labels.add(dateFormat.format(new Date(record.getStartTime())));
+            labels.add(dateFormat.format(new Date(record.getCreatedAt())));
         }
         
         if (entries.isEmpty()) {
@@ -263,9 +263,9 @@ public class StatsFragment extends Fragment {
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
             
             for (RecordEntity record : recordList) {
-                // FIXED: Use getStartTime() instead of getTimestamp() since that method doesn't exist
-                String dateKey = dateFormat.format(new Date(record.getStartTime()));
-                dailyTrashCount.put(dateKey, dailyTrashCount.getOrDefault(dateKey, 0) + record.getTrashCount());
+                // Fixed: Use getCreatedAt() instead of getStartTime()
+                String dateKey = dateFormat.format(new Date(record.getCreatedAt()));
+                dailyTrashCount.put(dateKey, dailyTrashCount.getOrDefault(dateKey, 0) + record.getPoints() / 10); // Convert points back to trash count
             }
             
             // Sort dates and create cumulative entries
@@ -353,10 +353,10 @@ public class StatsFragment extends Fragment {
         // For now, use sample data since we need to implement trash type tracking
         Map<String, Integer> trashCounts = new HashMap<>();
         
-        // Calculate total trash collected
+        // Calculate total trash collected from points (assuming 10 points per trash item)
         int totalTrash = 0;
         for (RecordEntity record : recordList) {
-            totalTrash += record.getTrashCount();
+            totalTrash += record.getPoints() / 10; // Convert points back to trash count
         }
         
         if (totalTrash > 0) {

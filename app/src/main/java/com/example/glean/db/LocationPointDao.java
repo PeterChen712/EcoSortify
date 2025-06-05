@@ -1,4 +1,4 @@
-package com.example.glean.dao;
+package com.example.glean.db;
 
 import androidx.lifecycle.LiveData;
 import androidx.room.Dao;

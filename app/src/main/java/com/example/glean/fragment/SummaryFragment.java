@@ -103,22 +103,24 @@ public class SummaryFragment extends Fragment {
     }
 
     private void displayActivityData(RecordEntity record) {
-        // Set date
-        binding.tvDate.setText(record.getDate());
+        // Set date - use createdAt instead of getDate()
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
+        String formattedDate = dateFormat.format(new Date(record.getCreatedAt()));
+        binding.tvDate.setText(formattedDate);
         
-        // Set location - use notes as location placeholder since getLocation() doesn't exist
-        String location = record.getNotes() != null && !record.getNotes().isEmpty() 
-            ? record.getNotes() 
+        // Set location - use description as location placeholder since getLocation() doesn't exist
+        String location = record.getDescription() != null && !record.getDescription().isEmpty() 
+            ? record.getDescription() 
             : "Plogging Session";
         binding.tvLocation.setText(location);
         
-        // Format start time
+        // Format start time - use createdAt instead of getStartTime()
         SimpleDateFormat sdf = new SimpleDateFormat("HH:mm", Locale.getDefault());
-        String startTime = sdf.format(new Date(record.getStartTime()));
+        String startTime = sdf.format(new Date(record.getCreatedAt()));
         binding.tvStartTime.setText(startTime);
         
-        // Format distance - use getTotalDistance() instead of getDistance()
-        float distanceKm = record.getTotalDistance() / 1000f;
+        // Format distance - use getDistance() instead of getTotalDistance()
+        float distanceKm = record.getDistance() / 1000f;
         binding.tvDistance.setText(String.format(Locale.getDefault(), "%.2f km", distanceKm));
         
         // Format duration - convert milliseconds to seconds and use getDuration()
@@ -134,16 +136,16 @@ public class SummaryFragment extends Fragment {
         }
         binding.tvDuration.setText(durationStr);
         
-        // Set points - calculate from trash count since getPlogPoints() doesn't exist
-        int points = record.getTrashCount() * 10; // 10 points per trash item
-        binding.tvPoints.setText(String.valueOf(points));
+        // Set points - use getPoints() directly instead of calculating from trash count
+        binding.tvPoints.setText(String.valueOf(record.getPoints()));
         
-        // Set trash collected - use getTrashCount() instead of getTrashCollected()
-        binding.tvTrashCollected.setText(String.valueOf(record.getTrashCount()));
+        // Set trash collected - calculate from points since getTrashCount() doesn't exist
+        int trashCount = record.getPoints() / 10; // Assuming 10 points per trash item
+        binding.tvTrashCollected.setText(String.valueOf(trashCount));
         
         // Calculate average pace - use available fields
-        if (record.getTotalDistance() > 0 && record.getDuration() > 0) {
-            float paceMinPerKm = (record.getDuration() / 60000f) / (record.getTotalDistance() / 1000f);
+        if (record.getDistance() > 0 && record.getDuration() > 0) {
+            float paceMinPerKm = (record.getDuration() / 60000f) / (record.getDistance() / 1000f);
             int paceMin = (int) paceMinPerKm;
             int paceSec = (int) ((paceMinPerKm - paceMin) * 60);
             binding.tvPace.setText(String.format(Locale.getDefault(), "%d:%02d min/km", paceMin, paceSec));
@@ -159,7 +161,11 @@ public class SummaryFragment extends Fragment {
                 
                 requireActivity().runOnUiThread(() -> {
                     if (record != null) {
-                        // Create share text
+                        // Create share text - use correct field names
+                        SimpleDateFormat dateFormat = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
+                        String formattedDate = dateFormat.format(new Date(record.getCreatedAt()));
+                        int trashCount = record.getPoints() / 10; // Calculate trash count from points
+                        
                         String shareText = String.format(Locale.getDefault(),
                             "I just completed a plogging session!\n\n" +
                             "📅 Date: %s\n" +
@@ -168,11 +174,11 @@ public class SummaryFragment extends Fragment {
                             "🗑️ Trash collected: %d items\n" +
                             "🏆 Points earned: %d\n\n" +
                             "Join me in making our environment cleaner! #Plogging #CleanEnvironment",
-                            record.getDate(),
-                            record.getTotalDistance() / 1000f,
+                            formattedDate,
+                            record.getDistance() / 1000f,
                             formatDuration(record.getDuration()),
-                            record.getTrashCount(),
-                            record.getTrashCount() * 10
+                            trashCount,
+                            record.getPoints()
                         );
                         
                         Intent shareIntent = new Intent(Intent.ACTION_SEND);
@@ -241,12 +247,13 @@ public class SummaryFragment extends Fragment {
         post.setCategory("plogging");
         post.setUserProfileUrl(user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : null);
         
-        // Add metadata
+        // Add metadata - use correct field names
         Map<String, Object> metadata = new HashMap<>();
-        metadata.put("distance_km", currentRecord.getTotalDistance() / 1000f);
+        metadata.put("distance_km", currentRecord.getDistance() / 1000f);
         metadata.put("duration_minutes", currentRecord.getDuration() / 60000);
-        metadata.put("trash_count", currentRecord.getTrashCount());
-        metadata.put("points_earned", currentRecord.getTrashCount() * 10); // Fixed: use calculated points
+        int trashCount = currentRecord.getPoints() / 10; // Calculate trash count from points
+        metadata.put("trash_count", trashCount);
+        metadata.put("points_earned", currentRecord.getPoints());
         metadata.put("record_id", currentRecord.getId());
         post.setMetadata(metadata);
         
@@ -357,8 +364,9 @@ public class SummaryFragment extends Fragment {
     }
 
     private String createPloggingPostContent(RecordEntity record) {
-        float distanceKm = record.getTotalDistance() / 1000f;
+        float distanceKm = record.getDistance() / 1000f;
         int durationMin = (int) (record.getDuration() / 60000);
+        int trashCount = record.getPoints() / 10; // Calculate trash count from points
         
         return String.format(Locale.getDefault(),
                 "🏃‍♂️ Just completed an amazing plogging session!\n\n" +
@@ -369,7 +377,7 @@ public class SummaryFragment extends Fragment {
                 "• Points earned: %d\n\n" +
                 "Every small action makes a big difference! 🌱\n" +
                 "#GleanGo #Plogging #MakeTheWorldClean",
-                distanceKm, durationMin, record.getTrashCount(), record.getTrashCount() * 10);
+                distanceKm, durationMin, trashCount, record.getPoints());
     }
 
     private void showLoginPrompt() {

@@ -19,8 +19,11 @@ import com.example.glean.db.AppDatabase;
 import com.example.glean.model.RecordEntity;
 import com.example.glean.model.TrashEntity;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -82,9 +85,16 @@ public class TrashListFragment extends Fragment implements TrashAdapter.OnTrashC
             // Use LiveData properly
             db.recordDao().getRecordById(recordId).observe(getViewLifecycleOwner(), record -> {
                 if (record != null) {
-                    binding.tvTitle.setText("Trash Items - " + record.getDate());
+                    // Format the date from createdAt timestamp
+                    SimpleDateFormat dateFormat = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
+                    String formattedDate = dateFormat.format(new Date(record.getCreatedAt()));
+                    binding.tvTitle.setText("Trash Items - " + formattedDate);
+                } else {
+                    binding.tvTitle.setText("Trash Items");
                 }
             });
+        } else {
+            binding.tvTitle.setText("Trash Items");
         }
     }
     

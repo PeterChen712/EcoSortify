@@ -11,6 +11,10 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -31,6 +35,7 @@ import com.example.glean.databinding.FragmentProfileBinding;
 import com.example.glean.databinding.DialogEditProfileBinding;
 import com.example.glean.databinding.DialogSettingsBinding;
 import com.example.glean.db.AppDatabase;
+import com.example.glean.model.Badge;
 import com.example.glean.model.UserEntity;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -78,13 +83,56 @@ public class ProfileFragment extends Fragment {
         executor = Executors.newSingleThreadExecutor();
         
         Log.d(TAG, "ProfileFragment created with userId: " + userId);
-    }
-
-    @Nullable
+    }    @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        binding = FragmentProfileBinding.inflate(inflater, container, false);
-        return binding.getRoot();
+        try {
+            binding = FragmentProfileBinding.inflate(inflater, container, false);
+            Log.d(TAG, "Profile binding created successfully");
+            return binding.getRoot();
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to create profile binding, using fallback", e);
+            return createFallbackLayout(inflater, container);
+        }
+    }
+    
+    private View createFallbackLayout(LayoutInflater inflater, ViewGroup container) {
+        // Create a simple fallback layout if the main layout fails
+        ScrollView scrollView = new ScrollView(requireContext());
+        LinearLayout layout = new LinearLayout(requireContext());
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(32, 32, 32, 32);
+        
+        // Title
+        TextView titleText = new TextView(requireContext());
+        titleText.setText("Profile");
+        titleText.setTextSize(24);
+        titleText.setGravity(android.view.Gravity.CENTER);
+        titleText.setPadding(0, 0, 0, 24);
+        layout.addView(titleText);
+        
+        // User info
+        TextView nameText = new TextView(requireContext());
+        nameText.setText("Loading...");
+        nameText.setTextSize(18);
+        nameText.setGravity(android.view.Gravity.CENTER);
+        layout.addView(nameText);
+        
+        TextView emailText = new TextView(requireContext());
+        emailText.setText("Loading email...");
+        emailText.setTextSize(14);
+        emailText.setGravity(android.view.Gravity.CENTER);
+        emailText.setPadding(0, 8, 0, 24);
+        layout.addView(emailText);
+        
+        // Simple button for basic functionality
+        Button editButton = new Button(requireContext());
+        editButton.setText("Edit Profile");
+        editButton.setOnClickListener(v -> showEditProfileDialog());
+        layout.addView(editButton);
+        
+        scrollView.addView(layout);
+        return scrollView;
     }
 
     @Override
@@ -241,17 +289,17 @@ public class ProfileFragment extends Fragment {
             }
         });
     }
-    
-    private void updateUIWithUserData(UserEntity user) {
+      private void updateUIWithUserData(UserEntity user) {
         try {
-            // Set user info
+            // Set user info with safe null checks
             String displayName = getDisplayName(user);
             if (binding.tvName != null) {
                 binding.tvName.setText(displayName);
             }
             
             if (binding.tvEmail != null) {
-                binding.tvEmail.setText(user.getEmail() != null ? user.getEmail() : "No email");
+                String email = user.getEmail();
+                binding.tvEmail.setText(email != null && !email.isEmpty() ? email : "No email");
             }
             
             // Format and display member since date
@@ -260,7 +308,7 @@ public class ProfileFragment extends Fragment {
                 binding.tvMemberSince.setText("Member since: " + memberSince);
             }
             
-            // Display points
+            // Display points with safe handling
             if (binding.tvTotalPoints != null) {
                 binding.tvTotalPoints.setText(String.valueOf(user.getPoints()));
             }
@@ -279,6 +327,33 @@ public class ProfileFragment extends Fragment {
             
         } catch (Exception e) {
             Log.e(TAG, "Error updating UI with user data", e);
+            // Set default values on error
+            setDefaultUIValues();
+        }
+    }
+    
+    private void setDefaultUIValues() {
+        try {
+            if (binding.tvName != null) {
+                binding.tvName.setText("User");
+            }
+            if (binding.tvEmail != null) {
+                binding.tvEmail.setText("No email");
+            }
+            if (binding.tvMemberSince != null) {
+                binding.tvMemberSince.setText("Member since: Recently");
+            }
+            if (binding.tvTotalPoints != null) {
+                binding.tvTotalPoints.setText("0");
+            }
+            if (binding.tvTotalPlogs != null) {
+                binding.tvTotalPlogs.setText("0");
+            }
+            if (binding.tvTotalDistance != null) {
+                binding.tvTotalDistance.setText("0.0");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error setting default UI values", e);
         }
     }
     
@@ -382,44 +457,46 @@ public class ProfileFragment extends Fragment {
     }
     
     private void setupBadges(UserEntity user) {
-        List<String> badges = new ArrayList<>();
+        List<Badge> badges = new ArrayList<>();
         
         // Generate badges based on user achievements
         int points = user.getPoints();
+        int badgeIdCounter = 1;
+        
         if (points >= 2000) {
-            badges.add("🏆 Legend");
+            badges.add(new Badge(badgeIdCounter++, "🏆 Legend", "Legend badge for top performers", "achievement", 3, true));
         }
         if (points >= 1000) {
-            badges.add("🥇 Expert Plogger");
+            badges.add(new Badge(badgeIdCounter++, "🥇 Expert Plogger", "Expert level plogger", "points", 3, true));
         }
         if (points >= 500) {
-            badges.add("🌍 Eco Warrior");
+            badges.add(new Badge(badgeIdCounter++, "🌍 Eco Warrior", "Environmental champion", "points", 2, true));
         }
         if (points >= 200) {
-            badges.add("🏅 Green Champion");
+            badges.add(new Badge(badgeIdCounter++, "🏅 Green Champion", "Green environmental champion", "points", 2, true));
         }
         if (points >= 100) {
-            badges.add("🌱 Green Helper");
+            badges.add(new Badge(badgeIdCounter++, "🌱 Green Helper", "Helpful green contributor", "points", 1, true));
         }
         if (points >= 50) {
-            badges.add("🌿 Beginner");
+            badges.add(new Badge(badgeIdCounter++, "🌿 Beginner", "Starting your eco journey", "points", 1, true));
         }
         if (points >= 10) {
-            badges.add("⭐ Starter");
+            badges.add(new Badge(badgeIdCounter++, "⭐ Starter", "First steps in plogging", "points", 1, true));
         }
         
         // Add special badges
         if (points >= 1500) {
-            badges.add("🧹 Master Cleaner");
+            badges.add(new Badge(badgeIdCounter++, "🧹 Master Cleaner", "Master of cleanup activities", "cleanup", 3, true));
         }
         
         // Ensure at least one badge
         if (badges.isEmpty()) {
-            badges.add("🌟 New Member");
+            badges.add(new Badge(badgeIdCounter, "🌟 New Member", "Welcome to the community", "achievement", 1, true));
         }
         
         if (binding.rvBadges != null) {
-            BadgeAdapter adapter = new BadgeAdapter(badges);
+            BadgeAdapter adapter = new BadgeAdapter(requireContext(), badges);
             binding.rvBadges.setAdapter(adapter);
         }
     }
