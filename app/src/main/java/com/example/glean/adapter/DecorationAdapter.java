@@ -51,12 +51,17 @@ public class DecorationAdapter extends RecyclerView.Adapter<DecorationAdapter.De
         public DecorationViewHolder(ItemDecorationBinding binding) {
             super(binding.getRoot());
             this.binding = binding;
-        }
-
-        public void bind(Decoration decoration, OnDecorationClickListener listener) {
+        }        public void bind(Decoration decoration, OnDecorationClickListener listener) {
             binding.tvDecorationName.setText(decoration.getName());
             binding.tvDecorationDescription.setText(decoration.getDescription());
-            binding.ivDecorationImage.setImageResource(decoration.getImageResourceId());
+            
+            // Safe image loading with error handling
+            try {
+                binding.ivDecorationImage.setImageResource(decoration.getImageResourceId());
+            } catch (Exception e) {
+                // Set a default image if the resource is not found
+                binding.ivDecorationImage.setImageResource(android.R.drawable.ic_menu_gallery);
+            }
             
             if (decoration.isOwned()) {
                 binding.tvDecorationPrice.setText("Owned");

@@ -64,4 +64,10 @@ public interface DaoUser {
     
     @Query("DELETE FROM users WHERE id = :userId")
     void deleteUserById(int userId);
+
+    @Query("SELECT COUNT(*) FROM users")
+    int getUserCount();
+    
+    @Query("SELECT * FROM users LIMIT 1")
+    UserEntity getFirstUser();
 }

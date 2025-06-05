@@ -1,6 +1,8 @@
 package com.example.glean.fragment;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -35,16 +37,32 @@ public class ProfileDecorFragment extends Fragment implements DecorationAdapter.
     private UserEntity user;
     private List<Decoration> decorations = new ArrayList<>();
     private DecorationAdapter adapter;
-    private List<String> ownedDecorations = new ArrayList<>();
-
-    @Override
+    private List<String> ownedDecorations = new ArrayList<>();    @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         db = AppDatabase.getInstance(requireContext());
         executor = Executors.newSingleThreadExecutor();
         
-        // Get user ID from shared preferences
-        userId = requireActivity().getSharedPreferences("USER_PREFS", 0).getInt("USER_ID", -1);
+        // Get user ID from arguments first, then SharedPreferences
+        if (getArguments() != null) {
+            userId = getArguments().getInt("USER_ID", -1);
+            Log.d("ProfileDecorFragment", "Got userId from arguments: " + userId);
+        }
+        
+        // Fallback to SharedPreferences if not in arguments
+        if (userId == -1) {
+            userId = requireActivity().getSharedPreferences("USER_PREFS", 0).getInt("USER_ID", -1);
+            Log.d("ProfileDecorFragment", "Got userId from USER_PREFS: " + userId);
+        }
+        
+        // Final fallback to default preferences
+        if (userId == -1) {
+            SharedPreferences defaultPrefs = android.preference.PreferenceManager.getDefaultSharedPreferences(requireContext());
+            userId = defaultPrefs.getInt("USER_ID", -1);
+            Log.d("ProfileDecorFragment", "Got userId from default prefs: " + userId);
+        }
+        
+        Log.d("ProfileDecorFragment", "Final userId: " + userId);
     }
 
     @Nullable
@@ -70,29 +88,49 @@ public class ProfileDecorFragment extends Fragment implements DecorationAdapter.
         loadUserData();
         loadDecorations();
     }
-    
-    private void loadUserData() {
+      private void loadUserData() {
         if (userId == -1) {
-            Toast.makeText(requireContext(), "User not found", Toast.LENGTH_SHORT).show();
+            Log.e("ProfileDecorFragment", "Invalid user ID: " + userId);
+            Toast.makeText(requireContext(), "User not found. Please try again.", Toast.LENGTH_SHORT).show();
             navigateBack();
             return;
         }
         
+        Log.d("ProfileDecorFragment", "Loading user data for userId: " + userId);
+        
         executor.execute(() -> {
-            user = db.userDao().getUserByIdSync(userId);
-            
-            if (user != null) {
-                // Update UI with user data
+            try {
+                user = db.userDao().getUserByIdSync(userId);
+                
+                if (user != null) {
+                    Log.d("ProfileDecorFragment", "User loaded successfully: " + user.getUsername());
+                    
+                    // Update UI with user data
+                    requireActivity().runOnUiThread(() -> {
+                        binding.tvPoints.setText(String.valueOf(user.getPoints()));
+                        
+                        // Parse owned decorations
+                        if (user.getDecorations() != null && !user.getDecorations().isEmpty()) {
+                            ownedDecorations = Arrays.asList(user.getDecorations().split(","));
+                        }
+                        
+                        // Update decoration items to show owned status
+                        updateDecorationItems();
+                    });
+                } else {
+                    Log.e("ProfileDecorFragment", "User not found in database for userId: " + userId);
+                    
+                    requireActivity().runOnUiThread(() -> {
+                        Toast.makeText(requireContext(), "User profile not found", Toast.LENGTH_SHORT).show();
+                        navigateBack();
+                    });
+                }
+            } catch (Exception e) {
+                Log.e("ProfileDecorFragment", "Error loading user data", e);
+                
                 requireActivity().runOnUiThread(() -> {
-                    binding.tvPoints.setText(String.valueOf(user.getPoints()));
-                    
-                    // Parse owned decorations
-                    if (user.getDecorations() != null && !user.getDecorations().isEmpty()) {
-                        ownedDecorations = Arrays.asList(user.getDecorations().split(","));
-                    }
-                    
-                    // Update decoration items to show owned status
-                    updateDecorationItems();
+                    Toast.makeText(requireContext(), "Error loading user data", Toast.LENGTH_SHORT).show();
+                    navigateBack();
                 });
             }
         });

@@ -1,15 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item>
-        <shape android:shape="rectangle">
-            <solid android:color="#4CAF50" />
-            <corners android:radius="8dp" />
-        </shape>
-    </item>
-    <item>
-        <bitmap
-            android:gravity="center"
-            android:src="@drawable/ic_eco"
-            android:alpha="0.2" />
-    </item>
-</layer-list>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <gradient
+        android:startColor="#4CAF50"
+        android:endColor="#2E7D32"
+        android:angle="135" />
+    <corners android:radius="8dp" />
+</shape>

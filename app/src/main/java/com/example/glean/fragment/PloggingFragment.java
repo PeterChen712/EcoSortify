@@ -91,11 +91,10 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
     private ExecutorService executor;
     private int currentRecordId = -1;
     private Marker currentLocationMarker;
-    private LocationCallback trackingCallback;
-
-    private ConnectivityManager connectivityManager;
+    private LocationCallback trackingCallback;    private ConnectivityManager connectivityManager;
     private ConnectivityManager.NetworkCallback networkCallback;
     private BroadcastReceiver networkReceiver;
+    private IntentFilter filter;
     private boolean isNetworkAvailable = false;
     private boolean isPloggingEnabled = false;
     private Snackbar networkSnackbar;
@@ -1534,31 +1533,54 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                     .setCancelable(false)
                     .show();
         });
-    }
-
-    private void createDefaultUser() {
+    }    private void createDefaultUser() {
         executor.execute(() -> {
             try {
-                // Create a default user
-                UserEntity defaultUser = new UserEntity("default@glean.app", "default123");
-                defaultUser.setFirstName("Default");
-                defaultUser.setLastName("User");
-                defaultUser.setUsername("defaultuser");
-                
-                long newUserId = db.userDao().insert(defaultUser);
-                
-                requireActivity().runOnUiThread(() -> {
-                    // Save the new user ID to SharedPreferences
+                // Check if any user exists first
+                int userCount = db.userDao().getUserCount();
+                if (userCount == 0) {
+                    // Create default user
+                    UserEntity defaultUser = new UserEntity();
+                    defaultUser.setUsername("PloggingUser");
+                    defaultUser.setFirstName("Plogging");
+                    defaultUser.setLastName("User");
+                    defaultUser.setEmail("user@glean.app");
+                    defaultUser.setCreatedAt(System.currentTimeMillis());
+                    defaultUser.setPoints(0);
+                    
+                    long newUserId = db.userDao().insert(defaultUser);
+                    
+                    // Save user ID to preferences
                     SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
                     prefs.edit().putInt("USER_ID", (int) newUserId).apply();
+                    
+                    // Also save to USER_PREFS
+                    SharedPreferences userPrefs = requireActivity().getSharedPreferences("USER_PREFS", 0);
+                    userPrefs.edit().putInt("USER_ID", (int) newUserId).apply();
+                    
                     userId = (int) newUserId;
                     
                     Log.d(TAG, "Default user created with ID: " + newUserId);
-                });
+                } else {
+                    // Get first available user
+                    UserEntity firstUser = db.userDao().getFirstUser();
+                    if (firstUser != null) {
+                        userId = firstUser.getId();
+                        
+                        // Save to preferences
+                        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
+                        prefs.edit().putInt("USER_ID", userId).apply();
+                        
+                        SharedPreferences userPrefs = requireActivity().getSharedPreferences("USER_PREFS", 0);
+                        userPrefs.edit().putInt("USER_ID", userId).apply();
+                        
+                        Log.d(TAG, "Using existing user with ID: " + userId);
+                    }
+                }
             } catch (Exception e) {
                 Log.e(TAG, "Error creating default user", e);
                 requireActivity().runOnUiThread(() -> {
-                    Toast.makeText(requireContext(), "Error creating user profile", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(requireContext(), "Error initializing user", Toast.LENGTH_SHORT).show();
                 });
             }
         });
@@ -1569,19 +1591,15 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
             try {
                 UserEntity user = db.userDao().getUserByIdSync(userId);
                 if (user == null) {
-                    // User doesn't exist, create a default one
-                    requireActivity().runOnUiThread(() -> {
-                        Log.w(TAG, "User with ID " + userId + " not found, creating default user");
-                        createDefaultUser();
-                    });
+                    // User doesn't exist, create default user
+                    Log.w(TAG, "User with ID " + userId + " not found, creating default user");
+                    requireActivity().runOnUiThread(() -> createDefaultUser());
                 } else {
-                    Log.d(TAG, "User verified: " + user.getDisplayName());
+                    Log.d(TAG, "User verified: " + user.getUsername());
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Error verifying user", e);
-                requireActivity().runOnUiThread(() -> {
-                    createDefaultUser();
-                });
+                requireActivity().runOnUiThread(() -> createDefaultUser());
             }
         });
     }

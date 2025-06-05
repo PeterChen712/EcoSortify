@@ -277,15 +277,16 @@ public class ProfileFragment extends Fragment {
         }
         
         Log.d(TAG, "Loading user data for userId: " + userId);
-        
-        db.userDao().getUserById(userId).observe(getViewLifecycleOwner(), user -> {
+          db.userDao().getUserById(userId).observe(getViewLifecycleOwner(), user -> {
             if (user != null) {
-                Log.d(TAG, "User data loaded successfully: " + user.getUsername());
+                String username = user.getUsername() != null ? user.getUsername() : "Unknown User";
+                Log.d(TAG, "User data loaded successfully: " + username);
                 currentUser = user;
                 updateUIWithUserData(user);
             } else {
                 Log.e(TAG, "User not found in database for userId: " + userId);
-                Toast.makeText(requireContext(), "User data not found", Toast.LENGTH_SHORT).show();
+                // Try to create a default user
+                createDefaultUserIfNeeded();
             }
         });
     }
@@ -910,5 +911,68 @@ public class ProfileFragment extends Fragment {
         if (executor != null && !executor.isShutdown()) {
             executor.shutdown();
         }
+    }
+
+    private void createDefaultUserIfNeeded() {
+        executor.execute(() -> {
+            try {
+                // Check if any user exists first
+                int userCount = db.userDao().getUserCount();
+                if (userCount == 0) {
+                    // Create default user
+                    UserEntity defaultUser = new UserEntity();
+                    defaultUser.setUsername("GleanUser");
+                    defaultUser.setFirstName("Glean");
+                    defaultUser.setLastName("User");
+                    defaultUser.setEmail("user@glean.app");
+                    defaultUser.setCreatedAt(System.currentTimeMillis());
+                    defaultUser.setPoints(0);
+                    
+                    long newUserId = db.userDao().insert(defaultUser);
+                    
+                    // Update current userId
+                    userId = (int) newUserId;
+                    
+                    // Save user ID to preferences
+                    SharedPreferences prefs = requireActivity().getSharedPreferences("USER_PREFS", 0);
+                    prefs.edit().putInt("USER_ID", userId).apply();
+                    
+                    SharedPreferences defaultPrefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
+                    defaultPrefs.edit().putInt("USER_ID", userId).apply();
+                    
+                    requireActivity().runOnUiThread(() -> {
+                        Log.d(TAG, "Default user created with ID: " + newUserId);
+                        Toast.makeText(requireContext(), "Profile created successfully!", Toast.LENGTH_SHORT).show();
+                        // Reload user data
+                        loadUserData();
+                    });
+                } else {
+                    // Get first available user and update userId
+                    UserEntity firstUser = db.userDao().getFirstUser();
+                    if (firstUser != null) {
+                        userId = firstUser.getId();
+                        
+                        // Save to preferences
+                        SharedPreferences prefs = requireActivity().getSharedPreferences("USER_PREFS", 0);
+                        prefs.edit().putInt("USER_ID", userId).apply();
+                        
+                        SharedPreferences defaultPrefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
+                        defaultPrefs.edit().putInt("USER_ID", userId).apply();
+                        
+                        requireActivity().runOnUiThread(() -> {
+                            Log.d(TAG, "Using existing user with ID: " + userId);
+                            // Reload user data
+                            loadUserData();
+                        });
+                    }
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error creating default user", e);
+                requireActivity().runOnUiThread(() -> {
+                    Toast.makeText(requireContext(), "Error creating profile", Toast.LENGTH_SHORT).show();
+                    setDefaultUIValues();
+                });
+            }
+        });
     }
 }
