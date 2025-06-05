@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.view.View;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -41,26 +42,29 @@ public class MainActivity extends AppCompatActivity {
             finish();
             return;
         }
+
+        // Konfigurasi bottom navigation sebelum setup
+        binding.bottomNavigation.setVisibility(View.VISIBLE);
+        binding.bottomNavigation.setLabelVisibilityMode(NavigationBarView.LABEL_VISIBILITY_UNLABELED);
         
         // Setup bottom navigation
         setupNavigation();
         
         // Initialize Firebase if user wants online features
         checkOnlineFeatures();
-        
-        // Find your bottom navigation view
-        NavigationBarView bottomNavigationView = findViewById(R.id.bottom_navigation);
-        // Hide all labels
-        bottomNavigationView.setLabelVisibilityMode(NavigationBarView.LABEL_VISIBILITY_UNLABELED);
     }
     
     private void setupNavigation() {
         NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.nav_host_fragment);
+        if (navHostFragment == null) return;
+        
         NavController navController = navHostFragment.getNavController();
+        
+        // Setup navigation dengan binding yang konsisten
         NavigationUI.setupWithNavController(binding.bottomNavigation, navController);
         
-        // Updated navigation for 5-item menu (removed community)
+        // Tentukan behavior navigasi
         binding.bottomNavigation.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
             if (itemId == R.id.homeFragment) {
