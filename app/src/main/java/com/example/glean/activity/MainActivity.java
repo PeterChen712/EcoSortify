@@ -14,6 +14,7 @@ import androidx.navigation.ui.NavigationUI;
 import com.example.glean.R;
 import com.example.glean.databinding.ActivityMainBinding;
 import com.example.glean.helper.FirebaseHelper;
+import com.google.android.material.navigation.NavigationBarView;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -46,6 +47,11 @@ public class MainActivity extends AppCompatActivity {
         
         // Initialize Firebase if user wants online features
         checkOnlineFeatures();
+        
+        // Find your bottom navigation view
+        NavigationBarView bottomNavigationView = findViewById(R.id.bottom_navigation);
+        // Hide all labels
+        bottomNavigationView.setLabelVisibilityMode(NavigationBarView.LABEL_VISIBILITY_UNLABELED);
     }
     
     private void setupNavigation() {
