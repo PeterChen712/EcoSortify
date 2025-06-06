@@ -1,4 +1,4 @@
-package com.example.glean.utils;
+package com.example.glean.util;
 
 public class UserStatistics {
     private int totalRecords;

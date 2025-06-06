@@ -1,4 +1,4 @@
-package com.example.glean.util;
+package com.example.glean.config;
 
 import com.example.glean.BuildConfig;
 

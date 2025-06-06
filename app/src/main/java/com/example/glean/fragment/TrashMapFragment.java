@@ -22,7 +22,7 @@ import com.example.glean.R;
 import com.example.glean.databinding.FragmentTrashMapBinding;
 import com.example.glean.db.AppDatabase;
 import com.example.glean.model.TrashEntity;
-import com.example.glean.util.ApiConfig;
+import com.example.glean.config.ApiConfig;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
