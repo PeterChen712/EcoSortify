@@ -224,7 +224,7 @@ public class NewsDetailFragment extends Fragment {
     // ADDED: Helper method to create reading time text
     private String getReadingTimeText(int readingTimeMinutes) {
         if (readingTimeMinutes <= 0) {
-            return "📖 Quick read";
+            return "Quick read";
         } else if (readingTimeMinutes == 1) {
             return "📖 1 min read";
         } else if (readingTimeMinutes < 60) {

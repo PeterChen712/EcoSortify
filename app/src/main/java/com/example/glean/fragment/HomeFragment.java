@@ -24,17 +24,20 @@ import com.example.glean.db.AppDatabase;
 import com.example.glean.model.RecordEntity;
 import com.example.glean.model.UserEntity;
 
+
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClickListener {
-    private FragmentHomeBinding binding;
+public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClickListener {    private FragmentHomeBinding binding;
     private AppDatabase db;
     private ExecutorService executor;
     private List<RecordEntity> recentActivities = new ArrayList<>();
-    private RecordAdapter recentActivitiesAdapter;    @Override
+    private RecordAdapter recentActivitiesAdapter;
+      // Default to show all records (no time filter)
+    private int currentTimeFilter = -1;@Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
@@ -54,9 +57,7 @@ public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClic
         }
     }    @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
-
-        try {
+        super.onViewCreated(view, savedInstanceState);        try {
             initializeDashboardContent();
             setupStartPloggingButton();
             setupQuickActionButtons();
@@ -78,7 +79,7 @@ public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClic
                 }
             });
         }
-    }    private void initializeDashboardContent() {
+    }private void initializeDashboardContent() {
         try {
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
             
@@ -111,66 +112,54 @@ public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClic
             
         } catch (Exception e) {
         }
-    }    private void updateQuickStatsUI(SharedPreferences prefs) {
-        try {
+    }    private void updateQuickStatsUI(SharedPreferences prefs) {        try {
             if (binding.tvQuickStatsTitle != null) {
-                binding.tvQuickStatsTitle.setText(prefs.getString("QUICK_STATS_TITLE", "📊 STATISTIK MINGGU INI"));
+                binding.tvQuickStatsTitle.setText("📊 Statistik Keseluruhan");
                 binding.tvQuickStatsTitle.setVisibility(View.VISIBLE);
             }
             
+            // Stats will be updated by updateQuickStatsDisplay() method
             if (binding.tvQuickStatsDistance != null) {
-                binding.tvQuickStatsDistance.setText(prefs.getString("QUICK_STATS_DISTANCE", "🏃 Total Lari: 0 km"));
                 binding.tvQuickStatsDistance.setVisibility(View.VISIBLE);
             }
             
             if (binding.tvQuickStatsTrash != null) {
-                binding.tvQuickStatsTrash.setText(prefs.getString("QUICK_STATS_TRASH", "🗑️ Sampah Terkumpul: 0"));
                 binding.tvQuickStatsTrash.setVisibility(View.VISIBLE);
             }
             
             if (binding.tvQuickStatsPoints != null) {
-                binding.tvQuickStatsPoints.setText(prefs.getString("QUICK_STATS_POINTS", "⭐ Poin: 0"));
                 binding.tvQuickStatsPoints.setVisibility(View.VISIBLE);
             }
             
             if (binding.tvQuickStatsBadge != null) {
-                binding.tvQuickStatsBadge.setText(prefs.getString("QUICK_STATS_BADGE", "🏆 Badge: Eco Beginner"));
                 binding.tvQuickStatsBadge.setVisibility(View.VISIBLE);
             }
             
         } catch (Exception e) {
         }
-    }    private void updateWeeklyChallengeUI(SharedPreferences prefs) {
-        try {
+    }    private void updateWeeklyChallengeUI(SharedPreferences prefs) {        try {
             if (binding.tvChallengeTitle != null) {
-                binding.tvChallengeTitle.setText(prefs.getString("CHALLENGE_TITLE", "🎯 CHALLENGE MINGGU INI"));
+                String challengeTitle = "🎯 CHALLENGE GLOBAL";
+                binding.tvChallengeTitle.setText(challengeTitle);
                 binding.tvChallengeTitle.setVisibility(View.VISIBLE);
             }
             
+            // Challenge target, progress, and remaining time will be updated by updateChallengeProgress()
             if (binding.tvChallengeTarget != null) {
-                binding.tvChallengeTarget.setText(prefs.getString("CHALLENGE_TARGET", "Target: Kumpulkan 50 sampah"));
                 binding.tvChallengeTarget.setVisibility(View.VISIBLE);
             }
             
-            // Update progress bar and text
-            int challengeProgress = prefs.getInt("CHALLENGE_PROGRESS", 0);
-            int challengeTarget = 50; // Default target
-            
             if (binding.progressChallenge != null) {
-                binding.progressChallenge.setMax(challengeTarget);
-                binding.progressChallenge.setProgress(challengeProgress);
                 binding.progressChallenge.setVisibility(View.VISIBLE);
             }
             
             if (binding.tvChallengeProgress != null) {
-                int percentage = challengeTarget > 0 ? (challengeProgress * 100) / challengeTarget : 0;
-                String progressText = String.format("Progress: %d/%d (%d%%)", challengeProgress, challengeTarget, percentage);
-                binding.tvChallengeProgress.setText(progressText);
                 binding.tvChallengeProgress.setVisibility(View.VISIBLE);
             }
             
             if (binding.tvChallengeRemaining != null) {
-                binding.tvChallengeRemaining.setText(prefs.getString("CHALLENGE_REMAINING", "Sisa: 7 hari lagi"));
+                String remainingText = "Target: Semua waktu";
+                binding.tvChallengeRemaining.setText(remainingText);
                 binding.tvChallengeRemaining.setVisibility(View.VISIBLE);
             }
             
@@ -311,8 +300,11 @@ public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClic
             return user.getUsername();
         } else if (user.getEmail() != null && !user.getEmail().isEmpty()) {
             return user.getEmail().split("@")[0]; // Use email prefix as display name
-        }
-        return "User";
+        }        return "User";
+    }
+      private List<RecordEntity> getAllRecords(List<RecordEntity> allRecords) {
+        // Return all records since we removed time filtering
+        return allRecords;
     }
       private void loadUserStats(int userId) {
         executor.execute(() -> {
@@ -341,48 +333,95 @@ public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClic
             try {
                 SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
                 int userId = prefs.getInt("USER_ID", -1);
-                
-                if (userId != -1) {
-                    long weekStart = getWeekStartTime();
-                    long weekEnd = System.currentTimeMillis();
-                    
+                  if (userId != -1) {
                     List<RecordEntity> allRecords = db.recordDao().getRecordsByUserIdSync(userId);
-                    List<RecordEntity> weeklyRecords = new ArrayList<>();
-                    
-                    for (RecordEntity record : allRecords) {
-                        if (record.getCreatedAt() >= weekStart && record.getCreatedAt() <= weekEnd) {
-                            weeklyRecords.add(record);
-                        }
-                    }
+                    List<RecordEntity> recordsToProcess = getAllRecords(allRecords);
                     
                     float totalDistance = 0f;
                     int totalTrash = 0;
                     int totalPoints = 0;
                     
-                    for (RecordEntity record : weeklyRecords) {
+                    for (RecordEntity record : recordsToProcess) {
                         totalDistance += record.getDistance();
                         totalPoints += record.getPoints();
                         List<com.example.glean.model.TrashEntity> trashList = db.trashDao().getTrashByRecordIdSync(record.getId());
                         totalTrash += trashList.size();
-                    }
-                    
+                    }                      // Update SharedPreferences with overall data
                     prefs.edit()
-                        .putFloat("WEEKLY_DISTANCE", totalDistance)
-                        .putInt("WEEKLY_TRASH", totalTrash)
-                        .putInt("WEEKLY_POINTS", totalPoints)
+                        .putFloat("OVERALL_DISTANCE", totalDistance)
+                        .putInt("OVERALL_TRASH", totalTrash)
+                        .putInt("OVERALL_POINTS", totalPoints)
                         .putInt("CHALLENGE_PROGRESS", totalTrash)
                         .apply();
                     
+                    // Create final copies for lambda usage
+                    final float finalTotalDistance = totalDistance;
+                    final int finalTotalTrash = totalTrash;
+                    final int finalTotalPoints = totalPoints;
+                    
                     requireActivity().runOnUiThread(() -> {
-                        if (getActivity() instanceof MainActivity) {
-                            ((MainActivity) getActivity()).updateStatsFromDatabase();
-                            initializeDashboardContent();
-                        }
+                        updateQuickStatsDisplay(finalTotalDistance, finalTotalTrash, finalTotalPoints);
+                        updateChallengeProgress(finalTotalTrash);
                     });
                 }
             } catch (Exception e) {
             }
         });
+    }
+    
+    private void updateQuickStatsDisplay(float totalDistance, int totalTrash, int totalPoints) {
+        try {
+            float distanceKm = totalDistance / 1000f;
+            
+            if (binding.tvQuickStatsDistance != null) {
+                binding.tvQuickStatsDistance.setText(String.format("%.1f km", distanceKm));
+            }
+            
+            if (binding.tvQuickStatsTrash != null) {
+                binding.tvQuickStatsTrash.setText(String.valueOf(totalTrash));
+            }
+            
+            if (binding.tvQuickStatsPoints != null) {
+                binding.tvQuickStatsPoints.setText(String.valueOf(totalPoints));
+            }
+            
+            if (binding.tvQuickStatsBadge != null) {
+                String badge = getBadgeForPoints(totalPoints);
+                binding.tvQuickStatsBadge.setText(badge);
+            }
+        } catch (Exception e) {
+        }
+    }
+      private void updateChallengeProgress(int totalTrash) {
+        try {
+            // Fixed challenge target for overall statistics
+            int challengeTarget = 100; // Global challenge target
+            
+            if (binding.progressChallenge != null) {
+                binding.progressChallenge.setMax(challengeTarget);
+                binding.progressChallenge.setProgress(Math.min(totalTrash, challengeTarget));
+            }
+            
+            if (binding.tvChallengeProgress != null) {
+                int percentage = challengeTarget > 0 ? (totalTrash * 100) / challengeTarget : 0;
+                String progressText = String.format("Progress: %d/%d (%d%%)", totalTrash, challengeTarget, Math.min(percentage, 100));
+                binding.tvChallengeProgress.setText(progressText);
+            }
+            
+            if (binding.tvChallengeTarget != null) {
+                String targetText = String.format("Target: Kumpulkan %d sampah", challengeTarget);
+                binding.tvChallengeTarget.setText(targetText);
+            }
+        } catch (Exception e) {
+        }
+    }
+    
+    private String getBadgeForPoints(int points) {
+        if (points >= 1000) return "🏆 Eco Champion";
+        else if (points >= 500) return "🥇 Eco Expert";
+        else if (points >= 200) return "🥈 Eco Warrior";
+        else if (points >= 50) return "🥉 Eco Fighter";
+        else return "🌱 Eco Beginner";
     }
 
     private long getWeekStartTime() {
@@ -397,15 +436,18 @@ public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClic
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
         int userId = prefs.getInt("USER_ID", -1);
         
-        if (userId != -1) {
-            executor.execute(() -> {
+        if (userId != -1) {            executor.execute(() -> {
                 try {
-                    List<RecordEntity> records = db.recordDao().getRecordsByUserIdSync(userId);
+                    List<RecordEntity> allRecords = db.recordDao().getRecordsByUserIdSync(userId);
+                    List<RecordEntity> recordsToProcess = getAllRecords(allRecords);
+                    
+                    // Sort by date (newest first) and limit to 5 recent activities
+                    recordsToProcess.sort((r1, r2) -> Long.compare(r2.getCreatedAt(), r1.getCreatedAt()));
                     List<RecordEntity> recentRecords = new ArrayList<>();
                     
-                    int limit = Math.min(records.size(), 5);
+                    int limit = Math.min(recordsToProcess.size(), 5);
                     for (int i = 0; i < limit; i++) {
-                        recentRecords.add(records.get(i));
+                        recentRecords.add(recordsToProcess.get(i));
                     }
                     
                     requireActivity().runOnUiThread(() -> {
@@ -414,10 +456,23 @@ public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClic
                             recentActivities.addAll(recentRecords);
                             recentActivitiesAdapter.notifyDataSetChanged();
                         }
+                        
+                        // Update recent activities title
+                        updateRecentActivitiesTitle(recordsToProcess.size());
                     });
                 } catch (Exception e) {
                 }
             });
+        }
+    }
+      private void updateRecentActivitiesTitle(int totalActivities) {
+        try {
+            // Update recent activities title for overall statistics
+            String periodText = String.format("Aktivitas Terbaru (%d)", totalActivities);
+            
+            // Update any recent activities title if it exists in the layout
+            // Note: This would need a corresponding TextView in the layout
+        } catch (Exception e) {
         }
     }
       @Override

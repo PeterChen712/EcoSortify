@@ -6,15 +6,13 @@
     android:background="#F5F5F5"
     android:gravity="center"
     android:orientation="vertical"
-    android:padding="32dp">
-
-    <!-- No Internet Icon -->
+    android:padding="32dp">    <!-- No Internet Icon -->
     <ImageView
         android:layout_width="120dp"
         android:layout_height="120dp"
         android:layout_marginBottom="24dp"
         android:src="@drawable/ic_no_internet"
-        android:tint="#FF6B6B"
+        app:tint="#FF6B6B"
         android:contentDescription="No Internet Connection" />
 
     <!-- Main Title -->

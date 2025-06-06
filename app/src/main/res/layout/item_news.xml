@@ -123,15 +123,13 @@
             android:gravity="center_vertical"
             android:layout_marginTop="12dp"
             android:visibility="gone"
-            android:id="@+id/layoutActions">
-
-            <ImageView
+            android:id="@+id/layoutActions">            <ImageView
                 android:id="@+id/ivReadStatus"
                 android:layout_width="16dp"
                 android:layout_height="16dp"
                 android:src="@drawable/ic_unread_dot"
                 android:layout_marginEnd="8dp"
-                android:tint="@color/environmental_green" />
+                app:tint="@color/environmental_green" />
 
             <TextView
                 android:id="@+id/tvReadStatus"
@@ -145,13 +143,11 @@
             <View
                 android:layout_width="0dp"
                 android:layout_height="1dp"
-                android:layout_weight="1" />
-
-            <ImageView
+                android:layout_weight="1" />            <ImageView
                 android:layout_width="16dp"
                 android:layout_height="16dp"
                 android:src="@drawable/ic_arrow_forward"
-                android:tint="@color/text_secondary"
+                app:tint="@color/text_secondary"
                 android:alpha="0.6" />
 
         </LinearLayout>

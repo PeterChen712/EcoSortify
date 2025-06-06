@@ -5,7 +5,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
-    android:background="@color/background_light">
+    android:background="@color/background_light"
+    android:scrollbars="none">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -14,48 +15,73 @@
         android:paddingTop="24dp"
         android:paddingBottom="24dp"
         android:paddingStart="20dp"
-        android:paddingEnd="20dp">        <!-- Enhanced Header Section -->
-        <LinearLayout
+        android:paddingEnd="20dp">
+
+        <!-- Enhanced Header Section -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="24dp"
-            android:background="@drawable/gradient_header_background"
             android:layout_marginBottom="20dp"
-            android:elevation="4dp">
+            app:cardBackgroundColor="@color/environmental_green"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="8dp">
 
-            <TextView
-                android:id="@+id/tvWelcomeMessage"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="🌱 Selamat datang!"
-                android:textSize="28sp"
-                android:textStyle="bold"
-                android:textColor="@android:color/white"
-                android:layout_marginBottom="8dp"
-                android:fontFamily="sans-serif-medium" />
+                android:orientation="vertical"
+                android:padding="24dp">
 
-            <TextView
-                android:id="@+id/tvCurrentDate"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="📅 Hari ini"
-                android:textSize="16sp"
-                android:textColor="@android:color/white"
-                android:alpha="0.9"
-                android:layout_marginBottom="12dp" />
+                <TextView
+                    android:id="@+id/tvWelcomeMessage"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Selamat datang!"
+                    android:textSize="28sp"
+                    android:textStyle="bold"
+                    android:textColor="@android:color/white"
+                    android:layout_marginBottom="8dp" />
 
-            <TextView
-                android:id="@+id/tvMotivation"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="💚 Mari bersihkan dunia!"
-                android:textSize="18sp"
-                android:textColor="@android:color/white"
-                android:textStyle="italic"
-                android:alpha="0.95" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="12dp">                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:layout_marginEnd="8dp"
+                        android:src="@drawable/ic_calendar"
+                        app:tint="@android:color/white"
+                        android:alpha="0.9"
+                        android:contentDescription="Calendar Icon" />
 
-        </LinearLayout>        <!-- Enhanced Quick Stats Section -->
+                    <TextView
+                        android:id="@+id/tvCurrentDate"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Hari ini"
+                        android:textSize="16sp"
+                        android:textColor="@android:color/white"
+                        android:alpha="0.9" />
+
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvMotivation"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Mari bersihkan dunia!"
+                    android:textSize="18sp"
+                    android:textColor="@android:color/white"
+                    android:textStyle="italic"
+                    android:alpha="0.95" />
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Enhanced Quick Stats Section -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -69,30 +95,83 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="24dp">
-
-                <LinearLayout
+                android:padding="24dp">                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:layout_marginBottom="20dp">
+                    android:layout_marginBottom="16dp">                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_marginEnd="8dp"
+                        android:src="@drawable/ic_bar_chart"
+                        app:tint="@color/environmental_green"
+                        android:contentDescription="Statistics Icon" />
 
                     <TextView
                         android:id="@+id/tvQuickStatsTitle"
-                        android:layout_width="0dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="📊 STATISTIK MINGGU INI"
+                        android:text="Statistik Keseluruhan"
                         android:textSize="18sp"
                         android:textStyle="bold"
                         android:textColor="@color/text_primary" />
+
+                </LinearLayout>
 
                     <View
                         android:layout_width="6dp"
                         android:layout_height="6dp"
                         android:background="@drawable/circle_indicator"
                         android:backgroundTint="@color/environmental_green" />
+
+                </LinearLayout>                <!-- Achievement Status -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="@drawable/gradient_background_welcome"
+                    android:padding="16dp"
+                    android:layout_marginBottom="16dp"
+                    android:elevation="2dp">                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_marginEnd="12dp"
+                        android:src="@drawable/ic_star"
+                        app:tint="@android:color/white"
+                        android:contentDescription="Achievement Icon" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Status Pencapaian"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="@android:color/white"
+                            android:layout_marginBottom="4dp" />
+
+                        <TextView
+                            android:id="@+id/tvAchievementStatus"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Terus semangat! Kamu sudah berkontribusi untuk lingkungan."
+                            android:textSize="13sp"
+                            android:textColor="@android:color/white"
+                            android:alpha="0.9" />
+
+                    </LinearLayout>
 
                 </LinearLayout>
 
@@ -111,24 +190,104 @@
                         android:orientation="vertical"
                         android:layout_marginEnd="12dp">
 
-                        <TextView
-                            android:id="@+id/tvQuickStatsDistance"
+                        <!-- Total Lari -->
+                        <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="🏃 Total Lari: 0 km"
-                            android:textSize="15sp"
-                            android:textColor="@color/text_secondary"
-                            android:layout_marginBottom="12dp"
-                            android:drawablePadding="8dp" />
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:layout_marginBottom="12dp">
 
-                        <TextView
-                            android:id="@+id/tvQuickStatsPoints"
+                            <androidx.cardview.widget.CardView
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
+                                android:layout_marginEnd="12dp"
+                                app:cardBackgroundColor="@color/light_green"
+                                app:cardCornerRadius="8dp"
+                                app:cardElevation="0dp">                                <ImageView
+                                    android:layout_width="20dp"
+                                    android:layout_height="20dp"
+                                    android:layout_gravity="center"
+                                    android:src="@drawable/ic_run"
+                                    app:tint="@color/environmental_green"
+                                    android:contentDescription="Running Icon" />
+
+                            </androidx.cardview.widget.CardView>
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Total Lari"
+                                    android:textSize="14sp"
+                                    android:textColor="@color/text_secondary"
+                                    android:layout_marginBottom="2dp" />
+
+                                <TextView
+                                    android:id="@+id/tvQuickStatsDistance"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="0 km"
+                                    android:textSize="16sp"
+                                    android:textStyle="bold"
+                                    android:textColor="@color/text_primary" />
+
+                            </LinearLayout>
+
+                        </LinearLayout>
+
+                        <!-- Poin -->
+                        <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="⭐ Poin: 0"
-                            android:textSize="15sp"
-                            android:textColor="@color/text_secondary"
-                            android:drawablePadding="8dp" />
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+
+                            <androidx.cardview.widget.CardView
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
+                                android:layout_marginEnd="12dp"
+                                app:cardBackgroundColor="@color/light_green"
+                                app:cardCornerRadius="8dp"
+                                app:cardElevation="0dp">                                <ImageView
+                                    android:layout_width="20dp"
+                                    android:layout_height="20dp"
+                                    android:layout_gravity="center"
+                                    android:src="@drawable/ic_star"
+                                    app:tint="@color/environmental_green"
+                                    android:contentDescription="Star Icon" />
+
+                            </androidx.cardview.widget.CardView>
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Poin"
+                                    android:textSize="14sp"
+                                    android:textColor="@color/text_secondary"
+                                    android:layout_marginBottom="2dp" />
+
+                                <TextView
+                                    android:id="@+id/tvQuickStatsPoints"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="0"
+                                    android:textSize="16sp"
+                                    android:textStyle="bold"
+                                    android:textColor="@color/text_primary" />
+
+                            </LinearLayout>
+
+                        </LinearLayout>
 
                     </LinearLayout>
 
@@ -140,31 +299,113 @@
                         android:orientation="vertical"
                         android:layout_marginStart="12dp">
 
-                        <TextView
-                            android:id="@+id/tvQuickStatsTrash"
+                        <!-- Sampah Terkumpul -->
+                        <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="🗑️ Sampah Terkumpul: 0"
-                            android:textSize="15sp"
-                            android:textColor="@color/text_secondary"
-                            android:layout_marginBottom="12dp"
-                            android:drawablePadding="8dp" />
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:layout_marginBottom="12dp">
 
-                        <TextView
-                            android:id="@+id/tvQuickStatsBadge"
+                            <androidx.cardview.widget.CardView
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
+                                android:layout_marginEnd="12dp"
+                                app:cardBackgroundColor="@color/light_green"
+                                app:cardCornerRadius="8dp"
+                                app:cardElevation="0dp">                                <ImageView
+                                    android:layout_width="20dp"
+                                    android:layout_height="20dp"
+                                    android:layout_gravity="center"
+                                    android:src="@drawable/ic_trash_can"
+                                    app:tint="@color/environmental_green"
+                                    android:contentDescription="Trash Icon" />
+
+                            </androidx.cardview.widget.CardView>
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Sampah Terkumpul"
+                                    android:textSize="14sp"
+                                    android:textColor="@color/text_secondary"
+                                    android:layout_marginBottom="2dp" />
+
+                                <TextView
+                                    android:id="@+id/tvQuickStatsTrash"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="0"
+                                    android:textSize="16sp"
+                                    android:textStyle="bold"
+                                    android:textColor="@color/text_primary" />
+
+                            </LinearLayout>
+
+                        </LinearLayout>
+
+                        <!-- Badge -->
+                        <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="🏆 Badge: Eco Beginner"
-                            android:textSize="15sp"
-                            android:textColor="@color/text_secondary"
-                            android:drawablePadding="8dp" />
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+
+                            <androidx.cardview.widget.CardView
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
+                                android:layout_marginEnd="12dp"
+                                app:cardBackgroundColor="@color/light_green"
+                                app:cardCornerRadius="8dp"
+                                app:cardElevation="0dp">                                <ImageView
+                                    android:layout_width="20dp"
+                                    android:layout_height="20dp"
+                                    android:layout_gravity="center"
+                                    android:src="@drawable/ic_trophy"
+                                    app:tint="@color/environmental_green"
+                                    android:contentDescription="Trophy Icon" />
+
+                            </androidx.cardview.widget.CardView>
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Badge"
+                                    android:textSize="14sp"
+                                    android:textColor="@color/text_secondary"
+                                    android:layout_marginBottom="2dp" />
+
+                                <TextView
+                                    android:id="@+id/tvQuickStatsBadge"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Eco Beginner"
+                                    android:textSize="16sp"
+                                    android:textStyle="bold"
+                                    android:textColor="@color/text_primary" />
+
+                            </LinearLayout>
+
+                        </LinearLayout>
 
                     </LinearLayout>
 
                 </LinearLayout>
 
             </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>        <!-- Enhanced Quick Action Buttons -->
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Enhanced Quick Action Buttons -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -178,52 +419,66 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="20dp">
-
-                <TextView
+                android:padding="20dp">                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="🚀 AKSI CEPAT"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/text_primary"
-                    android:layout_marginBottom="16dp" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="16dp">                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_marginEnd="8dp"
+                        android:src="@drawable/ic_flash"
+                        app:tint="@color/environmental_green"
+                        android:contentDescription="Quick Action Icon" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="AKSI CEPAT"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary" />
+
+                </LinearLayout>
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:weightSum="2">
-
-                    <com.google.android.material.button.MaterialButton
+                    android:weightSum="2">                    <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnQuickAction1"
                         style="@style/Widget.Material3.Button.TonalButton"
                         android:layout_width="0dp"
                         android:layout_height="60dp"
                         android:layout_weight="1"
                         android:layout_marginEnd="8dp"
-                        android:text="🏃‍♂️ Mulai Plogging"
+                        android:text="Mulai Plogging"
                         android:textSize="13sp"
                         android:textStyle="bold"
                         app:cornerRadius="12dp"
                         app:backgroundTint="@color/environmental_green"
                         android:textColor="@android:color/white"
-                        app:elevation="4dp" />
-
-                    <com.google.android.material.button.MaterialButton
+                        app:elevation="4dp"
+                        app:icon="@drawable/ic_run"
+                        app:iconTint="@android:color/white"
+                        app:iconGravity="start" />                    <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnQuickAction2"
                         style="@style/Widget.Material3.Button.OutlinedButton"
                         android:layout_width="0dp"
                         android:layout_height="60dp"
                         android:layout_weight="1"
                         android:layout_marginStart="8dp"
-                        android:text="📊 Lihat Statistik"
+                        android:text="Lihat Statistik"
                         android:textSize="13sp"
                         android:textStyle="bold"
                         app:cornerRadius="12dp"
                         app:strokeColor="@color/environmental_green"
                         android:textColor="@color/environmental_green"
-                        app:strokeWidth="2dp" />
+                        app:strokeWidth="2dp"
+                        app:icon="@drawable/ic_bar_chart"
+                        app:iconTint="@color/environmental_green"
+                        app:iconGravity="start" />
 
                 </LinearLayout>
 
@@ -232,42 +487,46 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:weightSum="2"
-                    android:layout_marginTop="12dp">
-
-                    <com.google.android.material.button.MaterialButton
+                    android:layout_marginTop="12dp">                    <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnQuickAction3"
                         style="@style/Widget.Material3.Button.OutlinedButton"
                         android:layout_width="0dp"
                         android:layout_height="60dp"
                         android:layout_weight="1"
                         android:layout_marginEnd="8dp"
-                        android:text="📰 Berita Lingkungan"
+                        android:text="Berita Lingkungan"
                         android:textSize="13sp"
                         android:textStyle="bold"
                         app:cornerRadius="12dp"
                         app:strokeColor="@color/environmental_green"
                         android:textColor="@color/environmental_green"
-                        app:strokeWidth="2dp" />
-
-                    <com.google.android.material.button.MaterialButton
+                        app:strokeWidth="2dp"
+                        app:icon="@drawable/ic_news"
+                        app:iconTint="@color/environmental_green"
+                        app:iconGravity="start" />                    <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnQuickAction4"
                         style="@style/Widget.Material3.Button.OutlinedButton"
                         android:layout_width="0dp"
                         android:layout_height="60dp"
                         android:layout_weight="1"
                         android:layout_marginStart="8dp"
-                        android:text="🗺️ Peta Sampah"
+                        android:text="Peta Sampah"
                         android:textSize="13sp"
                         android:textStyle="bold"
                         app:cornerRadius="12dp"
                         app:strokeColor="@color/environmental_green"
                         android:textColor="@color/environmental_green"
-                        app:strokeWidth="2dp" />
+                        app:strokeWidth="2dp"
+                        app:icon="@drawable/ic_map"
+                        app:iconTint="@color/environmental_green"
+                        app:iconGravity="start" />
 
                 </LinearLayout>
 
             </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>        <!-- Enhanced Challenge Section -->
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Enhanced Challenge Section -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -288,23 +547,23 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:layout_marginBottom="16dp">
-
-                    <TextView
+                    android:layout_marginBottom="16dp">                    <TextView
                         android:id="@+id/tvChallengeTitle"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="🎯 CHALLENGE MINGGU INI"
+                        android:text="CHALLENGE MINGGU INI"
                         android:textSize="18sp"
                         android:textStyle="bold"
-                        android:textColor="@color/text_primary" />
-
-                    <TextView
+                        android:textColor="@color/text_primary"
+                        app:drawableStartCompat="@drawable/ic_target"
+                        android:drawablePadding="8dp"
+                        app:drawableTint="@color/environmental_green" />                    <ImageView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="🔥"
-                        android:textSize="20sp" />
+                        android:src="@drawable/ic_fire"
+                        app:tint="@color/environmental_green"
+                        android:contentDescription="Fire Icon" />
 
                 </LinearLayout>
 
@@ -357,7 +616,9 @@
                     android:layout_marginTop="4dp" />
 
             </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>        <!-- Enhanced Daily Tip -->
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Enhanced Daily Tip -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -372,20 +633,17 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:padding="20dp"
-                android:gravity="center_vertical">
-
-                <LinearLayout
+                android:gravity="center_vertical">                <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:background="@drawable/circle_white_bg"
                     android:padding="12dp"
-                    android:layout_marginEnd="16dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="💡"
-                        android:textSize="24sp" />
+                    android:layout_marginEnd="16dp">                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_lightbulb"
+                        app:tint="@color/environmental_green"
+                        android:contentDescription="Lightbulb Icon" />
 
                 </LinearLayout>
 
@@ -417,7 +675,9 @@
                 </LinearLayout>
 
             </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>        <!-- Enhanced Recent Activity Section -->
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Enhanced Recent Activity Section -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -438,16 +698,17 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:layout_marginBottom="16dp">
-
-                    <TextView
+                    android:layout_marginBottom="16dp">                    <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="📈 AKTIVITAS TERAKHIR"
+                        android:text="AKTIVITAS TERAKHIR"
                         android:textSize="18sp"
                         android:textStyle="bold"
-                        android:textColor="@color/text_primary" />
+                        android:textColor="@color/text_primary"
+                        app:drawableStartCompat="@drawable/ic_trending_up"
+                        android:drawablePadding="8dp"
+                        app:drawableTint="@color/environmental_green" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnViewAllHistory"
@@ -459,7 +720,10 @@
                         android:textStyle="bold"
                         android:textColor="@color/environmental_green"
                         android:minWidth="0dp"
-                        android:padding="8dp" />
+                        android:padding="8dp"
+                        app:icon="@drawable/ic_chevron_right"
+                        app:iconGravity="end"
+                        app:iconTint="@color/environmental_green" />
 
                 </LinearLayout>
 
@@ -471,14 +735,16 @@
                     android:clipToPadding="false" />
 
             </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>        <!-- Enhanced Start Plogging Button -->
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Enhanced Start Plogging Button -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnStartPlogging"
             style="@style/Widget.Material3.Button.UnelevatedButton"
             android:layout_width="match_parent"
             android:layout_height="64dp"
             android:layout_marginTop="8dp"
-            android:text="🏃‍♂️ MULAI PLOGGING SEKARANG"
+            android:text="MULAI PLOGGING SEKARANG"
             android:textSize="18sp"
             android:textStyle="bold"
             android:textColor="@android:color/white"
@@ -487,7 +753,8 @@
             app:elevation="8dp"
             app:icon="@drawable/ic_play_arrow"
             app:iconGravity="textStart"
-            app:iconPadding="8dp" />
+            app:iconPadding="8dp"
+            app:iconTint="@android:color/white" />
 
         <!-- Add some bottom padding -->
         <View

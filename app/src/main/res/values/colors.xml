@@ -75,10 +75,11 @@
     
     <!-- Surface colors -->
     <color name="surface_variant">#F3F4F6</color>
-    <color name="outline_variant">#E5E7EB</color>
-    
-    <!-- Status colors -->
+    <color name="outline_variant">#E5E7EB</color>    <!-- Status colors -->
     <color name="success_green">#10B981</color>
     <color name="warning_yellow">#F59E0B</color>
     <color name="error_red">#EF4444</color>
+    
+    <!-- Missing colors for HomeFragment -->
+    <color name="light_green">#E8F5E8</color>
 </resources>

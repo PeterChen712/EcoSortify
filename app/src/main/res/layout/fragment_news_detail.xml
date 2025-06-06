@@ -122,10 +122,9 @@
 
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- WebView Card -->
-            <com.google.android.material.card.MaterialCardView
+            <!-- WebView Card -->            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
                 android:layout_marginHorizontal="16dp"
                 android:layout_marginBottom="16dp"
                 app:cardCornerRadius="16dp"
@@ -135,7 +134,7 @@
                 <WebView
                     android:id="@+id/webView"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_height="match_parent"
                     android:minHeight="400dp"
                     android:padding="8dp" />
 

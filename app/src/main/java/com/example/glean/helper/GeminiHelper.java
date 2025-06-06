@@ -2,7 +2,11 @@ package com.example.glean.helper;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
+
+import java.util.concurrent.Executor;
 
 import com.example.glean.config.ApiConfig;
 import com.google.ai.client.generativeai.GenerativeModel;
@@ -80,14 +84,19 @@ public class GeminiHelper {
                         Log.e(TAG, "Error processing Gemini response", e);
                         callback.onError("Failed to process classification result");
                     }
-                }
-                
-                @Override
+                }                @Override
                 public void onFailure(Throwable t) {
                     Log.e(TAG, "Gemini API call failed", t);
                     callback.onError("Classification failed: " + t.getMessage());
                 }
-            }, context.getMainExecutor());
+            }, new Executor() {
+                private final Handler handler = new Handler(Looper.getMainLooper());
+                
+                @Override
+                public void execute(Runnable command) {
+                    handler.post(command);
+                }
+            });
             
         } catch (Exception e) {
             Log.e(TAG, "Error calling Gemini API", e);

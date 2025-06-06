@@ -35,7 +35,6 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
     private final List<NewsItem> newsList;
     private final OnNewsItemClickListener listener;
     private final Context context;
-    private int lastAnimatedPosition = -1;
 
     public interface OnNewsItemClickListener {
         void onNewsItemClick(NewsItem newsItem);
@@ -104,18 +103,16 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
         ItemNewsBinding binding = ItemNewsBinding.inflate(
                 LayoutInflater.from(parent.getContext()), parent, false);
         return new NewsViewHolder(binding);
-    }
-
-    @Override
+    }    @Override
     public void onBindViewHolder(@NonNull NewsViewHolder holder, int position) {
         NewsItem newsItem = newsList.get(position);
-        holder.bind(newsItem, listener, position);
+        holder.bind(newsItem, listener);
         
-        // Add entrance animation
-        if (position > lastAnimatedPosition) {
+        // Add entrance animation - Use view tag to track animation state instead of position
+        if (holder.itemView.getTag() == null) {
             Animation animation = AnimationUtils.loadAnimation(context, R.anim.slide_in_bottom);
             holder.itemView.startAnimation(animation);
-            lastAnimatedPosition = position;
+            holder.itemView.setTag("animated");
         }
     }
 
@@ -130,9 +127,7 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
         public NewsViewHolder(ItemNewsBinding binding) {
             super(binding.getRoot());
             this.binding = binding;
-        }
-
-        public void bind(NewsItem newsItem, OnNewsItemClickListener listener, int position) {
+        }        public void bind(NewsItem newsItem, OnNewsItemClickListener listener) {
             Context context = binding.getRoot().getContext();
             
             // Set title with improved styling
@@ -293,12 +288,11 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
                                 .start();
                         })
                         .start();
-                    
-                    // Mark as read when clicked
+                      // Mark as read when clicked
                     boolean wasRead = newsItem.isRead();
                     newsItem.setRead(true);
                     if (!wasRead) {
-                        bind(newsItem, listener, position); // Refresh styling
+                        bind(newsItem, listener); // Refresh styling
                     }
                     
                     // Add haptic feedback
