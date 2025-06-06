@@ -235,7 +235,7 @@ public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClic
             }
 
             if (binding.btnQuickAction4 != null) {
-                binding.btnQuickAction4.setText("Peta Sampah");
+                binding.btnQuickAction4.setText("Peta");
                 binding.btnQuickAction4.setVisibility(View.VISIBLE);
                 binding.btnQuickAction4.setOnClickListener(v -> {
                     try {
@@ -362,28 +362,43 @@ public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClic
                 // Handle error silently
             }
         });
-    }
-
-    private void updateDashboardStats() {
+    }    private void updateDashboardStats() {
         executor.execute(() -> {
             try {
                 SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
                 int userId = prefs.getInt("USER_ID", -1);
                 
+                android.util.Log.d("HomeFragment", "DEBUG: Updating dashboard stats for userId: " + userId);
+                
                 if (userId != -1) {
                     List<RecordEntity> allRecords = db.recordDao().getRecordsByUserIdSync(userId);
                     List<RecordEntity> recordsToProcess = getAllRecords(allRecords);
+                    
+                    android.util.Log.d("HomeFragment", "DEBUG: Found " + recordsToProcess.size() + " records for user");
                     
                     float totalDistance = 0f;
                     int totalTrash = 0;
                     int totalPoints = 0;
                     
                     for (RecordEntity record : recordsToProcess) {
-                        totalDistance += record.getDistance();
-                        totalPoints += record.getPoints();
+                        float recordDistance = record.getDistance();
+                        totalDistance += recordDistance;
+                        
+                        // Calculate points directly from trash data to ensure accuracy
+                        int recordTrashPoints = db.trashDao().getTotalPointsByRecordIdSync(record.getId());
+                        totalPoints += recordTrashPoints;
+                        
                         List<com.example.glean.model.TrashEntity> trashList = db.trashDao().getTrashByRecordIdSync(record.getId());
-                        totalTrash += trashList.size();
+                        int recordTrashCount = trashList.size();
+                        totalTrash += recordTrashCount;
+                        
+                        android.util.Log.d("HomeFragment", "DEBUG: Record " + record.getId() + 
+                            " - Distance: " + recordDistance + "m, Trash: " + recordTrashCount + 
+                            ", Points: " + recordTrashPoints);
                     }
+                    
+                    android.util.Log.d("HomeFragment", "DEBUG: Total stats - Distance: " + totalDistance + 
+                        "m (" + (totalDistance/1000f) + "km), Trash: " + totalTrash + ", Points: " + totalPoints);
                     
                     String badge = getBadge(totalPoints);
                     
@@ -395,29 +410,30 @@ public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClic
                         updateStatsDisplay(finalTotalDistance, finalTotalTrash, finalTotalPoints, badge);
                         updateChallengeProgress(finalTotalTrash);
                     });
+                } else {
+                    android.util.Log.d("HomeFragment", "DEBUG: No valid user ID found");
                 }
             } catch (Exception e) {
-                // Handle error silently
+                android.util.Log.e("HomeFragment", "DEBUG: Error updating dashboard stats", e);
             }
         });
     }
-    
-    private void updateStatsDisplay(float totalDistance, int totalTrash, int totalPoints, String badge) {
+      private void updateStatsDisplay(float totalDistance, int totalTrash, int totalPoints, String badge) {
         try {
             if (binding.tvQuickStatsDistance != null) {
-                binding.tvQuickStatsDistance.setText(String.format("Total Lari: %.1f km", totalDistance / 1000f));
+                binding.tvQuickStatsDistance.setText(String.format("%.1f km", totalDistance / 1000f));
             }
             
             if (binding.tvQuickStatsTrash != null) {
-                binding.tvQuickStatsTrash.setText("Sampah Terkumpul: " + totalTrash);
+                binding.tvQuickStatsTrash.setText(String.valueOf(totalTrash));
             }
             
             if (binding.tvQuickStatsPoints != null) {
-                binding.tvQuickStatsPoints.setText("Poin: " + totalPoints);
+                binding.tvQuickStatsPoints.setText(String.valueOf(totalPoints));
             }
             
             if (binding.tvQuickStatsBadge != null) {
-                binding.tvQuickStatsBadge.setText("Badge: " + badge);
+                binding.tvQuickStatsBadge.setText(badge);
             }
         } catch (Exception e) {
             // Handle error silently
@@ -500,11 +516,97 @@ public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClic
 
     private void showErrorMessage(String message) {
         Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
-    }
-
-    @Override
+    }    @Override
     public void onRecordClick(RecordEntity record) {
         // Handle record click
+    }
+    
+    @Override
+    public void onResume() {
+        super.onResume();
+        android.util.Log.d("HomeFragment", "DEBUG: onResume() called - refreshing data");
+        updateDashboardStats();
+        loadRecentActivities();
+        debugDatabaseState();
+    }
+      private void debugDatabaseState() {
+        executor.execute(() -> {
+            try {
+                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
+                int userId = prefs.getInt("USER_ID", -1);
+                
+                android.util.Log.d("HomeFragment", "=== DATABASE DEBUG START ===");
+                android.util.Log.d("HomeFragment", "Current User ID: " + userId);
+                
+                if (userId != -1) {
+                    // Check all users
+                    List<UserEntity> allUsers = db.userDao().getAllUsersSync();
+                    android.util.Log.d("HomeFragment", "Total users in database: " + allUsers.size());
+                    for (UserEntity user : allUsers) {
+                        android.util.Log.d("HomeFragment", "User: ID=" + user.getId() + 
+                            ", Username=" + user.getUsername() + ", Email=" + user.getEmail());
+                    }
+                    
+                    // Check all records
+                    List<RecordEntity> allRecords = db.recordDao().getAllRecordsSync();
+                    android.util.Log.d("HomeFragment", "Total records in database: " + allRecords.size());
+                    for (RecordEntity record : allRecords) {
+                        android.util.Log.d("HomeFragment", "Record: ID=" + record.getId() + 
+                            ", UserID=" + record.getUserId() + ", Distance=" + record.getDistance() + 
+                            "m, Points=" + record.getPoints() + ", CreatedAt=" + record.getCreatedAt());
+                    }
+                      // Check all trash
+                    List<com.example.glean.model.TrashEntity> allTrash = db.trashDao().getAllTrashSync();
+                    android.util.Log.d("HomeFragment", "Total trash in database: " + allTrash.size());
+                    for (com.example.glean.model.TrashEntity trash : allTrash) {
+                        android.util.Log.d("HomeFragment", "Trash: ID=" + trash.getId() + 
+                            ", RecordID=" + trash.getRecordId() + ", Type=" + trash.getTrashType() + 
+                            ", Timestamp=" + trash.getTimestamp());
+                    }
+                    
+                    // Check user-specific data
+                    List<RecordEntity> userRecords = db.recordDao().getRecordsByUserIdSync(userId);
+                    android.util.Log.d("HomeFragment", "Records for user " + userId + ": " + userRecords.size());
+                    
+                    // TEST: Let's manually create a test trash record if we have records but no trash
+                    if (userRecords.size() > 0 && allTrash.size() == 0) {
+                        android.util.Log.d("HomeFragment", "TEST: Creating test trash record for debugging...");
+                        RecordEntity testRecord = userRecords.get(0);
+                        
+                        com.example.glean.model.TrashEntity testTrash = new com.example.glean.model.TrashEntity();
+                        testTrash.setRecordId(testRecord.getId());
+                        testTrash.setTrashType("Test Plastic");
+                        testTrash.setMlLabel("Test ML Label");
+                        testTrash.setConfidence(0.95f);
+                        testTrash.setDescription("Test trash item created for debugging");
+                        testTrash.setImagePath(null);
+                        testTrash.setLatitude(0.0);
+                        testTrash.setLongitude(0.0);
+                        testTrash.setTimestamp(System.currentTimeMillis());
+                        
+                        try {
+                            long testTrashId = db.trashDao().insert(testTrash);
+                            android.util.Log.d("HomeFragment", "TEST: Test trash created with ID: " + testTrashId);
+                            
+                            // Verify insertion
+                            com.example.glean.model.TrashEntity savedTestTrash = db.trashDao().getTrashByIdSync((int)testTrashId);
+                            if (savedTestTrash != null) {
+                                android.util.Log.d("HomeFragment", "TEST: Test trash verified in database with RecordId: " + savedTestTrash.getRecordId());
+                            } else {
+                                android.util.Log.e("HomeFragment", "TEST: Test trash not found after insertion!");
+                            }
+                        } catch (Exception e) {
+                            android.util.Log.e("HomeFragment", "TEST: Error creating test trash", e);
+                        }
+                    }
+                }
+                
+                android.util.Log.d("HomeFragment", "=== DATABASE DEBUG END ===");
+                
+            } catch (Exception e) {
+                android.util.Log.e("HomeFragment", "Error debugging database", e);
+            }
+        });
     }
 
     @Override

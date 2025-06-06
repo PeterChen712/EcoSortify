@@ -78,10 +78,15 @@ public class TrashMLFragment extends Fragment {
             Log.e(TAG, "Failed to initialize GeminiHelper", e);
             Toast.makeText(requireContext(), "Failed to initialize AI classification", Toast.LENGTH_SHORT).show();
         }
-        
-        // Get arguments
+          // Get arguments
         if (getArguments() != null) {
             recordId = getArguments().getInt("RECORD_ID", -1);
+            Log.d(TAG, "=== TRASHML FRAGMENT DEBUG ===");
+            Log.d(TAG, "INIT: Received recordId from arguments: " + recordId);
+            Log.d(TAG, "INIT: All bundle keys: " + getArguments().keySet().toString());
+            Log.d(TAG, "=== TRASHML FRAGMENT DEBUG END ===");
+        } else {
+            Log.e(TAG, "INIT: No arguments received! recordId will be -1");
         }
     }
 
@@ -479,10 +484,19 @@ public class TrashMLFragment extends Fragment {
             saveToDatabase(trashType, confidence, description, 0.0, 0.0);
         }
     }
-    
-    private void saveToDatabase(String trashType, float confidence, String description, double latitude, double longitude) {
+      private void saveToDatabase(String trashType, float confidence, String description, double latitude, double longitude) {
+        Log.d(TAG, "=== TRASH SAVE DEBUG START ===");
+        Log.d(TAG, "SAVE: recordId = " + recordId);
+        Log.d(TAG, "SAVE: trashType = " + trashType);
+        Log.d(TAG, "SAVE: confidence = " + confidence);
+        Log.d(TAG, "SAVE: description = " + description);
+        Log.d(TAG, "SAVE: latitude = " + latitude);
+        Log.d(TAG, "SAVE: longitude = " + longitude);
+        Log.d(TAG, "SAVE: currentPhotoPath = " + currentPhotoPath);
+        
         executor.execute(() -> {
             try {
+                Log.d(TAG, "SAVE: Creating TrashEntity...");
                 TrashEntity trash = new TrashEntity();
                 trash.setRecordId(recordId);
                 trash.setTrashType(trashType);
@@ -494,7 +508,25 @@ public class TrashMLFragment extends Fragment {
                 trash.setLongitude(longitude);
                 trash.setTimestamp(System.currentTimeMillis());
                 
+                Log.d(TAG, "SAVE: TrashEntity created, attempting to insert to database...");
+                Log.d(TAG, "SAVE: Entity details - RecordId: " + trash.getRecordId() + 
+                      ", Type: " + trash.getTrashType() + ", Timestamp: " + trash.getTimestamp());
+                
                 long trashId = db.trashDao().insert(trash);
+                
+                Log.d(TAG, "SAVE: Insert completed! Trash item saved with ID: " + trashId);
+                
+                // Verify the insertion by querying back
+                TrashEntity savedTrash = db.trashDao().getTrashByIdSync((int)trashId);
+                if (savedTrash != null) {
+                    Log.d(TAG, "SAVE: Verification successful - Trash exists in database with RecordId: " + savedTrash.getRecordId());
+                } else {
+                    Log.e(TAG, "SAVE: Verification FAILED - Trash not found in database after insert!");
+                }
+                
+                // Check total trash count for this record
+                int totalTrashCount = db.trashDao().getTrashCountByRecordIdSync(recordId);
+                Log.d(TAG, "SAVE: Total trash count for record " + recordId + ": " + totalTrashCount);
                 
                 requireActivity().runOnUiThread(() -> {
                     updateInstructionText("✅ Trash item saved successfully!\n\nContributing to cleaner environment! 🌱");
@@ -504,14 +536,16 @@ public class TrashMLFragment extends Fragment {
                     binding.getRoot().postDelayed(this::navigateBack, 2000);
                 });
                 
-                Log.d(TAG, "Trash item saved with ID: " + trashId);
-                
             } catch (Exception e) {
-                Log.e(TAG, "Error saving trash item", e);
+                Log.e(TAG, "SAVE: Error saving trash item", e);
+                Log.e(TAG, "SAVE: Error details - Message: " + e.getMessage());
+                Log.e(TAG, "SAVE: Error details - Cause: " + e.getCause());
+                e.printStackTrace();
                 requireActivity().runOnUiThread(() -> {
                     updateInstructionText("❌ Failed to save trash item. Please try again.");
                 });
             }
+            Log.d(TAG, "=== TRASH SAVE DEBUG END ===");
         });
     }
     

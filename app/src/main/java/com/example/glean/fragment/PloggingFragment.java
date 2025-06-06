@@ -598,11 +598,15 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                 binding.chronometer.setBase(SystemClock.elapsedRealtime());
             }
         }
-    }
-
-    private void navigateToTrashCollection() {
+    }    private void navigateToTrashCollection() {
         if (isTracking && currentRecordId != -1) {
             try {
+                Log.d("PloggingFragment", "=== NAVIGATION TO TRASH COLLECTION DEBUG ===");
+                Log.d("PloggingFragment", "NAV: currentRecordId = " + currentRecordId);
+                Log.d("PloggingFragment", "NAV: currentTrashCount = " + currentTrashCount);
+                Log.d("PloggingFragment", "NAV: currentPoints = " + currentPoints);
+                Log.d("PloggingFragment", "NAV: isTracking = " + isTracking);
+                
                 showNetworkStatusMessage("📸 Opening trash collection...", false);
 
                 NavController navController = Navigation.findNavController(requireView());
@@ -610,14 +614,21 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                 args.putInt("RECORD_ID", currentRecordId);
                 args.putInt("CURRENT_TRASH_COUNT", currentTrashCount);
                 args.putInt("CURRENT_POINTS", currentPoints);
+                
+                Log.d("PloggingFragment", "NAV: Bundle created with keys: " + args.keySet().toString());
+                Log.d("PloggingFragment", "NAV: Bundle RECORD_ID value: " + args.getInt("RECORD_ID"));
+                Log.d("PloggingFragment", "=== NAVIGATION DEBUG END ===");
+                
                 navController.navigate(R.id.action_ploggingFragment_to_trashMLFragment, args);
             } catch (Exception e) {
+                Log.e("PloggingFragment", "NAV: Error navigating to trash collection", e);
                 Toast.makeText(requireContext(), "Trash collection feature temporarily unavailable", Toast.LENGTH_SHORT).show();
             }
         } else {
+            Log.w("PloggingFragment", "NAV: Cannot navigate - isTracking: " + isTracking + ", currentRecordId: " + currentRecordId);
             Toast.makeText(requireContext(), "Start plogging first", Toast.LENGTH_SHORT).show();
         }
-    }    private void updateUIForTrackingState(boolean tracking) {
+    }private void updateUIForTrackingState(boolean tracking) {
         if (binding == null) return;
 
         if (tracking) {

@@ -510,7 +510,7 @@
                         android:layout_height="60dp"
                         android:layout_weight="1"
                         android:layout_marginStart="8dp"
-                        android:text="Peta Sampah"
+                        android:text="Peta"
                         android:textSize="13sp"
                         android:textStyle="bold"
                         app:cornerRadius="12dp"
