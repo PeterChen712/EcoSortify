@@ -122,8 +122,7 @@ public class StatsFragment extends Fragment {
         binding.pieChartTrashTypes.setHoleRadius(40f);
         binding.pieChartTrashTypes.setTransparentCircleRadius(45f);
     }
-    
-    private void loadData() {
+      private void loadData() {
         binding.progressBar.setVisibility(View.VISIBLE);
         
         if (userId != -1) {
@@ -138,21 +137,42 @@ public class StatsFragment extends Fragment {
             db.recordDao().getRecordsByUserId(userId).observe(getViewLifecycleOwner(), records -> {
                 binding.progressBar.setVisibility(View.GONE);
                 
-                if (records != null) {
+                if (records != null && !records.isEmpty()) {
                     recordList = records;
                     updateUserStats();
                     updateCharts();
+                    showDataViews();
                     dataLoaded = true;
                 } else {
                     recordList = new ArrayList<>();
                     updateUserStats();
-                    updateCharts();
+                    showNoDataState();
                 }
             });
         } else {
             binding.progressBar.setVisibility(View.GONE);
-            binding.tvNoData.setVisibility(View.VISIBLE);
+            showNoDataState();
         }
+    }
+    
+    private void showDataViews() {
+        // Show all chart cards
+        binding.cardBarChart.setVisibility(View.VISIBLE);
+        binding.cardLineChart.setVisibility(View.VISIBLE);
+        binding.cardPieChart.setVisibility(View.VISIBLE);
+        
+        // Hide no data card
+        binding.cardNoData.setVisibility(View.GONE);
+    }
+    
+    private void showNoDataState() {
+        // Hide all chart cards
+        binding.cardBarChart.setVisibility(View.GONE);
+        binding.cardLineChart.setVisibility(View.GONE);
+        binding.cardPieChart.setVisibility(View.GONE);
+        
+        // Show no data card
+        binding.cardNoData.setVisibility(View.VISIBLE);
     }
     
     private void updateUserStats() {
@@ -184,18 +204,13 @@ public class StatsFragment extends Fragment {
             binding.tvAverageTime.setText("0 min");
         }
     }
-    
-    private void updateCharts() {
+      private void updateCharts() {
         if (recordList.isEmpty()) {
-            binding.pieChartTrashTypes.setVisibility(View.GONE);
+            showNoDataState();
             return;
         }
         
-        binding.tvNoData.setVisibility(View.GONE);
-        binding.barChartDistance.setVisibility(View.VISIBLE);
-        binding.lineChartProgress.setVisibility(View.VISIBLE);
-        binding.pieChartTrashTypes.setVisibility(View.VISIBLE);
-        
+        showDataViews();
         updateDistanceBarChart();
         updateProgressLineChart();
         updateTrashTypePieChart();

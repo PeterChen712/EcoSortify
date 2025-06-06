@@ -241,13 +241,13 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
             if (isTracking) {
                 String buttonText;
                 if (currentTrashCount > 0) {
-                    buttonText = String.format("📸 Trash (+%d)", currentPoints);
+                    buttonText = String.format("Trash (+%d)", currentPoints);
                 } else {
-                    buttonText = "📸 Trash";
+                    buttonText = "Trash";
                 }
                 binding.btnCollectTrash.setText(buttonText);
             } else {
-                binding.btnCollectTrash.setText("📸 Trash");
+                binding.btnCollectTrash.setText("Trash");
             }
         }
     }
