@@ -157,10 +157,9 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
             mapFragment.getMapAsync(this);
         }
 
-        restoreTrackingSession();
-
-        updateUIForTrackingState(isTracking);
+        restoreTrackingSession();        updateUIForTrackingState(isTracking);
         updateUIForNetworkState(isNetworkAvailable);
+          // Set up button click listeners for new UI structure
         binding.btnStartStop.setOnClickListener(v -> toggleTracking());
         binding.btnCollectTrash.setOnClickListener(v -> navigateToTrashCollection());
         binding.btnFinish.setOnClickListener(v -> finishPlogging());
@@ -169,36 +168,25 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
 
         // Restore auto-finish timer if needed
         checkAndRestoreAutoFinishTimer();
-    }
-
-    private void initializeNoInternetViews() {
-        noInternetLayout = binding.layoutNoInternet.getRoot();
+    }    private void initializeNoInternetViews() {
+        noInternetLayout = binding.layoutNoInternetOverlay;
         btnRetryConnection = noInternetLayout.findViewById(R.id.btn_retry_connection);
-        btnOpenSettings = noInternetLayout.findViewById(R.id.btn_open_settings);
-        btnContinueOffline = noInternetLayout.findViewById(R.id.btn_continue_offline);
+        
+        if (btnRetryConnection != null) {
+            btnRetryConnection.setOnClickListener(v -> {
+                btnRetryConnection.setText("🔄 Checking...");
+                btnRetryConnection.setEnabled(false);
 
-        btnRetryConnection.setOnClickListener(v -> {
-            btnRetryConnection.setText("🔄 Checking...");
-            btnRetryConnection.setEnabled(false);
-
-            binding.getRoot().postDelayed(() -> {
-                checkNetworkStatus();
-                btnRetryConnection.setText("🔄 Try Again");
-                btnRetryConnection.setEnabled(true);
-            }, 1500);
-        });
-
-        btnOpenSettings.setOnClickListener(v -> {
-            try {
-                startActivity(new Intent(android.provider.Settings.ACTION_WIRELESS_SETTINGS));
-            } catch (Exception e) {
-                Toast.makeText(requireContext(), "Unable to open settings", Toast.LENGTH_SHORT).show();
-            }
-        });
-
-        btnContinueOffline.setOnClickListener(v -> {
-            showOfflineModeDialog();
-        });
+                binding.getRoot().postDelayed(() -> {
+                    checkNetworkStatus();
+                    btnRetryConnection.setText("🔄 Retry Connection");
+                    btnRetryConnection.setEnabled(true);
+                }, 1500);
+            });
+        }
+        
+        // Note: btn_open_settings and btn_continue_offline buttons may need to be added to XML
+        // if offline functionality is required
     }
 
     @Override
@@ -233,32 +221,27 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                 }
             });
         }
-    }
-
-    private void updateTrashUIAlternative() {
+    }    private void updateTrashUIAlternative() {
         if (binding == null) return;
+
+        // Update individual stat displays
+        if (binding.tvDistance != null) {
+            binding.tvDistance.setText(String.format(Locale.getDefault(), "%.2f km", totalDistance / 1000f));
+        }
 
         if (binding.tvTrashCount != null) {
             binding.tvTrashCount.setText(String.valueOf(currentTrashCount));
         }
 
-        if (binding.tvDistance != null) {
-            if (currentTrashCount > 0 || currentPoints > 0) {
-                String combinedText = String.format(Locale.getDefault(),
-                        "%.2f km | 🗑️ %d | ⭐ %d",
-                        totalDistance / 1000f, currentTrashCount, currentPoints);
-                binding.tvDistance.setText(combinedText);
-            } else {
-                binding.tvDistance.setText(String.format(Locale.getDefault(),
-                        "%.2f km", totalDistance / 1000f));
-            }
-        }
+        // Update chronometer is handled separately, no need to update duration value here
+        // as it's automatically updated by the Chronometer widget
 
+        // Update trash button text
         if (binding.btnCollectTrash != null) {
             if (isTracking) {
                 String buttonText;
                 if (currentTrashCount > 0) {
-                    buttonText = String.format("🗑️ +%d pts", currentPoints);
+                    buttonText = String.format("📸 Trash (+%d)", currentPoints);
                 } else {
                     buttonText = "📸 Trash";
                 }
@@ -634,28 +617,51 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         } else {
             Toast.makeText(requireContext(), "Start plogging first", Toast.LENGTH_SHORT).show();
         }
-    }
-
-    private void updateUIForTrackingState(boolean tracking) {
+    }    private void updateUIForTrackingState(boolean tracking) {
         if (binding == null) return;
 
         if (tracking) {
-            binding.btnStartStop.setText("Stop Tracking");
-            binding.btnStartStop.setBackgroundColor(getResources().getColor(android.R.color.holo_red_dark));
+            // Show active state layout with Trash and Finish buttons
+            binding.layoutInitialState.setVisibility(View.GONE);
+            binding.layoutActiveState.setVisibility(View.VISIBLE);
+            
+            // Enable buttons in active state
             binding.btnCollectTrash.setEnabled(true);
             binding.btnFinish.setEnabled(true);
+            
+            // Update button colors and alpha
+            binding.btnCollectTrash.setAlpha(1.0f);
+            binding.btnFinish.setAlpha(1.0f);
         } else {
             if (hasActiveSession()) {
-                binding.btnStartStop.setText("Resume Plogging");
-                binding.btnStartStop.setBackgroundColor(getResources().getColor(android.R.color.holo_blue_bright));
+                // Show active state but with different button states for paused session
+                binding.layoutInitialState.setVisibility(View.GONE);
+                binding.layoutActiveState.setVisibility(View.VISIBLE);
+                
+                // Update finish button to be enabled for paused sessions
                 binding.btnFinish.setEnabled(true);
+                binding.btnFinish.setAlpha(1.0f);
+                
+                // Disable trash button when not actively tracking
+                binding.btnCollectTrash.setEnabled(false);
+                binding.btnCollectTrash.setAlpha(0.6f);
+                
+                // Show start button in overlay for resume functionality
+                binding.layoutInitialState.setVisibility(View.VISIBLE);
+                binding.btnStartStop.setText(isPloggingEnabled ? "▶️ Resume" : "Internet Required");
+                binding.btnStartStop.setEnabled(isPloggingEnabled);
+                binding.btnStartStop.setAlpha(isPloggingEnabled ? 1.0f : 0.6f);
             } else {
-                String buttonText = isPloggingEnabled ? "Start Plogging" : "Internet Required";
+                // Show initial state layout with Start button only
+                binding.layoutInitialState.setVisibility(View.VISIBLE);
+                binding.layoutActiveState.setVisibility(View.GONE);
+                
+                // Update start button
+                String buttonText = isPloggingEnabled ? "🚀 Start Plogging" : "Internet Required";
                 binding.btnStartStop.setText(buttonText);
-                binding.btnStartStop.setBackgroundColor(getResources().getColor(android.R.color.holo_green_dark));
-                binding.btnFinish.setEnabled(false);
+                binding.btnStartStop.setEnabled(isPloggingEnabled);
+                binding.btnStartStop.setAlpha(isPloggingEnabled ? 1.0f : 0.6f);
             }
-            binding.btnCollectTrash.setEnabled(false);
         }
     }
 
@@ -1064,11 +1070,21 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         if (autoFinishHandler != null) {
             autoFinishHandler.removeCallbacksAndMessages(null);
         }
-    }
-
-    private void updateUIForNetworkState(boolean networkAvailable) {
+    }    private void updateUIForNetworkState(boolean networkAvailable) {
         if (binding == null) return;
 
+        // Update network status indicator
+        if (binding.networkStatusIndicator != null) {
+            if (networkAvailable) {
+                binding.networkStatusIndicator.setVisibility(View.GONE);
+            } else {
+                binding.networkStatusIndicator.setVisibility(View.VISIBLE);
+                binding.tvNetworkStatus.setText("❌ No Internet");
+                binding.networkStatusDot.setBackgroundResource(R.drawable.network_dot_disconnected);
+            }
+        }
+
+        // Legacy support for old network status view
         if (binding.tvNetworkStatus != null) {
             if (networkAvailable) {
                 binding.tvNetworkStatus.setText("🌐 Connected");
@@ -1086,21 +1102,33 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                 binding.tvNetworkStatus.setVisibility(View.VISIBLE);
             }
         }
-    }
-
-    private void enablePloggingFeatures() {
+    }    private void enablePloggingFeatures() {
         isPloggingEnabled = true;
 
         if (binding != null) {
+            // Enable start button
             binding.btnStartStop.setEnabled(true);
-            binding.btnCollectTrash.setEnabled(isTracking);
-            binding.btnFinish.setEnabled(hasActiveSession());
+            binding.btnStartStop.setAlpha(1.0f);
+            
+            // Enable other buttons based on tracking state
+            if (isTracking) {
+                binding.btnCollectTrash.setEnabled(true);
+                binding.btnCollectTrash.setAlpha(1.0f);
+            } else {
+                binding.btnCollectTrash.setEnabled(false);
+                binding.btnCollectTrash.setAlpha(0.6f);
+            }
+            
+            // Enable finish button only if there's an active session
+            if (hasActiveSession()) {
+                binding.btnFinish.setEnabled(true);
+                binding.btnFinish.setAlpha(1.0f);
+            } else {
+                binding.btnFinish.setEnabled(false);
+                binding.btnFinish.setAlpha(0.6f);
+            }
 
             updateUIForTrackingState(isTracking);
-
-            binding.btnStartStop.setAlpha(1.0f);
-            binding.btnCollectTrash.setAlpha(isTracking ? 1.0f : 0.6f);
-            binding.btnFinish.setAlpha(hasActiveSession() ? 1.0f : 0.6f);
         }
     }
 
@@ -1317,48 +1345,48 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
             disablePloggingFeatures();
             updateUIForNetworkState(false);
         }
-    }
-
-    private void showNoInternetScreen() {
+    }    private void showNoInternetScreen() {
         if (binding != null) {
-            binding.layoutPloggingContent.setVisibility(View.GONE);
-            binding.layoutNoInternet.getRoot().setVisibility(View.VISIBLE);
+            // Show the overlay instead of hiding content
+            binding.layoutNoInternetOverlay.setVisibility(View.VISIBLE);
         }
     }
 
     private void hideNoInternetScreen() {
         if (binding != null) {
-            binding.layoutPloggingContent.setVisibility(View.VISIBLE);
-            binding.layoutNoInternet.getRoot().setVisibility(View.GONE);
+            // Hide the overlay instead of showing content
+            binding.layoutNoInternetOverlay.setVisibility(View.GONE);
         }
-    }
-
-    private void disablePloggingFeatures() {
+    }    private void disablePloggingFeatures() {
         isPloggingEnabled = false;
 
         if (binding != null) {
+            // Disable all buttons
             binding.btnStartStop.setEnabled(false);
             binding.btnCollectTrash.setEnabled(false);
             binding.btnFinish.setEnabled(false);
 
+            // Set alpha to show disabled state
             binding.btnStartStop.setAlpha(0.6f);
             binding.btnCollectTrash.setAlpha(0.6f);
             binding.btnFinish.setAlpha(0.6f);
+            
+            // Update button text to indicate internet requirement
+            binding.btnStartStop.setText("Internet Required");
         }
-    }
-
-    private void enableLimitedPloggingFeatures() {
+    }    private void enableLimitedPloggingFeatures() {
         isPloggingEnabled = true;
 
         hideNoInternetScreen();
 
         if (binding != null) {
+            // Enable buttons with offline functionality
             binding.btnStartStop.setEnabled(true);
             binding.btnCollectTrash.setEnabled(isTracking);
             binding.btnFinish.setEnabled(hasActiveSession());
 
             if (hasActiveSession()) {
-                binding.btnStartStop.setText("Resume Plogging (Offline)");
+                binding.btnStartStop.setText("▶️ Resume (Offline)");
                 binding.btnStartStop.setOnClickListener(v -> {
                     if (isTracking) {
                         showStopConfirmationDialog();
@@ -1367,10 +1395,11 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                     }
                 });
             } else {
-                binding.btnStartStop.setText("Start Plogging (Offline)");
+                binding.btnStartStop.setText("🚀 Start (Offline)");
                 binding.btnStartStop.setOnClickListener(v -> toggleTracking());
             }
 
+            // Update alpha values
             binding.btnStartStop.setAlpha(1.0f);
             binding.btnCollectTrash.setAlpha(isTracking ? 1.0f : 0.6f);
             binding.btnFinish.setAlpha(hasActiveSession() ? 1.0f : 0.6f);
