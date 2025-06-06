@@ -425,11 +425,12 @@ public class ProfileFragment extends Fragment {
                 int totalRecords = db.recordDao().getRecordCountByUserId(userId);
                 float totalDistance = db.recordDao().getTotalDistanceByUserId(userId);
                 long totalDuration = db.recordDao().getTotalDurationByUserId(userId);
-                
-                requireActivity().runOnUiThread(() -> {
+                  requireActivity().runOnUiThread(() -> {
                     // Update UI with safe null checks
-                    if (binding.tvTotalRuns != null) {
-                        binding.tvTotalRuns.setText(String.valueOf(totalRecords));
+                    if (binding.tvTotalPoints != null) {
+                        // Show user's total accumulated points instead of record count
+                        int userPoints = currentUser != null ? currentUser.getPoints() : 0;
+                        binding.tvTotalPoints.setText(String.valueOf(userPoints));
                     }
                     if (binding.tvTotalPlogs != null) {
                         binding.tvTotalPlogs.setText(String.valueOf(totalRecords));
@@ -440,11 +441,10 @@ public class ProfileFragment extends Fragment {
                     }
                 });
             } catch (Exception e) {
-                Log.e(TAG, "Error loading user statistics", e);
-                requireActivity().runOnUiThread(() -> {
+                Log.e(TAG, "Error loading user statistics", e);                requireActivity().runOnUiThread(() -> {
                     // Set default values on error
-                    if (binding.tvTotalRuns != null) {
-                        binding.tvTotalRuns.setText("0");
+                    if (binding.tvTotalPoints != null) {
+                        binding.tvTotalPoints.setText("0");
                     }
                     if (binding.tvTotalPlogs != null) {
                         binding.tvTotalPlogs.setText("0");
