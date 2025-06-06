@@ -80,10 +80,10 @@ public class StatsFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        
-        // Set click listeners
+          // Set click listeners
         binding.btnViewHistory.setOnClickListener(v -> navigateToHistory());
         binding.btnViewChallenges.setOnClickListener(v -> navigateToChallenges());
+        binding.btnStartSession.setOnClickListener(v -> navigateToMainFragment());
         
         // Initialize charts
         setupCharts();
@@ -91,8 +91,7 @@ public class StatsFragment extends Fragment {
         // Load data
         loadData();
     }
-    
-    private void setupCharts() {
+      private void setupCharts() {
         // Set up bar chart
         binding.barChartDistance.setDrawGridBackground(false);
         binding.barChartDistance.setDrawBarShadow(false);
@@ -107,9 +106,7 @@ public class StatsFragment extends Fragment {
         XAxis xAxis = binding.barChartDistance.getXAxis();
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
         xAxis.setDrawGridLines(false);
-        xAxis.setGranularity(1f);
-        
-        // Set up line chart
+        xAxis.setGranularity(1f);        // Set up line chart
         binding.lineChartProgress.setDrawGridBackground(false);
         binding.lineChartProgress.setDrawBorders(false);
         binding.lineChartProgress.setDescription(description);
@@ -117,13 +114,12 @@ public class StatsFragment extends Fragment {
         binding.lineChartProgress.setPinchZoom(true);
         
         // Set up pie chart
-        binding.pieChartTrashTypes.setUsePercentValues(true);
-        binding.pieChartTrashTypes.setDescription(description);
-        binding.pieChartTrashTypes.setHoleRadius(40f);
-        binding.pieChartTrashTypes.setTransparentCircleRadius(45f);
-    }
-      private void loadData() {
-        binding.progressBar.setVisibility(View.VISIBLE);
+        binding.pieChartWaste.setUsePercentValues(true);
+        binding.pieChartWaste.setDescription(description);
+        binding.pieChartWaste.setHoleRadius(40f);
+        binding.pieChartWaste.setTransparentCircleRadius(45f);
+    }    private void loadData() {
+        binding.progressIndicator.setVisibility(View.VISIBLE);
         
         if (userId != -1) {
             // Load user data
@@ -135,7 +131,7 @@ public class StatsFragment extends Fragment {
             
             // Load record data
             db.recordDao().getRecordsByUserId(userId).observe(getViewLifecycleOwner(), records -> {
-                binding.progressBar.setVisibility(View.GONE);
+                binding.progressIndicator.setVisibility(View.GONE);
                 
                 if (records != null && !records.isEmpty()) {
                     recordList = records;
@@ -150,16 +146,15 @@ public class StatsFragment extends Fragment {
                 }
             });
         } else {
-            binding.progressBar.setVisibility(View.GONE);
+            binding.progressIndicator.setVisibility(View.GONE);
             showNoDataState();
         }
     }
-    
-    private void showDataViews() {
+      private void showDataViews() {
         // Show all chart cards
-        binding.cardBarChart.setVisibility(View.VISIBLE);
-        binding.cardLineChart.setVisibility(View.VISIBLE);
-        binding.cardPieChart.setVisibility(View.VISIBLE);
+        binding.cardDistanceChart.setVisibility(View.VISIBLE);
+        binding.cardProgressChart.setVisibility(View.VISIBLE);
+        binding.cardWasteChart.setVisibility(View.VISIBLE);
         
         // Hide no data card
         binding.cardNoData.setVisibility(View.GONE);
@@ -167,9 +162,9 @@ public class StatsFragment extends Fragment {
     
     private void showNoDataState() {
         // Hide all chart cards
-        binding.cardBarChart.setVisibility(View.GONE);
-        binding.cardLineChart.setVisibility(View.GONE);
-        binding.cardPieChart.setVisibility(View.GONE);
+        binding.cardDistanceChart.setVisibility(View.GONE);
+        binding.cardProgressChart.setVisibility(View.GONE);
+        binding.cardWasteChart.setVisibility(View.GONE);
         
         // Show no data card
         binding.cardNoData.setVisibility(View.VISIBLE);
@@ -188,20 +183,17 @@ public class StatsFragment extends Fragment {
         for (RecordEntity record : recordList) {
             totalDistance += record.getDistance();
             totalDuration += record.getDuration();
-        }
-        
-        // Update UI
+        }        // Update UI
         binding.tvTotalRuns.setText(String.valueOf(totalRuns));
         binding.tvTotalPlogs.setText(String.valueOf(totalPlogs));
         binding.tvTotalPoints.setText(String.valueOf(totalPoints));
-        binding.tvTotalDistance.setText(String.format(Locale.getDefault(), "%.1f km", totalDistance / 1000));
-        
-        // Calculate average run time
+        binding.tvTotalDistance.setText(String.format(Locale.getDefault(), "%.1f", totalDistance / 1000));
+          // Calculate average run time
         if (!recordList.isEmpty()) {
             long avgDuration = totalDuration / recordList.size();
             binding.tvAverageTime.setText(formatDuration(avgDuration / 1000)); // Convert to seconds
         } else {
-            binding.tvAverageTime.setText("0 min");
+            binding.tvAverageTime.setText("0");
         }
     }
       private void updateCharts() {
@@ -246,8 +238,7 @@ public class StatsFragment extends Fragment {
         
         BarData barData = new BarData(dataSet);
         barData.setBarWidth(0.8f);
-        
-        // Configure chart if it exists
+          // Configure chart if it exists
         if (binding.barChartDistance != null) {
             binding.barChartDistance.setData(barData);
             binding.barChartDistance.getDescription().setEnabled(false);
@@ -256,12 +247,10 @@ public class StatsFragment extends Fragment {
             binding.barChartDistance.invalidate();
         }
     }
-    
-    private void updateProgressLineChart() {
+      private void updateProgressLineChart() {
         if (binding.lineChartProgress == null) return;
         
-        try {
-            // Clear any existing data
+        try {            // Clear any existing data
             binding.lineChartProgress.clear();
             
             if (recordList == null || recordList.isEmpty()) {
@@ -413,10 +402,9 @@ public class StatsFragment extends Fragment {
         });
         
         PieData pieData = new PieData(dataSet);
-        
-        binding.pieChartTrashTypes.setData(pieData);
-        binding.pieChartTrashTypes.animateY(1000);
-        binding.pieChartTrashTypes.invalidate();
+          binding.pieChartWaste.setData(pieData);
+        binding.pieChartWaste.animateY(1000);
+        binding.pieChartWaste.invalidate();
     }
     
     private String formatDuration(long seconds) {
@@ -434,10 +422,14 @@ public class StatsFragment extends Fragment {
         NavController navController = Navigation.findNavController(requireView());
         navController.navigate(R.id.action_statsFragment_to_historyFragment);
     }
-    
-    private void navigateToChallenges() {
+      private void navigateToChallenges() {
         NavController navController = Navigation.findNavController(requireView());
         navController.navigate(R.id.action_statsFragment_to_challengeFragment);
+    }
+      private void navigateToMainFragment() {
+        NavController navController = Navigation.findNavController(requireView());
+        // Navigate back to home (main) fragment using bottom navigation
+        navController.navigate(R.id.homeFragment);
     }
     
     @Override

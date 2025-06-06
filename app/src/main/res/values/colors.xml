@@ -22,10 +22,12 @@
     <color name="warning_light">#FFECB3</color>
     <color name="warning_dark">#FFC107</color>
     <color name="warning_color">#FF9800</color>
-    <color name="error_color">#F44336</color>
-
-    <!-- Environmental colors -->
+    <color name="error_color">#F44336</color>    <!-- Environmental colors -->
     <color name="environmental_green">#4CAF50</color>
+    <color name="primary_green">#4CAF50</color>
+    <color name="primary_orange">#FF9800</color>
+    <color name="primary_blue">#2196F3</color>
+    <color name="primary_purple">#9C27B0</color>
     
     <!-- Additional missing colors -->
     <color name="background">#F5F5F5</color>
