@@ -10,6 +10,8 @@
         android:name="com.example.glean.fragment.HomeFragment"
         android:label="Home"
         tools:layout="@layout/fragment_home">
+        
+        <!-- Existing actions -->
         <action
             android:id="@+id/action_homeFragment_to_ploggingFragment"
             app:destination="@id/ploggingFragment" />
@@ -19,6 +21,14 @@
         <action
             android:id="@+id/action_homeFragment_to_trashMapFragment"
             app:destination="@id/trashMapFragment" />
+            
+        <!-- Additional actions for quick buttons -->
+        <action
+            android:id="@+id/action_homeFragment_to_statsFragment"
+            app:destination="@id/statsFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_newsFragment"
+            app:destination="@id/newsFragment" />
     </fragment>
 
     <fragment

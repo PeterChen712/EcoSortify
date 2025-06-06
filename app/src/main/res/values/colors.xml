@@ -65,4 +65,18 @@
     <color name="profile_frame_bronze">#CD7F32</color>
     <color name="dialog_background">#FFFFFF</color>
     <color name="overlay_background">#80000000</color>
+
+    <!-- Green theme colors for welcome section -->
+    <color name="green_500">#4CAF50</color>
+    <color name="green_600">#43A047</color>
+    <color name="green_700">#388E3C</color>
+    
+    <!-- Surface colors -->
+    <color name="surface_variant">#F3F4F6</color>
+    <color name="outline_variant">#E5E7EB</color>
+    
+    <!-- Status colors -->
+    <color name="success_green">#10B981</color>
+    <color name="warning_yellow">#F59E0B</color>
+    <color name="error_red">#EF4444</color>
 </resources>

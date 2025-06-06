@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark theme colors -->
+    <color name="green_500">#66BB6A</color>
+    <color name="green_600">#5CB860</color>
+    <color name="green_700">#4CAF50</color>
+    
+    <!-- Surface colors for dark theme -->
+    <color name="surface_variant">#2D3748</color>
+    <color name="outline_variant">#4A5568</color>
+</resources>
