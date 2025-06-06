@@ -223,13 +223,13 @@ public class MainActivity extends AppCompatActivity {
         }
     }    private void updateDailyTip() {
         String[] ecoTips = {
-            "Tip: Bawa botol minum sendiri untuk mengurangi sampah plastik!",
-            "Tip: Pilah sampah organik dan anorganik saat plogging!",
-            "Tip: 1 botol plastik butuh 450 tahun untuk terurai di alam!",
-            "Tip: Setiap langkah kecil membuat perubahan besar untuk bumi!",
-            "Tip: Plogging membakar 300-400 kalori per 30 menit!",
-            "Tip: Gunakan sarung tangan saat memungut sampah untuk keamanan!",
-            "Tip: Foto sampah sebelum dipungut untuk dokumentasi yang baik!"
+            "Bawa botol minum sendiri untuk mengurangi sampah plastik!",
+            "Pilah sampah organik dan anorganik saat plogging!",
+            "1 botol plastik butuh 450 tahun untuk terurai di alam!",
+            "Setiap langkah kecil membuat perubahan besar untuk bumi!",
+            "Plogging membakar 300-400 kalori per 30 menit!",
+            "Gunakan sarung tangan saat memungut sampah untuk keamanan!",
+            "Foto sampah sebelum dipungut untuk dokumentasi yang baik!"
         };
         
         int dayOfWeek = java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_WEEK);

@@ -416,11 +416,10 @@ public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClic
           if (userId != -1) {            executor.execute(() -> {
                 try {
                     List<RecordEntity> allRecords = db.recordDao().getRecordsByUserIdSync(userId);
-                    List<RecordEntity> recordsToProcess = getAllRecords(allRecords);
-                      recordsToProcess.sort((r1, r2) -> Long.compare(r2.getCreatedAt(), r1.getCreatedAt()));
+                    List<RecordEntity> recordsToProcess = getAllRecords(allRecords);                    recordsToProcess.sort((r1, r2) -> Long.compare(r2.getCreatedAt(), r1.getCreatedAt()));
                     List<RecordEntity> recentRecords = new ArrayList<>();
                     
-                    int limit = Math.min(recordsToProcess.size(), 5);
+                    int limit = Math.min(recordsToProcess.size(), 3);
                     for (int i = 0; i < limit; i++) {
                         recentRecords.add(recordsToProcess.get(i));
                     }
