@@ -72,11 +72,10 @@ public class MainActivity extends AppCompatActivity {
         java.text.SimpleDateFormat dateFormat = new java.text.SimpleDateFormat("EEEE, d MMMM yyyy", 
             new java.util.Locale("id", "ID"));
         String currentDate = dateFormat.format(new java.util.Date());
-        
-        prefs.edit()
-            .putString("GREETING_MESSAGE", "🌱 " + greeting + ", " + username + "!")
-            .putString("CURRENT_DATE", "📅 " + currentDate)
-            .putString("MOTIVATION_MESSAGE", "💚 Mari bersihkan dunia hari ini!")
+          prefs.edit()
+            .putString("GREETING_MESSAGE", greeting + ", " + username + "!")
+            .putString("CURRENT_DATE", currentDate)
+            .putString("MOTIVATION_MESSAGE", "Mari bersihkan dunia hari ini!")
             .apply();
     }    private void updateQuickStats() {
         try {
@@ -131,13 +130,12 @@ public class MainActivity extends AppCompatActivity {
             } else if (weeklyPoints >= 50) {
                 badge = "Eco Fighter";
             }
-            
-            SharedPreferences.Editor editor = prefs.edit();
-            editor.putString("QUICK_STATS_TITLE", "📊 STATISTIK MINGGU INI");
-            editor.putString("QUICK_STATS_DISTANCE", "🏃 Total Lari: " + String.format("%.1f km", distanceKm));
-            editor.putString("QUICK_STATS_TRASH", "🗑️ Sampah Terkumpul: " + weeklyTrash);
-            editor.putString("QUICK_STATS_POINTS", "⭐ Poin: " + weeklyPoints);
-            editor.putString("QUICK_STATS_BADGE", "🏆 Badge: " + badge);
+              SharedPreferences.Editor editor = prefs.edit();
+            editor.putString("QUICK_STATS_TITLE", "STATISTIK MINGGU INI");
+            editor.putString("QUICK_STATS_DISTANCE", "Total Lari: " + String.format("%.1f km", distanceKm));
+            editor.putString("QUICK_STATS_TRASH", "Sampah Terkumpul: " + weeklyTrash);
+            editor.putString("QUICK_STATS_POINTS", "Poin: " + weeklyPoints);
+            editor.putString("QUICK_STATS_BADGE", "Badge: " + badge);
             
             editor.putFloat("WEEKLY_DISTANCE_VALUE", weeklyDistance);
             editor.putInt("WEEKLY_TRASH_VALUE", weeklyTrash);
@@ -145,14 +143,13 @@ public class MainActivity extends AppCompatActivity {
             
             editor.apply();
             
-        } catch (Exception e) {
-            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        } catch (Exception e) {            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
             SharedPreferences.Editor editor = prefs.edit();
-            editor.putString("QUICK_STATS_TITLE", "📊 STATISTIK MINGGU INI");
-            editor.putString("QUICK_STATS_DISTANCE", "🏃 Total Lari: 0 km");
-            editor.putString("QUICK_STATS_TRASH", "🗑️ Sampah Terkumpul: 0");
-            editor.putString("QUICK_STATS_POINTS", "⭐ Poin: 0");
-            editor.putString("QUICK_STATS_BADGE", "🏆 Badge: Eco Beginner");
+            editor.putString("QUICK_STATS_TITLE", "STATISTIK MINGGU INI");
+            editor.putString("QUICK_STATS_DISTANCE", "Total Lari: 0 km");
+            editor.putString("QUICK_STATS_TRASH", "Sampah Terkumpul: 0");
+            editor.putString("QUICK_STATS_POINTS", "Poin: 0");
+            editor.putString("QUICK_STATS_BADGE", "Badge: Eco Beginner");
             editor.apply();
         }
     }    private void updateWeeklyChallenge() {
@@ -201,9 +198,8 @@ public class MainActivity extends AppCompatActivity {
             int dayOfWeek = calendar.get(java.util.Calendar.DAY_OF_WEEK);
             int daysRemaining = 8 - dayOfWeek;
             if (daysRemaining <= 0) daysRemaining = 7;
-            
-            SharedPreferences.Editor editor = prefs.edit();
-            editor.putString("CHALLENGE_TITLE", "🎯 CHALLENGE MINGGU INI");
+              SharedPreferences.Editor editor = prefs.edit();
+            editor.putString("CHALLENGE_TITLE", "CHALLENGE MINGGU INI");
             editor.putString("CHALLENGE_TARGET", "Target: Kumpulkan " + challengeTarget + " sampah");
             editor.putString("CHALLENGE_PROGRESS", "Progress: " + progressBar.toString() + " " + challengeProgress + "/" + challengeTarget + " (" + percentage + "%)");
             editor.putString("CHALLENGE_REMAINING", "Sisa: " + daysRemaining + " hari lagi");
@@ -214,10 +210,9 @@ public class MainActivity extends AppCompatActivity {
             
             editor.apply();
             
-        } catch (Exception e) {
-            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        } catch (Exception e) {            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
             SharedPreferences.Editor editor = prefs.edit();
-            editor.putString("CHALLENGE_TITLE", "🎯 CHALLENGE MINGGU INI");
+            editor.putString("CHALLENGE_TITLE", "CHALLENGE MINGGU INI");
             editor.putString("CHALLENGE_TARGET", "Target: Kumpulkan 50 sampah");
             editor.putString("CHALLENGE_PROGRESS", "Progress: ░░░░░░░░░░ 0/50 (0%)");
             editor.putString("CHALLENGE_REMAINING", "Sisa: 7 hari lagi");
@@ -228,13 +223,13 @@ public class MainActivity extends AppCompatActivity {
         }
     }    private void updateDailyTip() {
         String[] ecoTips = {
-            "💡 Tip: Bawa botol minum sendiri untuk mengurangi sampah plastik!",
-            "🌿 Tip: Pilah sampah organik dan anorganik saat plogging!",
-            "♻️ Tip: 1 botol plastik butuh 450 tahun untuk terurai di alam!",
-            "🌍 Tip: Setiap langkah kecil membuat perubahan besar untuk bumi!",
-            "🏃‍♂️ Tip: Plogging membakar 300-400 kalori per 30 menit!",
-            "🗑️ Tip: Gunakan sarung tangan saat memungut sampah untuk keamanan!",
-            "📱 Tip: Foto sampah sebelum dipungut untuk dokumentasi yang baik!"
+            "Tip: Bawa botol minum sendiri untuk mengurangi sampah plastik!",
+            "Tip: Pilah sampah organik dan anorganik saat plogging!",
+            "Tip: 1 botol plastik butuh 450 tahun untuk terurai di alam!",
+            "Tip: Setiap langkah kecil membuat perubahan besar untuk bumi!",
+            "Tip: Plogging membakar 300-400 kalori per 30 menit!",
+            "Tip: Gunakan sarung tangan saat memungut sampah untuk keamanan!",
+            "Tip: Foto sampah sebelum dipungut untuk dokumentasi yang baik!"
         };
         
         int dayOfWeek = java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_WEEK);
@@ -245,12 +240,12 @@ public class MainActivity extends AppCompatActivity {
     }    private void setupQuickActions() {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         prefs.edit()
-            .putString("QUICK_ACTION_1", "🏃‍♂️ Mulai Plogging")
-            .putString("QUICK_ACTION_2", "📊 Lihat Statistik") 
-            .putString("QUICK_ACTION_3", "📰 Berita Lingkungan")
-            .putString("QUICK_ACTION_4", "🗺️ Peta Sampah")
+            .putString("QUICK_ACTION_1", "Mulai Plogging")
+            .putString("QUICK_ACTION_2", "Lihat Statistik") 
+            .putString("QUICK_ACTION_3", "Berita Lingkungan")
+            .putString("QUICK_ACTION_4", "Peta Sampah")
             .apply();
-    }    private void setupNavigation() {
+    }private void setupNavigation() {
         NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.nav_host_fragment);
         if (navHostFragment == null) {

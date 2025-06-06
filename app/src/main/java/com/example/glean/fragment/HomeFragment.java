@@ -33,10 +33,8 @@ import java.util.concurrent.Executors;
 
 public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClickListener {    private FragmentHomeBinding binding;
     private AppDatabase db;
-    private ExecutorService executor;
-    private List<RecordEntity> recentActivities = new ArrayList<>();
+    private ExecutorService executor;    private List<RecordEntity> recentActivities = new ArrayList<>();
     private RecordAdapter recentActivitiesAdapter;
-      // Default to show all records (no time filter)
     private int currentTimeFilter = -1;@Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -79,33 +77,31 @@ public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClic
                 }
             });
         }
-    }private void initializeDashboardContent() {
-        try {
+    }private void initializeDashboardContent() {        try {
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
             
             if (binding.tvWelcomeMessage != null) {
-                String welcomeMsg = prefs.getString("GREETING_MESSAGE", "🌱 Selamat datang di GleanGo!");
+                String welcomeMsg = prefs.getString("GREETING_MESSAGE", "Selamat datang di GleanGo!");
                 binding.tvWelcomeMessage.setText(welcomeMsg);
                 binding.tvWelcomeMessage.setVisibility(View.VISIBLE);
             }
             
             if (binding.tvCurrentDate != null) {
-                String currentDate = prefs.getString("CURRENT_DATE", "📅 " + new java.text.SimpleDateFormat("EEEE, d MMMM yyyy", java.util.Locale.getDefault()).format(new java.util.Date()));
+                String currentDate = prefs.getString("CURRENT_DATE", new java.text.SimpleDateFormat("EEEE, d MMMM yyyy", java.util.Locale.getDefault()).format(new java.util.Date()));
                 binding.tvCurrentDate.setText(currentDate);
                 binding.tvCurrentDate.setVisibility(View.VISIBLE);
             }
             
             if (binding.tvMotivation != null) {
-                String motivation = prefs.getString("MOTIVATION_MESSAGE", "💚 Mari bersihkan dunia hari ini!");
+                String motivation = prefs.getString("MOTIVATION_MESSAGE", "Mari bersihkan dunia hari ini!");
                 binding.tvMotivation.setText(motivation);
                 binding.tvMotivation.setVisibility(View.VISIBLE);
             }
 
             updateQuickStatsUI(prefs);
-            updateWeeklyChallengeUI(prefs);
-
+            updateWeeklyChallengeUI(prefs);            
             if (binding.tvDailyTip != null) {
-                String dailyTip = prefs.getString("DAILY_TIP", "💡 Tip: Mulai plogging hari ini untuk hidup lebih sehat!");
+                String dailyTip = prefs.getString("DAILY_TIP", "Tip: Mulai plogging hari ini untuk hidup lebih sehat!");
                 binding.tvDailyTip.setText(dailyTip);
                 binding.tvDailyTip.setVisibility(View.VISIBLE);
             }
@@ -113,12 +109,11 @@ public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClic
         } catch (Exception e) {
         }
     }    private void updateQuickStatsUI(SharedPreferences prefs) {        try {
+            
             if (binding.tvQuickStatsTitle != null) {
-                binding.tvQuickStatsTitle.setText("📊 Statistik Keseluruhan");
-                binding.tvQuickStatsTitle.setVisibility(View.VISIBLE);
+                binding.tvQuickStatsTitle.setText("Statistik Keseluruhan");                binding.tvQuickStatsTitle.setVisibility(View.VISIBLE);
             }
             
-            // Stats will be updated by updateQuickStatsDisplay() method
             if (binding.tvQuickStatsDistance != null) {
                 binding.tvQuickStatsDistance.setVisibility(View.VISIBLE);
             }
@@ -138,13 +133,12 @@ public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClic
         } catch (Exception e) {
         }
     }    private void updateWeeklyChallengeUI(SharedPreferences prefs) {        try {
+            
             if (binding.tvChallengeTitle != null) {
-                String challengeTitle = "🎯 CHALLENGE GLOBAL";
-                binding.tvChallengeTitle.setText(challengeTitle);
-                binding.tvChallengeTitle.setVisibility(View.VISIBLE);
+                String challengeTitle = "CHALLENGE GLOBAL";
+                binding.tvChallengeTitle.setText(challengeTitle);                binding.tvChallengeTitle.setVisibility(View.VISIBLE);
             }
             
-            // Challenge target, progress, and remaining time will be updated by updateChallengeProgress()
             if (binding.tvChallengeTarget != null) {
                 binding.tvChallengeTarget.setVisibility(View.VISIBLE);
             }
@@ -166,11 +160,10 @@ public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClic
         } catch (Exception e) {
         }
     }private void setupQuickActionButtons() {
-        try {
-            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
+        try {            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
             
             if (binding.btnQuickAction1 != null) {
-                binding.btnQuickAction1.setText(prefs.getString("QUICK_ACTION_1", "🏃‍♂️ Mulai Plogging"));
+                binding.btnQuickAction1.setText(prefs.getString("QUICK_ACTION_1", "Mulai Plogging"));
                 binding.btnQuickAction1.setVisibility(View.VISIBLE);
                 binding.btnQuickAction1.setOnClickListener(v -> {
                     try {
@@ -182,30 +175,24 @@ public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClic
                         }
                     }
                 });
-            }
-
-            if (binding.btnQuickAction2 != null) {
-                binding.btnQuickAction2.setText(prefs.getString("QUICK_ACTION_2", "📊 Lihat Statistik"));
+            }            if (binding.btnQuickAction2 != null) {
+                binding.btnQuickAction2.setText(prefs.getString("QUICK_ACTION_2", "Lihat Statistik"));
                 binding.btnQuickAction2.setVisibility(View.VISIBLE);
                 binding.btnQuickAction2.setOnClickListener(v -> {
                     if (getActivity() instanceof MainActivity) {
                         ((MainActivity) getActivity()).navigateToStats();
                     }
                 });
-            }
-
-            if (binding.btnQuickAction3 != null) {
-                binding.btnQuickAction3.setText(prefs.getString("QUICK_ACTION_3", "📰 Berita Lingkungan"));
+            }            if (binding.btnQuickAction3 != null) {
+                binding.btnQuickAction3.setText(prefs.getString("QUICK_ACTION_3", "Berita"));
                 binding.btnQuickAction3.setVisibility(View.VISIBLE);
                 binding.btnQuickAction3.setOnClickListener(v -> {
                     if (getActivity() instanceof MainActivity) {
                         ((MainActivity) getActivity()).navigateToNews();
                     }
                 });
-            }
-
-            if (binding.btnQuickAction4 != null) {
-                binding.btnQuickAction4.setText(prefs.getString("QUICK_ACTION_4", "🗺️ Peta Sampah"));
+            }            if (binding.btnQuickAction4 != null) {
+                binding.btnQuickAction4.setText(prefs.getString("QUICK_ACTION_4", "Peta Sampah"));
                 binding.btnQuickAction4.setVisibility(View.VISIBLE);
                 binding.btnQuickAction4.setOnClickListener(v -> {
                     try {
@@ -252,10 +239,8 @@ public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClic
             if (userId != -1) {
                 LiveData<UserEntity> userLiveData = db.userDao().getUserById(userId);
                 userLiveData.observe(getViewLifecycleOwner(), user -> {
-                    if (user != null) {
-                        String displayName = getDisplayName(user);
-                        
-                        String greetingWithName = "🌱 " + getTimeGreeting() + ", " + displayName + "!";
+                    if (user != null) {                        String displayName = getDisplayName(user);
+                        String greetingWithName = getTimeGreeting() + ", " + displayName + "!";
                         if (binding.tvWelcomeMessage != null) {
                             binding.tvWelcomeMessage.setText(greetingWithName);
                         }
@@ -265,10 +250,9 @@ public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClic
                         
                         loadUserStats(userId);
                     }
-                });
-            } else {
+                });            } else {
                 if (binding.tvWelcomeMessage != null) {
-                    binding.tvWelcomeMessage.setText("🌱 " + getTimeGreeting() + ", Welcome!");
+                    binding.tvWelcomeMessage.setText(getTimeGreeting() + ", Welcome!");
                 }
             }
         } catch (Exception e) {
@@ -298,12 +282,13 @@ public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClic
             return user.getFirstName();
         } else if (user.getUsername() != null && !user.getUsername().isEmpty()) {
             return user.getUsername();
-        } else if (user.getEmail() != null && !user.getEmail().isEmpty()) {
-            return user.getEmail().split("@")[0]; // Use email prefix as display name
-        }        return "User";
+        } else if (user.getEmail() != null && !user.getEmail().isEmpty()) {            
+            return user.getEmail().split("@")[0];
+        }        
+        return "User";
     }
-      private List<RecordEntity> getAllRecords(List<RecordEntity> allRecords) {
-        // Return all records since we removed time filtering
+    
+    private List<RecordEntity> getAllRecords(List<RecordEntity> allRecords) {
         return allRecords;
     }
       private void loadUserStats(int userId) {
@@ -319,9 +304,8 @@ public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClic
                 requireActivity().runOnUiThread(() -> {
                     String statsText = String.format("Sessions: %d | Distance: %.1f km | Time: %.1f hrs", 
                             totalRecords, distanceKm, durationHours);
-                    
-                    if (binding.tvMotivation != null) {
-                        String combinedText = "💚 Mari bersihkan dunia!\n📊 " + statsText;
+                      if (binding.tvMotivation != null) {
+                        String combinedText = "Mari bersihkan dunia!\n" + statsText;
                         binding.tvMotivation.setText(combinedText);
                     }
                 });
@@ -329,11 +313,11 @@ public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClic
             }
         });
     }    private void updateDashboardStats() {
-        executor.execute(() -> {
-            try {
+        executor.execute(() -> {            try {
                 SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
                 int userId = prefs.getInt("USER_ID", -1);
-                  if (userId != -1) {
+                
+                if (userId != -1) {
                     List<RecordEntity> allRecords = db.recordDao().getRecordsByUserIdSync(userId);
                     List<RecordEntity> recordsToProcess = getAllRecords(allRecords);
                     
@@ -344,17 +328,14 @@ public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClic
                     for (RecordEntity record : recordsToProcess) {
                         totalDistance += record.getDistance();
                         totalPoints += record.getPoints();
-                        List<com.example.glean.model.TrashEntity> trashList = db.trashDao().getTrashByRecordIdSync(record.getId());
-                        totalTrash += trashList.size();
-                    }                      // Update SharedPreferences with overall data
+                        List<com.example.glean.model.TrashEntity> trashList = db.trashDao().getTrashByRecordIdSync(record.getId());                        totalTrash += trashList.size();
+                    }                      
                     prefs.edit()
                         .putFloat("OVERALL_DISTANCE", totalDistance)
                         .putInt("OVERALL_TRASH", totalTrash)
                         .putInt("OVERALL_POINTS", totalPoints)
-                        .putInt("CHALLENGE_PROGRESS", totalTrash)
-                        .apply();
+                        .putInt("CHALLENGE_PROGRESS", totalTrash)                        .apply();
                     
-                    // Create final copies for lambda usage
                     final float finalTotalDistance = totalDistance;
                     final int finalTotalTrash = totalTrash;
                     final int finalTotalPoints = totalPoints;
@@ -391,11 +372,9 @@ public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClic
             }
         } catch (Exception e) {
         }
-    }
-      private void updateChallengeProgress(int totalTrash) {
+    }    private void updateChallengeProgress(int totalTrash) {
         try {
-            // Fixed challenge target for overall statistics
-            int challengeTarget = 100; // Global challenge target
+            int challengeTarget = 100;
             
             if (binding.progressChallenge != null) {
                 binding.progressChallenge.setMax(challengeTarget);
@@ -415,13 +394,12 @@ public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClic
         } catch (Exception e) {
         }
     }
-    
-    private String getBadgeForPoints(int points) {
-        if (points >= 1000) return "🏆 Eco Champion";
-        else if (points >= 500) return "🥇 Eco Expert";
-        else if (points >= 200) return "🥈 Eco Warrior";
-        else if (points >= 50) return "🥉 Eco Fighter";
-        else return "🌱 Eco Beginner";
+      private String getBadgeForPoints(int points) {
+        if (points >= 1000) return "Eco Champion";
+        else if (points >= 500) return "Eco Expert";
+        else if (points >= 200) return "Eco Warrior";
+        else if (points >= 50) return "Eco Fighter";
+        else return "Eco Beginner";
     }
 
     private long getWeekStartTime() {
@@ -435,14 +413,11 @@ public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClic
     }    private void loadRecentActivities() {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
         int userId = prefs.getInt("USER_ID", -1);
-        
-        if (userId != -1) {            executor.execute(() -> {
+          if (userId != -1) {            executor.execute(() -> {
                 try {
                     List<RecordEntity> allRecords = db.recordDao().getRecordsByUserIdSync(userId);
                     List<RecordEntity> recordsToProcess = getAllRecords(allRecords);
-                    
-                    // Sort by date (newest first) and limit to 5 recent activities
-                    recordsToProcess.sort((r1, r2) -> Long.compare(r2.getCreatedAt(), r1.getCreatedAt()));
+                      recordsToProcess.sort((r1, r2) -> Long.compare(r2.getCreatedAt(), r1.getCreatedAt()));
                     List<RecordEntity> recentRecords = new ArrayList<>();
                     
                     int limit = Math.min(recordsToProcess.size(), 5);
@@ -454,24 +429,18 @@ public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClic
                         if (recentActivitiesAdapter != null) {
                             recentActivities.clear();
                             recentActivities.addAll(recentRecords);
-                            recentActivitiesAdapter.notifyDataSetChanged();
-                        }
+                            recentActivitiesAdapter.notifyDataSetChanged();                        }
                         
-                        // Update recent activities title
                         updateRecentActivitiesTitle(recordsToProcess.size());
                     });
                 } catch (Exception e) {
                 }
             });
         }
-    }
-      private void updateRecentActivitiesTitle(int totalActivities) {
+    }    private void updateRecentActivitiesTitle(int totalActivities) {
         try {
-            // Update recent activities title for overall statistics
             String periodText = String.format("Aktivitas Terbaru (%d)", totalActivities);
             
-            // Update any recent activities title if it exists in the layout
-            // Note: This would need a corresponding TextView in the layout
         } catch (Exception e) {
         }
     }
@@ -493,9 +462,8 @@ public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClic
             if (getContext() != null) {
                 Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show();
             }
-            
-            if (binding != null && binding.tvMotivation != null) {
-                binding.tvMotivation.setText("❌ Error: " + message);
+              if (binding != null && binding.tvMotivation != null) {
+                binding.tvMotivation.setText("Error: " + message);
                 binding.tvMotivation.setVisibility(View.VISIBLE);
             }
         } catch (Exception e) {
