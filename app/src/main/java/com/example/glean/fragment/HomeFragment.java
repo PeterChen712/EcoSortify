@@ -152,8 +152,20 @@ public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClic
                 binding.tvChallengeTarget.setVisibility(View.VISIBLE);
             }
             
+            // Update progress bar and text
+            int challengeProgress = prefs.getInt("CHALLENGE_PROGRESS", 0);
+            int challengeTarget = 50; // Default target
+            
+            if (binding.progressChallenge != null) {
+                binding.progressChallenge.setMax(challengeTarget);
+                binding.progressChallenge.setProgress(challengeProgress);
+                binding.progressChallenge.setVisibility(View.VISIBLE);
+            }
+            
             if (binding.tvChallengeProgress != null) {
-                binding.tvChallengeProgress.setText(prefs.getString("CHALLENGE_PROGRESS", "Progress: ░░░░░░░░░░ 0/50 (0%)"));
+                int percentage = challengeTarget > 0 ? (challengeProgress * 100) / challengeTarget : 0;
+                String progressText = String.format("Progress: %d/%d (%d%%)", challengeProgress, challengeTarget, percentage);
+                binding.tvChallengeProgress.setText(progressText);
                 binding.tvChallengeProgress.setVisibility(View.VISIBLE);
             }
             
@@ -164,7 +176,7 @@ public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClic
             
         } catch (Exception e) {
         }
-    }    private void setupQuickActionButtons() {
+    }private void setupQuickActionButtons() {
         try {
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
             
