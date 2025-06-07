@@ -8,7 +8,9 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.location.Location;
+import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
@@ -20,6 +22,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -30,6 +33,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
@@ -103,6 +107,13 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
     private Snackbar networkSnackbar;
     private AlertDialog networkDialog;
 
+    // GPS/Location services monitoring variables
+    private LocationManager locationManager;
+    private BroadcastReceiver gpsReceiver;
+    private boolean isGpsEnabled = false;
+    private boolean wasTrackingBeforeGpsLoss = false;
+    private AlertDialog gpsDialog;
+
     private View noInternetLayout;
     private Button btnRetryConnection;
     private Button btnOpenSettings;
@@ -143,9 +154,8 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
             createDefaultUser();
         } else {
             verifyUserExists();
-        }
-
-        initializeNetworkMonitoring();
+        }        initializeNetworkMonitoring();
+        initializeGpsMonitoring();
         initializeGoogleServices();
     }
 
@@ -166,9 +176,7 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                 .findFragmentById(R.id.map);
         if (mapFragment != null) {
             mapFragment.getMapAsync(this);
-        }
-
-        restoreTrackingSession();        updateUIForTrackingState(isTracking);
+        }        restoreTrackingSession();        updateUIForTrackingState(isTracking);
         updateUIForNetworkState(isNetworkAvailable);
           // Set up button click listeners for new UI structure
         binding.btnStartStop.setOnClickListener(v -> toggleTracking());
@@ -176,6 +184,7 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         binding.btnFinish.setOnClickListener(v -> finishPlogging());
 
         checkNetworkStatus();
+        checkGpsStatus();
 
         // Restore auto-finish timer if needed
         checkAndRestoreAutoFinishTimer();
@@ -198,12 +207,11 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         
         // Note: btn_open_settings and btn_continue_offline buttons may need to be added to XML
         // if offline functionality is required
-    }
-
-    @Override
+    }    @Override
     public void onResume() {
         super.onResume();
         registerNetworkCallbacks();
+        registerGpsCallbacks();
 
         restoreTrackingSession();
 
@@ -261,12 +269,22 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                 binding.btnCollectTrash.setText("Trash");
             }
         }
-    }
-
-    private void toggleTracking() {
+    }    private void toggleTracking() {
+        // If network is not available, show network options
+        if (!isNetworkAvailable) {
+            showNetworkOptionsDialog();
+            return;
+        }
+        
+        // If GPS is not enabled, directly show GPS settings dialog
+        if (!isGpsEnabled) {
+            showGpsDisabledDialog();
+            return;
+        }
+        
+        // If both conditions are met, proceed with normal tracking
         if (!isPloggingEnabled) {
-            showNetworkStatusMessage("⚠️ Please enable internet connection first", true);
-            checkNetworkStatus();
+            showNetworkStatusMessage("⚠️ Please check your internet and location settings", true);
             return;
         }
 
@@ -289,8 +307,7 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                 .setPositiveButton("Stop", (dialog, which) -> {
                     internalPauseTracking();
                     showNetworkStatusMessage("🛑 Plogging stopped. Tap 'Start Plogging' to resume or 'Finish' to complete.", false);
-                })
-                .setNegativeButton("Cancel", null)
+                })                .setNegativeButton("Cancel", null)
                 .setNeutralButton("Finish Session", (dialog, which) -> {
                     finishPlogging();
                 })
@@ -298,8 +315,21 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
     }
 
     private void startTracking() {
+        // If network is not available, show network options
+        if (!isNetworkAvailable) {
+            showNetworkOptionsDialog();
+            return;
+        }
+        
+        // If GPS is not enabled, directly show GPS settings dialog
+        if (!isGpsEnabled) {
+            showGpsDisabledDialog();
+            return;
+        }
+        
+        // If both conditions are met but plogging is still disabled, show general message
         if (!isPloggingEnabled) {
-            showNetworkStatusMessage("⚠️ Internet connection required for plogging", true);
+            showNetworkStatusMessage("⚠️ Please check your internet and location settings", true);
             return;
         }
         
@@ -419,11 +449,20 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         requireActivity().startService(serviceIntent);
 
         showNetworkStatusMessage("🛑 Plogging session ended.", false);
-    }
-
-    private void resumeTracking() {
+    }    private void resumeTracking() {
         if (currentRecordId == -1) {
             showNetworkStatusMessage("❌ No active session found", true);
+            return;
+        }
+        
+        if (!isPloggingEnabled) {
+            showNetworkStatusMessage("⚠️ Internet connection required to resume tracking", true);
+            return;
+        }
+        
+        if (!isGpsEnabled) {
+            showGpsStatusMessage("⚠️ Location services required to resume tracking", true);
+            showGpsDisabledDialog();
             return;
         }
 
@@ -664,19 +703,32 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                 // Disable trash button when not actively tracking
                 binding.btnCollectTrash.setEnabled(false);
                 binding.btnCollectTrash.setAlpha(0.6f);
-                
-                // Show start button in overlay for resume functionality
+                  // Show start button in overlay for resume functionality
                 binding.layoutInitialState.setVisibility(View.VISIBLE);
-                binding.btnStartStop.setText(isPloggingEnabled ? "▶️ Resume" : "Internet Required");
+                String resumeButtonText;
+                if (!isNetworkAvailable) {
+                    resumeButtonText = "Internet Required";
+                } else if (!isGpsEnabled) {
+                    resumeButtonText = "Location Required";
+                } else {
+                    resumeButtonText = "▶️ Resume";
+                }
+                binding.btnStartStop.setText(resumeButtonText);
                 binding.btnStartStop.setEnabled(isPloggingEnabled);
                 binding.btnStartStop.setAlpha(isPloggingEnabled ? 1.0f : 0.6f);
             } else {
                 // Show initial state layout with Start button only
                 binding.layoutInitialState.setVisibility(View.VISIBLE);
                 binding.layoutActiveState.setVisibility(View.GONE);
-                
-                // Update start button
-                String buttonText = isPloggingEnabled ? "🚀 Start Plogging" : "Internet Required";
+                  // Update start button
+                String buttonText;
+                if (!isNetworkAvailable) {
+                    buttonText = "Internet Required";
+                } else if (!isGpsEnabled) {
+                    buttonText = "Location Required";
+                } else {
+                    buttonText = "🚀 Start Plogging";
+                }
                 binding.btnStartStop.setText(buttonText);
                 binding.btnStartStop.setEnabled(isPloggingEnabled);
                 binding.btnStartStop.setAlpha(isPloggingEnabled ? 1.0f : 0.6f);
@@ -1066,13 +1118,13 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         editor.putLong("SESSION_START_TIME", startTime);
         editor.putFloat("SESSION_DISTANCE", distance);
         editor.apply();
-    }
-
-    @Override
+    }    @Override
     public void onDestroyView() {
         super.onDestroyView();
         hideNetworkWarning();
         unregisterNetworkCallbacks();
+        unregisterGpsCallbacks();
+        dismissGpsDialog();
 
         binding = null;
     }
@@ -1128,15 +1180,16 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
             }
         }
     }    private void enablePloggingFeatures() {
-        isPloggingEnabled = true;
+        // Only enable plogging if both network and GPS are available
+        isPloggingEnabled = isNetworkAvailable && isGpsEnabled;
 
         if (binding != null) {
-            // Enable start button
-            binding.btnStartStop.setEnabled(true);
-            binding.btnStartStop.setAlpha(1.0f);
+            // Enable start button only if both conditions are met
+            binding.btnStartStop.setEnabled(isPloggingEnabled);
+            binding.btnStartStop.setAlpha(isPloggingEnabled ? 1.0f : 0.6f);
             
-            // Enable other buttons based on tracking state
-            if (isTracking) {
+            // Enable other buttons based on tracking state and conditions
+            if (isTracking && isPloggingEnabled) {
                 binding.btnCollectTrash.setEnabled(true);
                 binding.btnCollectTrash.setAlpha(1.0f);
             } else {
@@ -1248,344 +1301,183 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         }
     }
 
-    private void initializeGoogleServices() {
-        GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
-        int resultCode = apiAvailability.isGooglePlayServicesAvailable(requireContext());
-
-        if (resultCode == ConnectionResult.SUCCESS) {
-            fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
-        } else if (apiAvailability.isUserResolvableError(resultCode)) {
-            apiAvailability.getErrorDialog(requireActivity(), resultCode, PLAY_SERVICES_RESOLUTION_REQUEST).show();
-        } else {
-            Toast.makeText(requireContext(), "Google Play Services required for location features", Toast.LENGTH_LONG).show();
-        }
+    private void initializeGpsMonitoring() {
+        locationManager = (LocationManager) requireContext().getSystemService(Context.LOCATION_SERVICE);
+        
+        // Create GPS receiver for monitoring GPS enable/disable events
+        gpsReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (LocationManager.PROVIDERS_CHANGED_ACTION.equals(intent.getAction())) {
+                    checkGpsStatus();
+                }
+            }
+        };
+        
+        // Check initial GPS status
+        checkGpsStatus();
     }
-
-    private void registerNetworkCallbacks() {
-        if (connectivityManager == null) return;
-
+    
+    private void registerGpsCallbacks() {
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && networkCallback != null) {
-                NetworkRequest.Builder builder = new NetworkRequest.Builder()
-                        .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-                        .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
-                        .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR);
-
-                connectivityManager.registerNetworkCallback(builder.build(), networkCallback);
-            } else if (networkReceiver != null) {
-                IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
-                requireContext().registerReceiver(networkReceiver, filter);
+            if (gpsReceiver != null) {
+                IntentFilter filter = new IntentFilter(LocationManager.PROVIDERS_CHANGED_ACTION);
+                requireContext().registerReceiver(gpsReceiver, filter);
             }
         } catch (Exception e) {
-
+            Log.e(TAG, "Error registering GPS callbacks", e);
         }
     }
-
-    private void unregisterNetworkCallbacks() {
+    
+    private void unregisterGpsCallbacks() {
         try {
-            if (connectivityManager != null && networkCallback != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                connectivityManager.unregisterNetworkCallback(networkCallback);
-            }
-
-            if (networkReceiver != null) {
+            if (gpsReceiver != null) {
                 try {
-                    requireContext().unregisterReceiver(networkReceiver);
+                    requireContext().unregisterReceiver(gpsReceiver);
                 } catch (IllegalArgumentException e) {
-
+                    // Receiver was not registered
                 }
             }
         } catch (Exception e) {
-
+            Log.e(TAG, "Error unregistering GPS callbacks", e);
         }
     }
-
-    private void checkNetworkStatus() {
-        if (connectivityManager == null) return;
-
-        boolean networkAvailable = false;
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            Network activeNetwork = connectivityManager.getActiveNetwork();
-            if (activeNetwork != null) {
-                NetworkCapabilities capabilities = connectivityManager.getNetworkCapabilities(activeNetwork);
-                networkAvailable = capabilities != null &&
-                        capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
-                        capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
-            }
-        } else {
-            NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
-            networkAvailable = activeNetworkInfo != null && activeNetworkInfo.isConnected();
-        }
-
-        if (networkAvailable != isNetworkAvailable) {
-            if (networkAvailable) {
-                onNetworkAvailable();
+    
+    private void checkGpsStatus() {
+        if (locationManager == null) return;
+        
+        boolean gpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+        boolean networkLocationEnabled = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+        boolean locationServicesEnabled = gpsEnabled || networkLocationEnabled;
+        
+        if (locationServicesEnabled != isGpsEnabled) {
+            isGpsEnabled = locationServicesEnabled;
+            
+            if (isGpsEnabled) {
+                onGpsAvailable();
             } else {
-                onNetworkLost();
+                onGpsLost();
             }
         }
     }
-
-    private void onNetworkAvailable() {
-        if (!isNetworkAvailable) {
-            isNetworkAvailable = true;
-
-            hideNoInternetScreen();
-            hideNetworkWarning();
+      private void onGpsAvailable() {
+        requireActivity().runOnUiThread(() -> {
+            Log.d(TAG, "GPS/Location services available");
+            
+            dismissGpsDialog();
             enablePloggingFeatures();
-
-            if (wasTrackingBeforeNetworkLoss && hasActiveSession()) {
-                showNetworkStatusMessage("🌐 Internet reconnected! Your session is ready to continue.", false);
+            
+            if (wasTrackingBeforeGpsLoss && hasActiveSession() && isNetworkAvailable) {
+                showGpsStatusMessage("📍 Location services restored! You can resume tracking.", false);
             } else {
-                showNetworkStatusMessage("🌐 Internet Connected - Plogging Enabled!", false);
+                showGpsStatusMessage("📍 Location Services Enabled!", false);
             }
-
-            updateUIForNetworkState(true);
-        }
+        });
     }
-
-    private void onNetworkLost() {
-        if (isNetworkAvailable) {
-            isNetworkAvailable = false;
-            wasTrackingBeforeNetworkLoss = isTracking;
-
-            // Record network loss time and start auto-finish timer
-            networkLossStartTime = System.currentTimeMillis();
-            hasShownWarning = false;
-
-            // Save network loss time to preferences for restoration
-            saveNetworkLossStartTime(networkLossStartTime);
-
+    
+    private void onGpsLost() {
+        requireActivity().runOnUiThread(() -> {
+            Log.d(TAG, "GPS/Location services lost");
+            
+            wasTrackingBeforeGpsLoss = isTracking;
+            
             if (isTracking) {
                 internalPauseTracking();
-                showNetworkStatusMessage("📡 Connection lost! Session paused automatically.", true);
-
-                // Start auto-finish timer only if we have an active session
-                if (hasActiveSession()) {
-                    startAutoFinishTimer();
-                }
+                showGpsStatusMessage("📍 Location services disabled! Tracking paused.", true);
             }
-
-            showNoInternetScreen();
-            disablePloggingFeatures();
-            updateUIForNetworkState(false);
-        }
-    }    private void showNoInternetScreen() {
-        if (binding != null) {
-            // Show the overlay instead of hiding content
-            binding.layoutNoInternetOverlay.setVisibility(View.VISIBLE);
-        }
-    }
-
-    private void hideNoInternetScreen() {
-        if (binding != null) {
-            // Hide the overlay instead of showing content
-            binding.layoutNoInternetOverlay.setVisibility(View.GONE);
-        }
-    }    private void disablePloggingFeatures() {
-        isPloggingEnabled = false;
-
-        if (binding != null) {
-            // Disable all buttons
-            binding.btnStartStop.setEnabled(false);
-            binding.btnCollectTrash.setEnabled(false);
-            binding.btnFinish.setEnabled(false);
-
-            // Set alpha to show disabled state
-            binding.btnStartStop.setAlpha(0.6f);
-            binding.btnCollectTrash.setAlpha(0.6f);
-            binding.btnFinish.setAlpha(0.6f);
             
-            // Update button text to indicate internet requirement
-            binding.btnStartStop.setText("Internet Required");
+            // Disable plogging features when GPS is lost
+            isPloggingEnabled = false;
+            updateUIForTrackingState(isTracking);
+            
+            showGpsDisabledDialog();
+        });
+    }
+    
+    private void showGpsDisabledDialog() {
+        if (gpsDialog != null && gpsDialog.isShowing()) {
+            return; // Dialog already showing
         }
-    }    private void enableLimitedPloggingFeatures() {
-        isPloggingEnabled = true;
-
-        hideNoInternetScreen();
-
-        if (binding != null) {
-            // Enable buttons with offline functionality
-            binding.btnStartStop.setEnabled(true);
-            binding.btnCollectTrash.setEnabled(isTracking);
-            binding.btnFinish.setEnabled(hasActiveSession());
-
-            if (hasActiveSession()) {
-                binding.btnStartStop.setText("▶️ Resume (Offline)");
-                binding.btnStartStop.setOnClickListener(v -> {
-                    if (isTracking) {
-                        showStopConfirmationDialog();
-                    } else {
-                        resumeTracking();
+        
+        if (getContext() == null || !isAdded()) return;
+        
+        gpsDialog = new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("📍 Enable Location Services")
+                .setMessage("Location services are required for plogging tracking.\n\n" +
+                           "Please enable GPS or Network location in your device settings.")
+                .setPositiveButton("Open Settings", (dialog, which) -> {
+                    try {
+                        Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                        startActivity(intent);
+                    } catch (Exception e) {
+                        Toast.makeText(requireContext(), "Cannot open location settings", Toast.LENGTH_SHORT).show();
                     }
-                });
+                })
+                .setNegativeButton("Cancel", null)
+                .setCancelable(false)
+                .show();
+    }
+    
+    private void dismissGpsDialog() {
+        if (gpsDialog != null && gpsDialog.isShowing()) {
+            gpsDialog.dismiss();
+            gpsDialog = null;
+        }
+    }
+    
+    private void showGpsStatusMessage(String message, boolean isError) {
+        if (binding != null) {
+            Snackbar snackbar = Snackbar.make(binding.getRoot(), message, Snackbar.LENGTH_LONG);
+            
+            if (isError) {
+                snackbar.setBackgroundTint(ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark));
             } else {
-                binding.btnStartStop.setText("🚀 Start (Offline)");
-                binding.btnStartStop.setOnClickListener(v -> toggleTracking());
+                snackbar.setBackgroundTint(ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark));
             }
-
-            // Update alpha values
-            binding.btnStartStop.setAlpha(1.0f);
-            binding.btnCollectTrash.setAlpha(isTracking ? 1.0f : 0.6f);
-            binding.btnFinish.setAlpha(hasActiveSession() ? 1.0f : 0.6f);
-        }
-
-        Toast.makeText(requireContext(), "📱 Offline mode enabled - Limited functionality", Toast.LENGTH_LONG).show();
-    }
-
-    private void hideNetworkWarning() {
-        if (networkSnackbar != null) {
-            networkSnackbar.dismiss();
-            networkSnackbar = null;
-        }
-
-        if (networkDialog != null && networkDialog.isShowing()) {
-            networkDialog.dismiss();
-            networkDialog = null;
-        }
-
-        // Cancel auto-finish timers when network is restored
-        cancelAutoFinishTimer();
-    }
-
-    // Auto-finish timer methods
-    private void saveNetworkLossStartTime(long startTime) {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
-        prefs.edit()
-                .putLong("NETWORK_LOSS_START_TIME", startTime)
-                .putBoolean("HAS_SHOWN_WARNING", hasShownWarning)
-                .apply();
-    }
-
-    private void checkAndRestoreAutoFinishTimer() {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
-        long savedNetworkLossTime = prefs.getLong("NETWORK_LOSS_START_TIME", 0);
-
-        // Only restore timer if we have an active session and network is still down
-        if (savedNetworkLossTime > 0 && !isNetworkAvailable && hasActiveSession()) {
-            networkLossStartTime = savedNetworkLossTime;
-            hasShownWarning = prefs.getBoolean("HAS_SHOWN_WARNING", false);
-
-            long elapsedTime = System.currentTimeMillis() - networkLossStartTime;
-
-            if (elapsedTime >= AUTO_FINISH_TIMEOUT_MS) {
-                // Time already exceeded, auto-finish immediately
-                autoFinishPloggingSession();
-            } else {
-                // Calculate remaining time and start timers
-                long remainingTimeToWarning = WARNING_TIMEOUT_MS - elapsedTime;
-                long remainingTimeToFinish = AUTO_FINISH_TIMEOUT_MS - elapsedTime;
-
-                if (remainingTimeToWarning > 0 && !hasShownWarning) {
-                    // Schedule warning
-                    warningRunnable = this::showAutoFinishWarning;
-                    autoFinishHandler.postDelayed(warningRunnable, remainingTimeToWarning);
-                }
-
-                if (remainingTimeToFinish > 0) {
-                    // Schedule auto-finish
-                    autoFinishRunnable = this::autoFinishPloggingSession;
-                    autoFinishHandler.postDelayed(autoFinishRunnable, remainingTimeToFinish);
-                }
-            }
+            
+            snackbar.setTextColor(Color.WHITE);
+            snackbar.show();
         }
     }
-
-    private void startAutoFinishTimer() {
-        // Cancel any existing timers first
-        cancelAutoFinishTimer();
-
-        // Schedule warning at 4 minutes (1 minute before auto-finish)
-        warningRunnable = this::showAutoFinishWarning;
-        autoFinishHandler.postDelayed(warningRunnable, WARNING_TIMEOUT_MS);
-
-        // Schedule auto-finish at 5 minutes
-        autoFinishRunnable = this::autoFinishPloggingSession;
-        autoFinishHandler.postDelayed(autoFinishRunnable, AUTO_FINISH_TIMEOUT_MS);
-
-        Log.d(TAG, "Auto-finish timer started - Warning in 4 min, Auto-finish in 5 min");
-    }
-
-    private void cancelAutoFinishTimer() {
-        if (autoFinishHandler != null) {
-            if (warningRunnable != null) {
-                autoFinishHandler.removeCallbacks(warningRunnable);
-                warningRunnable = null;
-            }
-            if (autoFinishRunnable != null) {
-                autoFinishHandler.removeCallbacks(autoFinishRunnable);
-                autoFinishRunnable = null;
-            }
-        }
-
-        // Clear saved network loss time
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
-        prefs.edit()
-                .remove("NETWORK_LOSS_START_TIME")
-                .remove("HAS_SHOWN_WARNING")
-                .apply();
-
-        networkLossStartTime = 0;
-        hasShownWarning = false;
-
-        Log.d(TAG, "Auto-finish timer cancelled");
-    }
-
-    private void showAutoFinishWarning() {
-        if (hasShownWarning || isNetworkAvailable) return;
-
-        hasShownWarning = true;
-
-        // Save warning state
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
-        prefs.edit().putBoolean("HAS_SHOWN_WARNING", true).apply();
-
-        requireActivity().runOnUiThread(() -> {
-            if (getContext() == null || !isAdded()) return;
-
-            new MaterialAlertDialogBuilder(requireContext())
-                    .setTitle("⚠️ Auto-Finish Warning")
-                    .setMessage("Your plogging session will be automatically finished in 1 minute due to extended network disconnection.\n\n" +
-                            "To prevent this:\n" +
-                            "• Restore internet connection\n" +
-                            "• Or manually finish your session now")
-                    .setPositiveButton("Finish Now", (dialog, which) -> {
-                        cancelAutoFinishTimer();
-                        finishPloggingConfirmed();
-                    })
-                    .setNegativeButton("Wait", null)
-                    .setCancelable(false)
-                    .show();
-        });
-
-        showNetworkStatusMessage("⚠️ Session will auto-finish in 1 minute!", true);
-        Log.d(TAG, "Auto-finish warning shown");
-    }
-
-    private void autoFinishPloggingSession() {
-        if (isNetworkAvailable || !hasActiveSession()) {
-            // Network restored or no active session, cancel auto-finish
-            cancelAutoFinishTimer();
-            return;
-        }
-
-        requireActivity().runOnUiThread(() -> {
-            if (getContext() == null || !isAdded()) return;
-
-            Log.d(TAG, "Auto-finishing plogging session due to network timeout");
-
-            showNetworkStatusMessage("⏰ Session auto-finished due to extended disconnection", true);
-
-            // Show auto-finish notification
-            new MaterialAlertDialogBuilder(requireContext())
-                    .setTitle("⏰ Session Auto-Finished")
-                    .setMessage("Your plogging session has been automatically finished due to 5 minutes of network disconnection.\n\n" +
-                            "Your progress has been saved.")
-                    .setPositiveButton("OK", (dialog, which) -> {
-                        finishPloggingConfirmed();
-                    })
-                    .setCancelable(false)                    .show();
-        });
+    
+    private void showNetworkOptionsDialog() {
+        if (getContext() == null || !isAdded()) return;
+        
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("🌐 Internet Connection Required")
+                .setMessage("Internet connection is required for plogging tracking.\n\n" +
+                           "Please check your WiFi or mobile data connection.")
+                .setPositiveButton("Open Settings", (dialog, which) -> {
+                    try {
+                        Intent intent = new Intent(Settings.ACTION_WIFI_SETTINGS);
+                        startActivity(intent);
+                    } catch (Exception e) {
+                        try {
+                            // Fallback to wireless settings
+                            Intent fallbackIntent = new Intent(Settings.ACTION_WIRELESS_SETTINGS);
+                            startActivity(fallbackIntent);
+                        } catch (Exception ex) {
+                            Toast.makeText(requireContext(), "Cannot open network settings", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                })
+                .setNeutralButton("Mobile Data", (dialog, which) -> {
+                    try {
+                        Intent intent = new Intent(Settings.ACTION_DATA_ROAMING_SETTINGS);
+                        startActivity(intent);
+                    } catch (Exception e) {
+                        try {
+                            // Fallback to main settings
+                            Intent fallbackIntent = new Intent(Settings.ACTION_SETTINGS);
+                            startActivity(fallbackIntent);
+                        } catch (Exception ex) {
+                            Toast.makeText(requireContext(), "Cannot open mobile data settings", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .setCancelable(false)
+                .show();
     }
     
     // Location movement detection methods
@@ -1821,6 +1713,229 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                 requireActivity().runOnUiThread(() -> createDefaultUser());
             }
         });
+    }
+
+    private void initializeGoogleServices() {
+        try {
+            // Initialize FusedLocationProviderClient
+            fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
+            
+            // Check Google Play Services availability
+            GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
+            int resultCode = apiAvailability.isGooglePlayServicesAvailable(requireContext());
+            
+            if (resultCode == ConnectionResult.SUCCESS) {
+                Log.d(TAG, "Google Play Services is available");
+            } else if (apiAvailability.isUserResolvableError(resultCode)) {
+                Log.w(TAG, "Google Play Services error (user resolvable): " + resultCode);
+                // Could show dialog to user to resolve the issue
+                apiAvailability.getErrorDialog(requireActivity(), resultCode, PLAY_SERVICES_RESOLUTION_REQUEST).show();
+            } else {
+                Log.e(TAG, "Google Play Services not available: " + resultCode);
+                Toast.makeText(requireContext(), "Google Play Services required for location features", Toast.LENGTH_LONG).show();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error initializing Google Services", e);
+        }
+    }
+
+    // Network monitoring methods
+    private void checkNetworkStatus() {
+        if (connectivityManager == null) return;
+        
+        boolean networkAvailable = false;
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Network activeNetwork = connectivityManager.getActiveNetwork();
+            if (activeNetwork != null) {
+                NetworkCapabilities capabilities = connectivityManager.getNetworkCapabilities(activeNetwork);
+                networkAvailable = capabilities != null && 
+                    capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                    capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
+            }
+        } else {
+            @SuppressWarnings("deprecation")
+            NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+            networkAvailable = activeNetworkInfo != null && activeNetworkInfo.isConnected();
+        }
+        
+        if (networkAvailable != isNetworkAvailable) {
+            isNetworkAvailable = networkAvailable;
+            if (isNetworkAvailable) {
+                onNetworkAvailable();
+            } else {
+                onNetworkLost();
+            }
+        }
+    }
+    
+    private void registerNetworkCallbacks() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && networkCallback != null) {
+                NetworkRequest.Builder builder = new NetworkRequest.Builder()
+                    .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                    .addCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
+                connectivityManager.registerNetworkCallback(builder.build(), networkCallback);
+            } else if (networkReceiver != null) {
+                IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
+                requireContext().registerReceiver(networkReceiver, filter);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error registering network callbacks", e);
+        }
+    }
+    
+    private void unregisterNetworkCallbacks() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && networkCallback != null) {
+                connectivityManager.unregisterNetworkCallback(networkCallback);
+            } else if (networkReceiver != null) {
+                try {
+                    requireContext().unregisterReceiver(networkReceiver);
+                } catch (IllegalArgumentException e) {
+                    // Receiver was not registered
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error unregistering network callbacks", e);
+        }
+    }
+    
+    private void onNetworkAvailable() {
+        Log.d(TAG, "Network connection available");
+        enablePloggingFeatures();
+        hideNetworkWarning();
+        
+        if (wasTrackingBeforeNetworkLoss && hasActiveSession() && isGpsEnabled) {
+            showNetworkStatusMessage("🌐 Internet connection restored! You can resume tracking.", false);
+        } else {
+            updateUIForNetworkState(true);
+            showNetworkStatusMessage("🌐 Internet Connected!", false);
+        }
+    }
+    
+    private void onNetworkLost() {
+        Log.d(TAG, "Network connection lost");
+        
+        wasTrackingBeforeNetworkLoss = isTracking;
+        
+        if (isTracking) {
+            internalPauseTracking();
+            showNetworkStatusMessage("🌐 Internet connection lost! Tracking paused.", true);
+        }
+        
+        // Disable plogging features when network is lost
+        isPloggingEnabled = false;
+        updateUIForNetworkState(false);
+        
+        showOfflineModeDialog();
+    }
+      private void hideNetworkWarning() {
+        if (networkSnackbar != null) {
+            networkSnackbar.dismiss();
+            networkSnackbar = null;
+        }
+        
+        if (networkDialog != null && networkDialog.isShowing()) {
+            networkDialog.dismiss();
+            networkDialog = null;
+        }
+        
+        // Hide network warning indicator
+        if (binding != null && binding.networkStatusIndicator != null) {
+            binding.networkStatusIndicator.setVisibility(View.GONE);
+        }
+    }
+    
+    private void enableLimitedPloggingFeatures() {
+        // Enable basic pllogging features for offline mode
+        if (isGpsEnabled) {
+            isPloggingEnabled = true;
+            enablePloggingFeatures();
+            showNetworkStatusMessage("📱 Offline mode enabled - basic features available", false);
+        } else {
+            showNetworkStatusMessage("📍 Location services still required for offline mode", true);
+        }
+    }
+    
+    // Auto-finish timer methods
+    private void checkAndRestoreAutoFinishTimer() {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
+        long networkLossTime = prefs.getLong("NETWORK_LOSS_TIME", 0);
+        boolean wasAutoFinishActive = prefs.getBoolean("AUTO_FINISH_ACTIVE", false);
+        
+        if (wasAutoFinishActive && networkLossTime > 0) {
+            long elapsedTime = System.currentTimeMillis() - networkLossTime;
+            if (elapsedTime < AUTO_FINISH_TIMEOUT_MS) {
+                // Continue the timer from where it left off
+                long remainingTime = AUTO_FINISH_TIMEOUT_MS - elapsedTime;
+                startAutoFinishTimer(remainingTime);
+            } else {
+                // Timer should have already expired, trigger auto-finish
+                autoFinishDueToNetworkLoss();
+            }
+        }
+    }
+    
+    private void startAutoFinishTimer(long timeoutMs) {
+        cancelAutoFinishTimer();
+        
+        autoFinishRunnable = () -> {
+            if (!isNetworkAvailable && hasActiveSession()) {
+                autoFinishDueToNetworkLoss();
+            }
+        };
+        
+        // Set warning timer (1 minute before auto-finish)
+        long warningTime = Math.max(timeoutMs - 60000, 0);
+        if (warningTime > 0) {
+            warningRunnable = () -> {
+                if (!isNetworkAvailable && !hasShownWarning) {
+                    hasShownWarning = true;
+                    showNetworkStatusMessage("⚠️ Session will auto-finish in 1 minute due to no internet", true);
+                }
+            };
+            autoFinishHandler.postDelayed(warningRunnable, warningTime);
+        }
+        
+        autoFinishHandler.postDelayed(autoFinishRunnable, timeoutMs);
+        
+        // Save timer state
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
+        prefs.edit()
+            .putLong("NETWORK_LOSS_TIME", System.currentTimeMillis())
+            .putBoolean("AUTO_FINISH_ACTIVE", true)
+            .apply();
+    }
+    
+    private void cancelAutoFinishTimer() {
+        if (autoFinishHandler != null) {
+            if (autoFinishRunnable != null) {
+                autoFinishHandler.removeCallbacks(autoFinishRunnable);
+                autoFinishRunnable = null;
+            }
+            if (warningRunnable != null) {
+                autoFinishHandler.removeCallbacks(warningRunnable);
+                warningRunnable = null;
+            }
+        }
+        
+        hasShownWarning = false;
+        networkLossStartTime = 0;
+        
+        // Clear timer state
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
+        prefs.edit()
+            .putLong("NETWORK_LOSS_TIME", 0)
+            .putBoolean("AUTO_FINISH_ACTIVE", false)
+            .apply();
+    }
+      private void autoFinishDueToNetworkLoss() {
+        if (hasActiveSession()) {
+            showNetworkStatusMessage("⏰ Session auto-finished due to prolonged internet loss", true);
+            finishPloggingConfirmed();
+        }
+        cancelAutoFinishTimer();
     }
 }
 
