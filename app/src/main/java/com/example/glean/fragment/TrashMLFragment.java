@@ -44,6 +44,16 @@ public class TrashMLFragment extends Fragment {
     private static final String TAG = "TrashMLFragment";
     private static final int REQUEST_IMAGE_CAPTURE = 1001;
     private static final int REQUEST_PERMISSION = 1002;
+    
+    // AI Confidence Configuration
+    private static final float AI_CONFIDENCE_THRESHOLD = 0.6f; // 60% minimum confidence
+    private static final float AI_VERY_LOW_CONFIDENCE = 0.3f;  // 30% - very uncertain
+    
+    // Non-trash detection keywords
+    private static final String[] NON_TRASH_KEYWORDS = {
+        "not trash", "bukan sampah", "tidak sampah", 
+        "unknown", "tidak dikenal", "bukan barang"
+    };
 
     private FragmentTrashMlBinding binding;
     private AppDatabase db;
@@ -103,9 +113,8 @@ public class TrashMLFragment extends Fragment {
         
         // Initialize UI dengan safe binding
         setupUIElements();
-        
-        // Set initial instructions
-        updateInstructionText("📸 Tap 'Take Photo' to capture a trash image for AI classification.");
+          // Set initial instructions
+        updateInstructionText("📸 Tap 'Ambil Foto' untuk memulai deteksi sampah dengan AI.");
     }
     
     private void setupUIElements() {
@@ -237,15 +246,14 @@ public class TrashMLFragment extends Fragment {
             PermissionHelper.requestCameraPermission(this, REQUEST_PERMISSION);
         }
     }
-    
-    private void takePhoto() {
+      private void takePhoto() {
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         if (takePictureIntent.resolveActivity(requireActivity().getPackageManager()) != null) {
             try {
                 photoFile = createImageFile();
             } catch (IOException ex) {
                 Log.e(TAG, "Error occurred while creating the File", ex);
-                updateInstructionText("❌ Error creating image file");
+                updateInstructionText("❌ Gagal membuat file gambar");
                 return;
             }
             
@@ -256,7 +264,7 @@ public class TrashMLFragment extends Fragment {
                 startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
             }
         } else {
-            updateInstructionText("❌ No camera app found");
+            updateInstructionText("❌ Aplikasi kamera tidak ditemukan");
         }
     }
     
@@ -277,13 +285,12 @@ public class TrashMLFragment extends Fragment {
         if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == requireActivity().RESULT_OK) {
             if (photoFile != null && photoFile.exists()) {
                 capturedImage = BitmapFactory.decodeFile(photoFile.getAbsolutePath());
-                
-                if (capturedImage != null) {
+                  if (capturedImage != null) {
                     displayCapturedImage();
                     enableButton("btnClassify", "button_classify", "btn_classify");
-                    updateInstructionText("✅ Photo captured! Tap 'Classify Trash' to analyze with AI.");
+                    updateInstructionText("✅ Foto berhasil diambil! Tap 'Deteksi dengan Gemini AI' untuk menganalisis.");
                 } else {
-                    updateInstructionText("❌ Failed to load captured image");
+                    updateInstructionText("❌ Gagal memuat foto yang diambil");
                 }
             }
         }
@@ -308,10 +315,9 @@ public class TrashMLFragment extends Fragment {
                 } catch (Exception e) {
                     Log.e(TAG, "Glide error, using direct bitmap: " + e.getMessage());
                     ((android.widget.ImageView) imageView).setImageBitmap(capturedImage);
-                }
-            } else {
+                }            } else {
                 Log.w(TAG, "ImageView not found or image is null");
-                updateInstructionText("📷 Image captured but cannot display");
+                updateInstructionText("📷 Foto berhasil diambil tapi tidak bisa ditampilkan");
             }
         } catch (Exception e) {
             Log.e(TAG, "Error displaying image: " + e.getMessage());
@@ -331,38 +337,50 @@ public class TrashMLFragment extends Fragment {
             button.setEnabled(false);
         }
     }
-    
-    private void classifyTrash() {
+      private void classifyTrash() {
         if (capturedImage == null) {
-            updateInstructionText("❌ Please take a photo first");
+            updateInstructionText("❌ Ambil foto terlebih dahulu");
             return;
         }
         
         if (geminiHelper == null || !geminiHelper.isApiKeyConfigured()) {
-            updateInstructionText("❌ AI classification not available");
+            updateInstructionText("❌ Deteksi AI tidak tersedia");
             return;
         }
         
         // Show loading state
         showProgressBar(true);
         disableButton("btnClassify", "button_classify", "btn_classify");
-        updateInstructionText("🤖 Analyzing image with AI...");
-        
-        // Classify using Gemini AI
+        updateInstructionText("🤖 Sedang menganalisis gambar dengan AI...");
+          // Classify using Gemini AI
         geminiHelper.classifyTrash(capturedImage, new GeminiHelper.ClassificationCallback() {
             @Override
             public void onSuccess(String trashType, float confidence, String description) {
                 requireActivity().runOnUiThread(() -> {
                     showProgressBar(false);
                     enableButton("btnClassify", "button_classify", "btn_classify");
+                      // Check confidence threshold and non-trash detection
+                    if (confidence < AI_CONFIDENCE_THRESHOLD || isNonTrashItem(trashType)) {
+                        
+                        // Show confidence warning
+                        showConfidenceWarning(confidence, trashType);
+                        hideClassificationResult();
+                        disableButton("btnSave", "button_save", "btn_save");
+                        
+                        Log.d(TAG, "Low confidence or non-trash detected: " + trashType + " (" + confidence + ")");
+                        return;
+                    }
                     
-                    // Display results
+                    // Hide confidence warning if previously shown
+                    hideConfidenceWarning();
+                    
+                    // Display successful results in Indonesian
                     String resultText = String.format(Locale.getDefault(),
-                            "🎯 AI Classification Result:\n\n" +
-                            "📋 Type: %s\n" +
-                            "📊 Confidence: %.1f%%\n" +
-                            "📝 Description: %s\n\n" +
-                            "Ready to save!",
+                            "🎯 Hasil Deteksi AI:\n\n" +
+                            "📋 Jenis: %s\n" +
+                            "📊 Tingkat Keyakinan: %.1f%%\n" +
+                            "📝 Deskripsi: %s\n\n" +
+                            "Siap untuk disimpan! 🌱",
                             trashType, confidence * 100, description);
                     
                     updateResultText(resultText);
@@ -378,7 +396,7 @@ public class TrashMLFragment extends Fragment {
                     showProgressBar(false);
                     enableButton("btnClassify", "button_classify", "btn_classify");
                     
-                    String errorText = "❌ Classification failed: " + error + "\n\nTry again or check your internet connection.";
+                    String errorText = "❌ Deteksi gagal: " + error + "\n\nCoba lagi atau periksa koneksi internet kamu.";
                     updateResultText(errorText);
                     
                     Log.e(TAG, "Gemini classification failed: " + error);
@@ -401,8 +419,7 @@ public class TrashMLFragment extends Fragment {
             updateInstructionText(resultText);
         }
     }
-    
-    private void showProgressBar(boolean show) {
+      private void showProgressBar(boolean show) {
         try {
             View progressBar = findViewSafely("progressBar", "progress_bar", "loading", "progressIndicator");
             if (progressBar != null) {
@@ -413,30 +430,79 @@ public class TrashMLFragment extends Fragment {
         }
     }
     
-    private void saveTrashItem() {
+    private void showConfidenceWarning(float confidence, String trashType) {
+        try {
+            View warningCard = findViewSafely("cardConfidenceWarning", "card_confidence_warning");
+            if (warningCard != null) {
+                warningCard.setVisibility(View.VISIBLE);
+                  // Update warning text
+                View warningText = findViewSafely("tvConfidenceWarning", "tv_confidence_warning");
+                if (warningText instanceof android.widget.TextView) {
+                    String message = generateConfidenceWarningMessage(confidence, trashType);
+                    ((android.widget.TextView) warningText).setText(message);
+                }
+                
+                // Setup retake photo button
+                View retakeBtn = findViewSafely("btnRetakePhoto", "btn_retake_photo");
+                if (retakeBtn != null) {
+                    retakeBtn.setOnClickListener(v -> {
+                        hideConfidenceWarning();
+                        resetForNewCapture();
+                        updateInstructionText("📸 Siap untuk mengambil foto baru. Pastikan objek sampah terlihat jelas!");
+                    });
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error showing confidence warning: " + e.getMessage());
+            updateInstructionText("⚠️ AI tidak yakin ini adalah sampah. Coba foto ulang dengan objek yang lebih jelas.");
+        }
+    }
+    
+    private void hideConfidenceWarning() {
+        try {
+            View warningCard = findViewSafely("cardConfidenceWarning", "card_confidence_warning");
+            if (warningCard != null) {
+                warningCard.setVisibility(View.GONE);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error hiding confidence warning: " + e.getMessage());
+        }
+    }
+    
+    private void hideClassificationResult() {
+        try {
+            View resultView = findViewSafely("tvClassificationResult", "tvResult", "textResult", "tvDescription");
+            if (resultView != null) {
+                resultView.setVisibility(View.GONE);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error hiding classification result: " + e.getMessage());
+        }
+    }
+      private void saveTrashItem() {
         if (capturedImage == null || currentPhotoPath == null) {
-            updateInstructionText("❌ No image to save");
+            updateInstructionText("❌ Tidak ada gambar untuk disimpan");
             return;
         }
         
         // Get classification result
         String resultText = getResultText();
-        String trashType = "Unknown";
+        String trashType = "Tidak Dikenal";
         float confidence = 0.0f;
         String description = "";
         
-        // Parse results
-        if (resultText.contains("Type: ")) {
+        // Parse results - support both Indonesian and English formats
+        if (resultText.contains("Jenis: ") || resultText.contains("Type: ")) {
             try {
                 String[] lines = resultText.split("\n");
                 for (String line : lines) {
                     line = line.trim();
-                    if (line.startsWith("📋 Type: ") || line.startsWith("Type: ")) {
+                    if (line.startsWith("📋 Jenis: ") || line.startsWith("📋 Type: ") || line.startsWith("Type: ")) {
                         trashType = line.substring(line.indexOf(": ") + 2).trim();
-                    } else if (line.startsWith("📊 Confidence: ") || line.startsWith("Confidence: ")) {
+                    } else if (line.startsWith("📊 Tingkat Keyakinan: ") || line.startsWith("📊 Confidence: ") || line.startsWith("Confidence: ")) {
                         String confStr = line.substring(line.indexOf(": ") + 2).replace("%", "").trim();
                         confidence = Float.parseFloat(confStr) / 100.0f;
-                    } else if (line.startsWith("📝 Description: ") || line.startsWith("Description: ")) {
+                    } else if (line.startsWith("📝 Deskripsi: ") || line.startsWith("📝 Description: ") || line.startsWith("Description: ")) {
                         description = line.substring(line.indexOf(": ") + 2).trim();
                     }
                 }
@@ -527,9 +593,8 @@ public class TrashMLFragment extends Fragment {
                 // Check total trash count for this record
                 int totalTrashCount = db.trashDao().getTrashCountByRecordIdSync(recordId);
                 Log.d(TAG, "SAVE: Total trash count for record " + recordId + ": " + totalTrashCount);
-                
-                requireActivity().runOnUiThread(() -> {
-                    updateInstructionText("✅ Trash item saved successfully!\n\nContributing to cleaner environment! 🌱");
+                  requireActivity().runOnUiThread(() -> {
+                    updateInstructionText("✅ Data sampah berhasil disimpan!\n\nBerkontribusi untuk lingkungan yang lebih bersih! 🌱");
                     resetForNewCapture();
                     
                     // Navigate back after delay
@@ -540,9 +605,8 @@ public class TrashMLFragment extends Fragment {
                 Log.e(TAG, "SAVE: Error saving trash item", e);
                 Log.e(TAG, "SAVE: Error details - Message: " + e.getMessage());
                 Log.e(TAG, "SAVE: Error details - Cause: " + e.getCause());
-                e.printStackTrace();
-                requireActivity().runOnUiThread(() -> {
-                    updateInstructionText("❌ Failed to save trash item. Please try again.");
+                e.printStackTrace();                requireActivity().runOnUiThread(() -> {
+                    updateInstructionText("❌ Gagal menyimpan data sampah. Silakan coba lagi.");
                 });
             }
             Log.d(TAG, "=== TRASH SAVE DEBUG END ===");
@@ -590,9 +654,8 @@ public class TrashMLFragment extends Fragment {
         
         if (requestCode == REQUEST_PERMISSION) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                takePhoto();
-            } else {
-                updateInstructionText("❌ Camera permission required. Please grant permission in settings and try again.");
+                takePhoto();            } else {
+                updateInstructionText("❌ Izin kamera diperlukan. Berikan izin di pengaturan dan coba lagi.");
             }
         }
     }
@@ -608,6 +671,44 @@ public class TrashMLFragment extends Fragment {
         super.onDestroy();
         if (executor != null && !executor.isShutdown()) {
             executor.shutdown();
+        }
+    }
+    
+    /**
+     * Helper method to check if the detected item is not trash based on keywords
+     * @param trashType The detected item type
+     * @return true if the item should be considered as non-trash
+     */
+    private boolean isNonTrashItem(String trashType) {
+        if (trashType == null) return true;
+        
+        String lowerType = trashType.toLowerCase();
+        for (String keyword : NON_TRASH_KEYWORDS) {
+            if (lowerType.contains(keyword)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    /**
+     * Helper method to generate appropriate confidence warning message
+     * @param confidence AI confidence level
+     * @param trashType Detected item type
+     * @return Appropriate warning message in Indonesian
+     */
+    private String generateConfidenceWarningMessage(float confidence, String trashType) {
+        if (confidence < AI_VERY_LOW_CONFIDENCE) {
+            return String.format("AI sangat tidak yakin (%.1f%%) bahwa ini adalah sampah. " +
+                    "Coba foto objek sampah yang lebih jelas dengan pencahayaan yang baik.", 
+                    confidence * 100);
+        } else if (isNonTrashItem(trashType)) {
+            return "AI mendeteksi bahwa ini kemungkinan bukan sampah. " +
+                    "Pastikan kamu memfoto sampah yang jelas dan benar.";
+        } else {
+            return String.format("Tingkat keyakinan AI rendah (%.1f%%). " +
+                    "Coba ambil foto dengan sudut yang berbeda atau pencahayaan yang lebih baik.", 
+                    confidence * 100);
         }
     }
 }
