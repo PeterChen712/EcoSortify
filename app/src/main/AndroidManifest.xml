@@ -71,13 +71,18 @@
         <activity
             android:name=".activity.AuthActivity"
             android:exported="false"
-            android:screenOrientation="portrait" />
-
-        <!-- Main Activity with Bottom Navigation -->
+            android:screenOrientation="portrait" />        <!-- Main Activity with Bottom Navigation -->
         <activity
             android:name=".activity.MainActivity"
             android:exported="false"
             android:screenOrientation="portrait" />
+
+        <!-- UCrop Activity for Image Cropping -->
+        <activity
+            android:name="com.yalantis.ucrop.UCropActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
 
         <!-- Background Location Service -->
         <service

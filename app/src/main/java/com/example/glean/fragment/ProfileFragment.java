@@ -1,12 +1,14 @@
 package com.example.glean.fragment;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -22,6 +24,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
@@ -39,6 +42,7 @@ import com.example.glean.model.Badge;
 import com.example.glean.model.UserEntity;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.yalantis.ucrop.UCrop;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -50,11 +54,11 @@ import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class ProfileFragment extends Fragment {
-
-    private static final String TAG = "ProfileFragment";
+public class ProfileFragment extends Fragment {    private static final String TAG = "ProfileFragment";
     private static final int PICK_IMAGE_REQUEST = 1001;
-    private static final int REQUEST_STORAGE_PERMISSION = 1002;
+    private static final int CAMERA_REQUEST = 1002;
+    private static final int REQUEST_STORAGE_PERMISSION = 1003;
+    private static final int REQUEST_CAMERA_PERMISSION = 1004;
 
     private FragmentProfileBinding binding;
     
@@ -63,6 +67,7 @@ public class ProfileFragment extends Fragment {
     private UserEntity currentUser;
     private ExecutorService executor;
     private Uri selectedImageUri;
+    private Uri cameraImageUri;
     private String profileImagePath;
 
     @Override
@@ -533,82 +538,295 @@ public class ProfileFragment extends Fragment {
             binding.ivProfileFrame.setVisibility(View.GONE);
         }
     }
-    
-    private void checkPermissionsAndSelectImage() {
+      private void checkPermissionsAndSelectImage() {
         if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.READ_EXTERNAL_STORAGE) 
                 != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(requireActivity(),
                     new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
                     REQUEST_STORAGE_PERMISSION);
         } else {
-            selectImage();
+            showImageSourceDialog();
         }
     }
     
-    private void selectImage() {
+    private void showImageSourceDialog() {
+        String[] options = {"Camera", "Gallery"};
+        
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Select Profile Picture")
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) {
+                        // Camera option
+                        checkCameraPermissionAndCapture();
+                    } else {
+                        // Gallery option
+                        selectImageFromGallery();
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+    
+    private void checkCameraPermissionAndCapture() {
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA) 
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(requireActivity(),
+                    new String[]{Manifest.permission.CAMERA},
+                    REQUEST_CAMERA_PERMISSION);
+        } else {
+            captureImageFromCamera();
+        }
+    }
+    
+    private void captureImageFromCamera() {
+        try {
+            Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+            if (cameraIntent.resolveActivity(requireActivity().getPackageManager()) != null) {
+                // Create image file
+                File photoFile = createImageFile();
+                if (photoFile != null) {
+                    cameraImageUri = FileProvider.getUriForFile(
+                            requireContext(),
+                            "com.example.glean.fileprovider",
+                            photoFile
+                    );
+                    cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, cameraImageUri);
+                    startActivityForResult(cameraIntent, CAMERA_REQUEST);
+                }
+            } else {
+                Toast.makeText(requireContext(), "No camera app available", Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error capturing image from camera", e);
+            Toast.makeText(requireContext(), "Error opening camera", Toast.LENGTH_SHORT).show();
+        }
+    }
+    
+    private File createImageFile() {
+        try {
+            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+            String imageFileName = "PROFILE_" + timeStamp + "_";
+            File storageDir = new File(requireContext().getFilesDir(), "images");
+            if (!storageDir.exists()) {
+                storageDir.mkdirs();
+            }
+            return File.createTempFile(imageFileName, ".jpg", storageDir);
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating image file", e);
+            return null;
+        }
+    }
+    
+    private void selectImageFromGallery() {
         try {
             Intent intent = new Intent();
             intent.setType("image/*");
             intent.setAction(Intent.ACTION_GET_CONTENT);
             startActivityForResult(Intent.createChooser(intent, "Select Profile Picture"), PICK_IMAGE_REQUEST);
         } catch (Exception e) {
-            Log.e(TAG, "Error selecting image", e);
+            Log.e(TAG, "Error selecting image from gallery", e);
             Toast.makeText(requireContext(), "Error opening image picker", Toast.LENGTH_SHORT).show();
         }
     }
-    
-    @Override
+      @Override
     public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         
-        if (requestCode == PICK_IMAGE_REQUEST && resultCode == requireActivity().RESULT_OK
-                && data != null && data.getData() != null) {
-            try {
+        if (resultCode != Activity.RESULT_OK) {
+            return;
+        }
+        
+        try {
+            if (requestCode == PICK_IMAGE_REQUEST && data != null && data.getData() != null) {
+                // Gallery image selected
                 selectedImageUri = data.getData();
+                startCropActivity(selectedImageUri);
                 
-                // Display the selected image
-                if (binding.ivProfilePic != null) {
+            } else if (requestCode == CAMERA_REQUEST && cameraImageUri != null) {
+                // Camera image captured
+                startCropActivity(cameraImageUri);
+                
+            } else if (requestCode == UCrop.REQUEST_CROP) {
+                // Image cropped successfully
+                handleCropResult(data);
+                
+            } else if (requestCode == UCrop.RESULT_ERROR) {
+                // Crop error
+                handleCropError(data);
+            }
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error handling activity result", e);
+            Toast.makeText(requireContext(), "Error processing image", Toast.LENGTH_SHORT).show();
+        }
+    }
+    
+    private void startCropActivity(Uri sourceUri) {
+        try {
+            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+            String fileName = "cropped_profile_" + timeStamp + ".jpg";
+            Uri destinationUri = Uri.fromFile(new File(requireContext().getCacheDir(), fileName));
+            
+            UCrop.Options options = new UCrop.Options();
+            options.setCompressionFormat(android.graphics.Bitmap.CompressFormat.JPEG);
+            options.setCompressionQuality(90);
+            options.setHideBottomControls(false);
+            options.setFreeStyleCropEnabled(true);
+            options.setShowCropFrame(true);
+            options.setShowCropGrid(true);
+            options.setCircleDimmedLayer(true);
+            options.setCropGridStrokeWidth(2);
+            options.setCropFrameStrokeWidth(4);
+            options.setMaxBitmapSize(1024);
+              // Set colors
+            options.setToolbarColor(ContextCompat.getColor(requireContext(), R.color.primary));
+            options.setStatusBarColor(ContextCompat.getColor(requireContext(), R.color.primary_dark));
+            options.setActiveControlsWidgetColor(ContextCompat.getColor(requireContext(), R.color.accent));
+            
+            UCrop.of(sourceUri, destinationUri)
+                    .withAspectRatio(1, 1)
+                    .withMaxResultSize(512, 512)
+                    .withOptions(options)
+                    .start(requireContext(), this);
+                    
+        } catch (Exception e) {
+            Log.e(TAG, "Error starting crop activity", e);
+            Toast.makeText(requireContext(), "Error opening crop editor", Toast.LENGTH_SHORT).show();
+        }
+    }
+    
+    private void handleCropResult(@Nullable Intent data) {
+        if (data != null) {
+            final Uri resultUri = UCrop.getOutput(data);
+            if (resultUri != null) {
+                selectedImageUri = resultUri;
+                
+                // Display the cropped image
+                if (binding != null && binding.ivProfilePic != null) {
                     Glide.with(this)
-                            .load(selectedImageUri)
+                            .load(resultUri)
                             .placeholder(android.R.drawable.ic_menu_camera)
                             .error(android.R.drawable.ic_menu_camera)
                             .circleCrop()
+                            .diskCacheStrategy(DiskCacheStrategy.NONE)
+                            .skipMemoryCache(true)
                             .into(binding.ivProfilePic);
                 }
                 
-                // Save the image
+                // Save the cropped image
                 saveProfileImage();
                 
-            } catch (Exception e) {
-                Log.e(TAG, "Error handling image selection result", e);
-                Toast.makeText(requireContext(), "Error loading selected image", Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(), "Profile picture updated successfully", Toast.LENGTH_SHORT).show();
             }
         }
     }
     
-    private void saveProfileImage() {
+    private void handleCropError(@Nullable Intent data) {
+        if (data != null) {
+            final Throwable cropError = UCrop.getError(data);
+            if (cropError != null) {
+                Log.e(TAG, "Crop error: " + cropError.getMessage(), cropError);
+                Toast.makeText(requireContext(), "Error cropping image: " + cropError.getMessage(), Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(requireContext(), "Error cropping image", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+      private void saveProfileImage() {
         if (selectedImageUri != null && currentUser != null) {
-            try {
-                String imagePath = selectedImageUri.toString();
-                currentUser.setProfileImagePath(imagePath);
-                
-                executor.execute(() -> {
-                    try {
+            executor.execute(() -> {
+                try {
+                    // Copy the cropped image to permanent storage
+                    String permanentImagePath = copyImageToPermanentStorage(selectedImageUri);
+                    
+                    if (permanentImagePath != null) {
+                        // Update user with new image path
+                        currentUser.setProfileImagePath(permanentImagePath);
                         db.userDao().update(currentUser);
                         
                         requireActivity().runOnUiThread(() -> {
+                            // Reload the profile image
+                            loadProfileImage();
                             Toast.makeText(requireContext(), "Profile picture updated!", Toast.LENGTH_SHORT).show();
                         });
-                    } catch (Exception e) {
-                        Log.e(TAG, "Error saving profile image to database", e);
+                    } else {
                         requireActivity().runOnUiThread(() -> {
                             Toast.makeText(requireContext(), "Failed to save profile picture", Toast.LENGTH_SHORT).show();
                         });
                     }
-                });
-            } catch (Exception e) {
-                Log.e(TAG, "Error saving profile image", e);
-                Toast.makeText(requireContext(), "Failed to save profile picture", Toast.LENGTH_SHORT).show();
+                    
+                } catch (Exception e) {
+                    Log.e(TAG, "Error saving profile image to database", e);
+                    requireActivity().runOnUiThread(() -> {
+                        Toast.makeText(requireContext(), "Failed to save profile picture", Toast.LENGTH_SHORT).show();
+                    });
+                }
+            });
+        }
+    }
+    
+    private String copyImageToPermanentStorage(Uri sourceUri) {
+        try {
+            // Create permanent storage directory
+            File profileImagesDir = new File(requireContext().getFilesDir(), "profile_images");
+            if (!profileImagesDir.exists()) {
+                profileImagesDir.mkdirs();
+            }
+            
+            // Create unique filename
+            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+            String fileName = "profile_" + userId + "_" + timeStamp + ".jpg";
+            File destinationFile = new File(profileImagesDir, fileName);
+            
+            // Copy file from source URI to destination
+            try (java.io.InputStream inputStream = requireContext().getContentResolver().openInputStream(sourceUri);
+                 java.io.FileOutputStream outputStream = new java.io.FileOutputStream(destinationFile)) {
+                
+                if (inputStream != null) {
+                    byte[] buffer = new byte[1024];
+                    int length;
+                    while ((length = inputStream.read(buffer)) > 0) {
+                        outputStream.write(buffer, 0, length);
+                    }
+                    outputStream.flush();
+                    
+                    Log.d(TAG, "Image saved to: " + destinationFile.getAbsolutePath());
+                    return destinationFile.getAbsolutePath();
+                }
+            }
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error copying image to permanent storage", e);
+        }
+        return null;
+    }
+    
+    private void loadProfileImage() {
+        if (currentUser != null && currentUser.getProfileImagePath() != null && binding != null && binding.ivProfilePic != null) {
+            String imagePath = currentUser.getProfileImagePath();
+            
+            // Clear any existing cache for this image
+            Glide.with(requireContext()).clear(binding.ivProfilePic);
+            
+            // Load the image with cache busting
+            Glide.with(this)
+                    .load(new File(imagePath))
+                    .placeholder(android.R.drawable.ic_menu_camera)
+                    .error(android.R.drawable.ic_menu_camera)
+                    .circleCrop()
+                    .diskCacheStrategy(DiskCacheStrategy.NONE)
+                    .skipMemoryCache(true)
+                    .signature(new com.bumptech.glide.signature.ObjectKey(System.currentTimeMillis()))
+                    .into(binding.ivProfilePic);
+            
+            Log.d(TAG, "Loading profile image from: " + imagePath);
+        } else {
+            // Load default profile image
+            if (binding != null && binding.ivProfilePic != null) {
+                Glide.with(this)
+                        .load(android.R.drawable.ic_menu_camera)
+                        .circleCrop()
+                        .into(binding.ivProfilePic);
             }
         }
     }
@@ -875,17 +1093,21 @@ public class ProfileFragment extends Fragment {
                 }
             });
         }
-    }
-
-    @Override
+    }    @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         
         if (requestCode == REQUEST_STORAGE_PERMISSION) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                selectImage();
+                showImageSourceDialog();
             } else {
                 Toast.makeText(requireContext(), "Storage permission required to select image", Toast.LENGTH_SHORT).show();
+            }
+        } else if (requestCode == REQUEST_CAMERA_PERMISSION) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                captureImageFromCamera();
+            } else {
+                Toast.makeText(requireContext(), "Camera permission required to take photo", Toast.LENGTH_SHORT).show();
             }
         }
     }

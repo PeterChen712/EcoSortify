@@ -91,22 +91,9 @@ public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClic
         }
     }
 
-    private void initializeDashboardContent() {
-        try {
-            // Set current date
-            if (binding.tvCurrentDate != null) {
-                java.text.SimpleDateFormat dateFormat = new java.text.SimpleDateFormat("EEEE, d MMMM yyyy", 
-                    new java.util.Locale("id", "ID"));
-                String currentDate = dateFormat.format(new java.util.Date());
-                binding.tvCurrentDate.setText(currentDate);
-                binding.tvCurrentDate.setVisibility(View.VISIBLE);
-            }
-            
-            // Set motivation message
-            if (binding.tvMotivation != null) {
-                binding.tvMotivation.setText("Mari bersihkan dunia hari ini!");
-                binding.tvMotivation.setVisibility(View.VISIBLE);
-            }
+    private void initializeDashboardContent() {        try {
+            // Date and motivation text are now part of the simple header
+            // No longer needed as we removed the large greeting container
 
             // Set daily tip
             if (binding.tvDailyTip != null) {
@@ -286,21 +273,21 @@ public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClic
             int userId = prefs.getInt("USER_ID", -1);
             
             if (userId != -1) {
-                LiveData<UserEntity> userLiveData = db.userDao().getUserById(userId);
-                userLiveData.observe(getViewLifecycleOwner(), user -> {
-                    if (user != null) {
+                LiveData<UserEntity> userLiveData = db.userDao().getUserById(userId);                userLiveData.observe(getViewLifecycleOwner(), user -> {                    if (user != null) {
                         String displayName = getDisplayName(user);
                         String greetingWithName = getTimeGreeting() + ", " + displayName + "!";
-                        if (binding.tvWelcomeMessage != null) {
-                            binding.tvWelcomeMessage.setText(greetingWithName);
+                        
+                        // Update the welcome message in the simple header with actual user name
+                        if (binding.tvWelcomeUser != null) {
+                            binding.tvWelcomeUser.setText("Welcome back, " + displayName + "!");
                         }
                         
                         loadUserStats(userId);
                     }
-                });
-            } else {
-                if (binding.tvWelcomeMessage != null) {
-                    binding.tvWelcomeMessage.setText(getTimeGreeting() + ", Welcome!");
+                });            } else {
+                // Set default welcome message when no user is logged in
+                if (binding.tvWelcomeUser != null) {
+                    binding.tvWelcomeUser.setText("Welcome back!");
                 }
             }
         } catch (Exception e) {
@@ -350,13 +337,11 @@ public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClic
                 
                 float distanceKm = totalDistance / 1000f;
                 float durationHours = totalDuration / (1000f * 60f * 60f);
-                
-                requireActivity().runOnUiThread(() -> {
+                  requireActivity().runOnUiThread(() -> {
                     String combinedText = String.format("Total: %d aktivitas, %.1f km, %.1f jam", 
                         totalRecords, distanceKm, durationHours);
-                    if (binding.tvMotivation != null) {
-                        binding.tvMotivation.setText(combinedText);
-                    }
+                    // Stats are now displayed in the statistics section, not in motivation text
+                    // The motivation text area was removed with the greeting container
                 });
             } catch (Exception e) {
                 // Handle error silently

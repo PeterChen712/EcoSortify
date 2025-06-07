@@ -33,14 +33,15 @@
                 android:src="@drawable/ic_settings"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
-                app:tint="@color/white" />
-
-            <!-- Profile Picture with Frame -->
+                app:tint="@color/white" />            <!-- Profile Picture with Frame -->
             <FrameLayout
                 android:id="@+id/profilePictureFrame"
                 android:layout_width="120dp"
                 android:layout_height="120dp"
                 android:layout_marginTop="16dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackgroundBorderless"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/btnSettings">
@@ -60,8 +61,28 @@
                     android:visibility="gone"
                     tools:src="@drawable/ic_star"
                     tools:visibility="visible" />
+                
+                <!-- Edit overlay -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/profile_edit_overlay" />
+                
+                <!-- Camera icon -->
+                <ImageView
+                    android:id="@+id/ivEditProfile"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_gravity="bottom|end"
+                    android:layout_marginEnd="8dp"
+                    android:layout_marginBottom="8dp"
+                    android:background="@drawable/circle_white_background"
+                    android:src="@drawable/ic_camera"
+                    android:padding="6dp"
+                    app:tint="@color/environmental_green"
+                    android:contentDescription="Edit Profile Picture" />
 
-            </FrameLayout>            <!-- User Name -->
+            </FrameLayout><!-- User Name -->
             <TextView
                 android:id="@+id/tvName"
                 android:layout_width="0dp"
