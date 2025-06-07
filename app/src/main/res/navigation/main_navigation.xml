@@ -25,10 +25,9 @@
         <!-- Additional actions for quick buttons -->
         <action
             android:id="@+id/action_homeFragment_to_statsFragment"
-            app:destination="@id/statsFragment" />
-        <action
-            android:id="@+id/action_homeFragment_to_newsFragment"
-            app:destination="@id/newsFragment" />
+            app:destination="@id/statsFragment" />        <action
+            android:id="@+id/action_homeFragment_to_communityFragment"
+            app:destination="@id/communityFragment" />
     </fragment>    <fragment
         android:id="@+id/ploggingFragment"
         android:name="com.example.glean.fragment.PloggingFragment"
@@ -118,17 +117,12 @@
         android:label="Create Post"
         tools:layout="@layout/fragment_create_post" />
     
-    <!-- Enhanced News Fragment with online features -->
+    <!-- Enhanced Community Fragment with 5 tabs -->
     <fragment
-        android:id="@+id/newsFragment"
-        android:name="com.example.glean.fragment.NewsFragment"
-        android:label="News"
-        tools:layout="@layout/fragment_news">
-        
-        <action
-            android:id="@+id/action_newsFragment_to_newsDetailFragment"
-            app:destination="@id/newsDetailFragment" />
-    </fragment>
+        android:id="@+id/communityFragment"
+        android:name="com.example.glean.fragment.CommunityFragment"
+        android:label="Community"
+        tools:layout="@layout/fragment_community" />
     
     <!-- News Detail Fragment -->
     <fragment

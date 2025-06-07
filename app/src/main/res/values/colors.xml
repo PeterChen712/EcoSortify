@@ -82,4 +82,10 @@
     
     <!-- Missing colors for HomeFragment -->
     <color name="light_green">#E8F5E8</color>
+      <!-- Additional colors for Community feature -->
+    <color name="background_color">#F5F5F5</color>
+    <color name="primary_light">#C8E6C9</color>
+    <color name="success_color">#4CAF50</color>
+    <color name="background_secondary">#EEEEEE</color>
+    
 </resources>

@@ -13,12 +13,10 @@
     <item
         android:id="@+id/statsFragment"
         android:icon="@drawable/ic_stats"
-        android:title="Statistik" />
-
-    <item
-        android:id="@+id/newsFragment"
-        android:icon="@drawable/ic_news"
-        android:title="Berita" />
+        android:title="Statistik" />    <item
+        android:id="@+id/communityFragment"
+        android:icon="@drawable/ic_community"
+        android:title="Komunitas" />
 
     <item
         android:id="@+id/profileFragment"

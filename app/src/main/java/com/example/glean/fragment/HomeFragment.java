@@ -209,14 +209,12 @@ public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClic
                         ((MainActivity) getActivity()).navigateToStats();
                     }
                 });
-            }
-
-            if (binding.btnQuickAction3 != null) {
-                binding.btnQuickAction3.setText("Berita");
+            }            if (binding.btnQuickAction3 != null) {
+                binding.btnQuickAction3.setText("Komunitas");
                 binding.btnQuickAction3.setVisibility(View.VISIBLE);
                 binding.btnQuickAction3.setOnClickListener(v -> {
                     if (getActivity() instanceof MainActivity) {
-                        ((MainActivity) getActivity()).navigateToNews();
+                        ((MainActivity) getActivity()).navigateToCommunity();
                     }
                 });
             }

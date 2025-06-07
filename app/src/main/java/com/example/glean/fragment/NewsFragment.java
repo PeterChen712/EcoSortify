@@ -372,9 +372,8 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
                 args.putInt("NEWS_ID", newsItem.getId());
                 args.putString("NEWS_URL", newsItem.getUrl());
                 args.putString("NEWS_TITLE", newsItem.getTitle());
-                
-                NavController navController = Navigation.findNavController(requireView());
-                navController.navigate(R.id.action_newsFragment_to_newsDetailFragment, args);
+                  NavController navController = Navigation.findNavController(requireView());
+                navController.navigate(R.id.newsDetailFragment, args);
             } else {
                 showMessage("📰 Article content not available", true);
             }

@@ -68,9 +68,8 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             } else if (itemId == R.id.statsFragment) {
                 navController.navigate(R.id.statsFragment);
-                return true;
-            } else if (itemId == R.id.newsFragment) {
-                navController.navigate(R.id.newsFragment);
+                return true;            } else if (itemId == R.id.communityFragment) {
+                navController.navigate(R.id.communityFragment);
                 return true;
             } else if (itemId == R.id.profileFragment) {
                 navController.navigate(R.id.profileFragment);
@@ -96,11 +95,9 @@ public class MainActivity extends AppCompatActivity {
         if (navController != null) {
             navController.navigate(R.id.statsFragment);
         }
-    }
-
-    public void navigateToNews() {
+    }    public void navigateToCommunity() {
         if (navController != null) {
-            navController.navigate(R.id.newsFragment);
+            navController.navigate(R.id.communityFragment);
         }
     }
 
