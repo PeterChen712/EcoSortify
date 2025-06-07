@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.glean.R;
+import com.example.glean.activity.PostDetailActivity;
 import com.example.glean.adapter.PostAdapter;
 import com.example.glean.databinding.FragmentSosialBinding;
 import com.example.glean.model.PostEntity;
@@ -112,24 +113,44 @@ public class SosialFragment extends Fragment implements PostAdapter.OnPostClickL
             binding.recyclerViewPosts.setVisibility(View.VISIBLE);
         }
     }
-    
-    @Override
+      @Override
     public void onPostClick(PostEntity post) {
         // Navigate to post detail
-        // Implementation depends on your navigation setup
+        Intent intent = new Intent(requireContext(), PostDetailActivity.class);
+        intent.putExtra("post_id", post.getId());
+        intent.putExtra("username", post.getUsername());
+        intent.putExtra("content", post.getContent());
+        intent.putExtra("like_count", post.getLikeCount());
+        intent.putExtra("comment_count", post.getCommentCount());
+        intent.putExtra("timestamp", post.getTimestamp());
+        intent.putExtra("is_liked", post.isLiked());
+        startActivityForResult(intent, 1001);
     }
     
     @Override
     public void onLikeClick(PostEntity post) {
-        // Handle like action
-        post.setLikeCount(post.getLikeCount() + 1);
+        // Toggle like state
+        post.setLiked(!post.isLiked());
+        if (post.isLiked()) {
+            post.setLikeCount(post.getLikeCount() + 1);
+        } else {
+            post.setLikeCount(post.getLikeCount() - 1);
+        }
         postAdapter.notifyDataSetChanged();
     }
-    
-    @Override
+      @Override
     public void onCommentClick(PostEntity post) {
-        // Navigate to comments
-        // Implementation depends on your navigation setup
+        // Navigate to post detail with focus on comments
+        Intent intent = new Intent(requireContext(), PostDetailActivity.class);
+        intent.putExtra("post_id", post.getId());
+        intent.putExtra("username", post.getUsername());
+        intent.putExtra("content", post.getContent());
+        intent.putExtra("like_count", post.getLikeCount());
+        intent.putExtra("comment_count", post.getCommentCount());
+        intent.putExtra("timestamp", post.getTimestamp());
+        intent.putExtra("is_liked", post.isLiked());
+        intent.putExtra("focus_comment", true); // Focus on comment input
+        startActivityForResult(intent, 1001);
     }
     
     @Override
@@ -139,6 +160,29 @@ public class SosialFragment extends Fragment implements PostAdapter.OnPostClickL
         shareIntent.setType("text/plain");
         shareIntent.putExtra(Intent.EXTRA_TEXT, post.getContent());
         startActivity(Intent.createChooser(shareIntent, "Bagikan Post"));
+    }
+    
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == 1001 && resultCode == getActivity().RESULT_OK && data != null) {
+            // Update post data from detail activity
+            String postId = data.getStringExtra("post_id");
+            int likeCount = data.getIntExtra("like_count", 0);
+            boolean isLiked = data.getBooleanExtra("is_liked", false);
+            int commentCount = data.getIntExtra("comment_count", 0);
+            
+            // Find and update the post in the list
+            for (PostEntity post : posts) {
+                if (post.getId().equals(postId)) {
+                    post.setLikeCount(likeCount);
+                    post.setLiked(isLiked);
+                    post.setCommentCount(commentCount);
+                    break;
+                }
+            }
+            postAdapter.notifyDataSetChanged();
+        }
     }
     
     @Override

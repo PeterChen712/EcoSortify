@@ -3,14 +3,14 @@ package com.example.glean.adapter;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.bumptech.glide.Glide;
 import com.example.glean.R;
-import com.example.glean.databinding.ItemCommentBinding;
-import com.example.glean.model.CommentModel;
+import com.example.glean.model.CommentEntity;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -18,95 +18,53 @@ import java.util.List;
 import java.util.Locale;
 
 public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentViewHolder> {
-
-    private final List<CommentModel> commentList;
-    private final OnCommentInteractionListener listener;
-
-    public interface OnCommentInteractionListener {
-        void onCommentLike(CommentModel comment, int position);
-        void onCommentReply(CommentModel comment, int position);
-        void onUserClick(CommentModel comment);
+    
+    private List<CommentEntity> comments;
+    
+    public CommentAdapter(List<CommentEntity> comments) {
+        this.comments = comments;
     }
-
-    public CommentAdapter(List<CommentModel> commentList, OnCommentInteractionListener listener) {
-        this.commentList = commentList;
-        this.listener = listener;
-    }
-
+    
     @NonNull
     @Override
     public CommentViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        ItemCommentBinding binding = ItemCommentBinding.inflate(
-                LayoutInflater.from(parent.getContext()), parent, false);
-        return new CommentViewHolder(binding);
+        View view = LayoutInflater.from(parent.getContext())
+                .inflate(R.layout.item_comment, parent, false);
+        return new CommentViewHolder(view);
     }
-
+    
     @Override
     public void onBindViewHolder(@NonNull CommentViewHolder holder, int position) {
-        holder.bind(commentList.get(position), position);
+        CommentEntity comment = comments.get(position);
+        holder.bind(comment);
     }
-
+    
     @Override
     public int getItemCount() {
-        return commentList.size();
-    }
-
+        return comments.size();
+    }    
     class CommentViewHolder extends RecyclerView.ViewHolder {
-        private final ItemCommentBinding binding;
-
-        public CommentViewHolder(ItemCommentBinding binding) {
-            super(binding.getRoot());
-            this.binding = binding;
+        private TextView tvUsername, tvContent, tvTimestamp;
+        private ImageView ivUserAvatar;
+        
+        public CommentViewHolder(@NonNull View itemView) {
+            super(itemView);
+            tvUsername = itemView.findViewById(R.id.tvCommentUsername);
+            tvContent = itemView.findViewById(R.id.tvCommentContent);
+            tvTimestamp = itemView.findViewById(R.id.tvCommentTime);
+            ivUserAvatar = itemView.findViewById(R.id.ivCommentUserAvatar);
         }
-
-        public void bind(CommentModel comment, int position) {
-            // User name
-            binding.tvUserName.setText(comment.getUserName());
+        
+        public void bind(CommentEntity comment) {
+            tvUsername.setText(comment.getUsername());
+            tvContent.setText(comment.getContent());
             
-            // Profile image
-            if (comment.getUserProfileUrl() != null && !comment.getUserProfileUrl().isEmpty()) {
-                Glide.with(binding.ivUserProfile.getContext())
-                        .load(comment.getUserProfileUrl())
-                        .placeholder(R.drawable.profile_placeholder)
-                        .circleCrop()
-                        .into(binding.ivUserProfile);
-            } else {
-                binding.ivUserProfile.setImageResource(R.drawable.profile_placeholder);
-            }
-
-            // Comment content
-            binding.tvComment.setText(comment.getContent());
+            // Format timestamp
+            SimpleDateFormat sdf = new SimpleDateFormat("HH:mm • dd MMM", Locale.getDefault());
+            tvTimestamp.setText(sdf.format(new Date(comment.getTimestamp())));
             
-            // Timestamp
-            SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault());
-            binding.tvTimestamp.setText(sdf.format(new Date(comment.getTimestamp())));
-
-            // Like count
-            if (comment.getLikeCount() > 0) {
-                binding.tvLikeCount.setVisibility(View.VISIBLE);
-                binding.tvLikeCount.setText(String.valueOf(comment.getLikeCount()));
-            } else {
-                binding.tvLikeCount.setVisibility(View.GONE);
-            }
-
-            // Click listeners
-            binding.layoutUser.setOnClickListener(v -> {
-                if (listener != null) {
-                    listener.onUserClick(comment);
-                }
-            });
-
-            binding.btnLike.setOnClickListener(v -> {
-                if (listener != null) {
-                    listener.onCommentLike(comment, position);
-                }
-            });
-
-            binding.btnReply.setOnClickListener(v -> {
-                if (listener != null) {
-                    listener.onCommentReply(comment, position);
-                }
-            });
+            // Set default avatar
+            ivUserAvatar.setImageResource(R.drawable.ic_user_placeholder);
         }
     }
 }

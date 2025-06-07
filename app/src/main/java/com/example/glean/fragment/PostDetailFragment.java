@@ -29,7 +29,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-public class PostDetailFragment extends Fragment implements CommentAdapter.OnCommentInteractionListener {
+public class PostDetailFragment extends Fragment {
 
     private FragmentPostDetailBinding binding;
     private FirebaseHelper firebaseHelper;
@@ -64,11 +64,9 @@ public class PostDetailFragment extends Fragment implements CommentAdapter.OnCom
         setupUI();
         loadPostDetails();
         loadComments();
-    }
-
-    private void setupUI() {
+    }    private void setupUI() {
         // Setup RecyclerView for comments
-        commentAdapter = new CommentAdapter(commentList, this);
+        commentAdapter = new CommentAdapter(new ArrayList<>());
         binding.rvComments.setLayoutManager(new LinearLayoutManager(requireContext()));
         binding.rvComments.setAdapter(commentAdapter);
         
@@ -289,34 +287,8 @@ public class PostDetailFragment extends Fragment implements CommentAdapter.OnCom
         startActivity(Intent.createChooser(shareIntent, "Share post"));
     }
 
-    private void navigateBack() {
-        NavController navController = Navigation.findNavController(requireView());
+    private void navigateBack() {        NavController navController = Navigation.findNavController(requireView());
         navController.navigateUp();
-    }
-
-    @Override
-    public void onCommentLike(CommentModel comment, int position) {
-        if (!firebaseHelper.isUserLoggedIn()) {
-            Toast.makeText(requireContext(), "Please sign in to like comments", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        // Implement comment like functionality if needed
-        Toast.makeText(requireContext(), "Comment like feature coming soon!", Toast.LENGTH_SHORT).show();
-    }
-
-    @Override
-    public void onCommentReply(CommentModel comment, int position) {
-        // Pre-fill comment field with reply format
-        binding.etComment.setText("@" + comment.getUserName() + " ");
-        binding.etComment.setSelection(binding.etComment.getText().length());
-        binding.etComment.requestFocus();
-    }
-
-    @Override
-    public void onUserClick(CommentModel comment) {
-        // Navigate to user profile or show user info
-        Toast.makeText(requireContext(), "User: " + comment.getUserName(), Toast.LENGTH_SHORT).show();
     }
 
     @Override

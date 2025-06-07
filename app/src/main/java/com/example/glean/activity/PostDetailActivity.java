@@ -1,0 +1,212 @@
+package com.example.glean.activity;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.widget.Toast;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+
+import com.example.glean.R;
+import com.example.glean.adapter.CommentAdapter;
+import com.example.glean.databinding.ActivityPostDetailBinding;
+import com.example.glean.model.CommentEntity;
+import com.example.glean.model.PostEntity;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+
+public class PostDetailActivity extends AppCompatActivity {
+    
+    private ActivityPostDetailBinding binding;
+    private PostEntity post;
+    private CommentAdapter commentAdapter;
+    private List<CommentEntity> comments = new ArrayList<>();
+    
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        binding = ActivityPostDetailBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
+        
+        // Get post data from intent
+        String postId = getIntent().getStringExtra("post_id");
+        String username = getIntent().getStringExtra("username");
+        String content = getIntent().getStringExtra("content");
+        int likeCount = getIntent().getIntExtra("like_count", 0);
+        int commentCount = getIntent().getIntExtra("comment_count", 0);        long timestamp = getIntent().getLongExtra("timestamp", System.currentTimeMillis());
+        boolean isLiked = getIntent().getBooleanExtra("is_liked", false);
+        boolean focusComment = getIntent().getBooleanExtra("focus_comment", false);
+        
+        // Create post object
+        post = new PostEntity();
+        post.setId(postId);
+        post.setUsername(username);
+        post.setContent(content);
+        post.setLikeCount(likeCount);
+        post.setCommentCount(commentCount);
+        post.setTimestamp(timestamp);
+        post.setLiked(isLiked);
+        
+        setupToolbar();
+        setupPostData();
+        setupRecyclerView();
+        setupClickListeners();
+        loadComments();
+        
+        // Focus on comment input if requested
+        if (focusComment) {
+            binding.etComment.requestFocus();
+            // You can also show keyboard here if needed
+        }
+    }
+    
+    private void setupToolbar() {
+        setSupportActionBar(binding.toolbar);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setTitle("Detail Post");
+        }
+        
+        binding.toolbar.setNavigationOnClickListener(v -> onBackPressed());
+    }
+    
+    private void setupPostData() {
+        binding.tvUsername.setText(post.getUsername());
+        binding.tvContent.setText(post.getContent());
+        binding.tvLikeCount.setText(String.valueOf(post.getLikeCount()));
+        binding.tvCommentCount.setText(String.valueOf(post.getCommentCount()));
+        
+        // Format timestamp
+        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm • dd MMM yyyy", Locale.getDefault());
+        binding.tvTimestamp.setText(sdf.format(new Date(post.getTimestamp())));
+        
+        // Set like state
+        updateLikeButton();
+    }
+    
+    private void setupRecyclerView() {
+        commentAdapter = new CommentAdapter(comments);
+        binding.recyclerViewComments.setLayoutManager(new LinearLayoutManager(this));
+        binding.recyclerViewComments.setAdapter(commentAdapter);
+    }
+    
+    private void setupClickListeners() {
+        binding.btnLike.setOnClickListener(v -> {
+            toggleLike();
+        });
+        
+        binding.btnComment.setOnClickListener(v -> {
+            binding.etComment.requestFocus();
+        });
+        
+        binding.btnShare.setOnClickListener(v -> {
+            sharePost();
+        });
+        
+        binding.btnSendComment.setOnClickListener(v -> {
+            sendComment();
+        });
+    }
+    
+    private void toggleLike() {
+        post.setLiked(!post.isLiked());
+        if (post.isLiked()) {
+            post.setLikeCount(post.getLikeCount() + 1);
+        } else {
+            post.setLikeCount(post.getLikeCount() - 1);
+        }
+        updateLikeButton();
+        binding.tvLikeCount.setText(String.valueOf(post.getLikeCount()));
+        
+        // Send result back to update the list
+        Intent resultIntent = new Intent();
+        resultIntent.putExtra("post_id", post.getId());
+        resultIntent.putExtra("like_count", post.getLikeCount());
+        resultIntent.putExtra("is_liked", post.isLiked());
+        resultIntent.putExtra("comment_count", post.getCommentCount());
+        setResult(RESULT_OK, resultIntent);
+    }
+    
+    private void updateLikeButton() {
+        if (post.isLiked()) {
+            binding.btnLike.setImageResource(R.drawable.ic_heart_filled);
+            binding.btnLike.setColorFilter(getResources().getColor(R.color.red_heart));
+        } else {
+            binding.btnLike.setImageResource(R.drawable.ic_heart_outline);
+            binding.btnLike.setColorFilter(getResources().getColor(R.color.text_secondary));
+        }
+    }
+    
+    private void sharePost() {
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.setType("text/plain");
+        String shareText = post.getUsername() + ": " + post.getContent() + "\n\n#PloggingChallenge #Glean";
+        shareIntent.putExtra(Intent.EXTRA_TEXT, shareText);
+        startActivity(Intent.createChooser(shareIntent, "Bagikan Post"));
+    }
+    
+    private void sendComment() {
+        String commentText = binding.etComment.getText().toString().trim();
+        if (commentText.isEmpty()) {
+            Toast.makeText(this, "Tulis komentar terlebih dahulu", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        // Create new comment
+        CommentEntity comment = new CommentEntity();
+        comment.setId(String.valueOf(System.currentTimeMillis()));
+        comment.setPostId(post.getId());
+        comment.setUsername("You"); // In real app, get from user session
+        comment.setContent(commentText);
+        comment.setTimestamp(System.currentTimeMillis());
+        
+        // Add to list and update UI
+        comments.add(0, comment);
+        commentAdapter.notifyItemInserted(0);
+        binding.recyclerViewComments.scrollToPosition(0);
+        
+        // Update comment count
+        post.setCommentCount(post.getCommentCount() + 1);
+        binding.tvCommentCount.setText(String.valueOf(post.getCommentCount()));
+        
+        // Clear input
+        binding.etComment.setText("");
+        
+        // Send result back
+        Intent resultIntent = new Intent();
+        resultIntent.putExtra("post_id", post.getId());
+        resultIntent.putExtra("like_count", post.getLikeCount());
+        resultIntent.putExtra("is_liked", post.isLiked());
+        resultIntent.putExtra("comment_count", post.getCommentCount());
+        setResult(RESULT_OK, resultIntent);
+        
+        Toast.makeText(this, "Komentar berhasil ditambahkan", Toast.LENGTH_SHORT).show();
+    }
+    
+    private void loadComments() {
+        // Load existing comments - in real app, this would be an API call
+        // For now, add some sample comments
+        
+        CommentEntity comment1 = new CommentEntity();
+        comment1.setId("1");
+        comment1.setPostId(post.getId());
+        comment1.setUsername("EcoFriend");
+        comment1.setContent("Keren banget! Aku juga mau ikut plogging");
+        comment1.setTimestamp(System.currentTimeMillis() - 1800000); // 30 min ago
+        comments.add(comment1);
+        
+        CommentEntity comment2 = new CommentEntity();
+        comment2.setId("2");
+        comment2.setPostId(post.getId());
+        comment2.setUsername("GreenLover");
+        comment2.setContent("Semangat terus! Bumi butuh lebih banyak orang seperti kamu 🌍");
+        comment2.setTimestamp(System.currentTimeMillis() - 3600000); // 1 hour ago
+        comments.add(comment2);
+        
+        commentAdapter.notifyDataSetChanged();
+    }
+}
