@@ -72,11 +72,14 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1001;
     private static final int CAMERA_PERMISSION_REQUEST_CODE = 1002;
     private static final int PLAY_SERVICES_RESOLUTION_REQUEST = 1003;
-    private static final int STORAGE_PERMISSION_REQUEST_CODE = 1004;
-
-    // Auto-finish timeout constants
+    private static final int STORAGE_PERMISSION_REQUEST_CODE = 1004;    // Auto-finish timeout constants
     private static final long AUTO_FINISH_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
     private static final long WARNING_TIMEOUT_MS = 4 * 60 * 1000; // 4 minutes (1 minute warning)
+    
+    // Location movement detection constants
+    private static final long MOVEMENT_CHECK_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
+    private static final long MOVEMENT_WARNING_TIMEOUT_MS = 10 * 1000; // 10 seconds auto-finish timeout
+    private static final float MINIMAL_MOVEMENT_THRESHOLD_METERS = 50f; // 50 meters movement threshold
 
     private FragmentPloggingBinding binding;
     private GoogleMap mMap;
@@ -107,14 +110,21 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
     private int currentTrashCount = 0;
     private int currentPoints = 0;
 
-    private boolean wasTrackingBeforeNetworkLoss = false;
-
-    // Auto-finish timer variables
+    private boolean wasTrackingBeforeNetworkLoss = false;    // Auto-finish timer variables
     private Handler autoFinishHandler;
     private Runnable autoFinishRunnable;
     private Runnable warningRunnable;
     private long networkLossStartTime = 0;
     private boolean hasShownWarning = false;
+    
+    // Location movement detection variables
+    private Location startLocationForMovement;
+    private long movementCheckStartTime = 0;
+    private Handler movementCheckHandler;
+    private Runnable movementCheckRunnable;
+    private Runnable movementWarningTimeoutRunnable;
+    private AlertDialog movementWarningDialog;
+    private boolean hasShownMovementWarning = false;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -122,10 +132,11 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         db = AppDatabase.getInstance(requireContext());
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
         userId = prefs.getInt("USER_ID", -1);
-        executor = Executors.newSingleThreadExecutor();
-
-        // Initialize auto-finish handler
+        executor = Executors.newSingleThreadExecutor();        // Initialize auto-finish handler
         autoFinishHandler = new Handler(Looper.getMainLooper());
+        
+        // Initialize movement check handler
+        movementCheckHandler = new Handler(Looper.getMainLooper());
 
         // Verify user exists, if not create a default user
         if (userId == -1) {
@@ -327,11 +338,12 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                     saveTrackingSession(true, currentRecordId, System.currentTimeMillis(), 0f);
 
                     updateUIForTrackingState(true);
-                    updateTrashUIAlternative();
-
-                    binding.chronometer.setBase(SystemClock.elapsedRealtime());
+                    updateTrashUIAlternative();                    binding.chronometer.setBase(SystemClock.elapsedRealtime());
                     binding.chronometer.start();
-
+                    
+                    // Reset movement detection state to ensure clean start for new session
+                    stopMovementDetection();
+                    
                     startContinuousLocationTracking();
 
                     String statusMessage = isNetworkAvailable ?
@@ -355,9 +367,7 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
             serviceIntent.putExtra("RECORD_ID", currentRecordId);
             requireActivity().startService(serviceIntent);
         }
-    }
-
-    private void internalPauseTracking() {
+    }    private void internalPauseTracking() {
         isTracking = false;
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
@@ -373,12 +383,13 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
             trackingCallback = null;
         }
 
+        // Stop movement detection when pausing
+        stopMovementDetection();
+
         Intent serviceIntent = new Intent(requireContext(), LocationService.class);
         serviceIntent.setAction(LocationService.ACTION_STOP_TRACKING);
         requireActivity().startService(serviceIntent);
-    }
-
-    private void stopTracking() {
+    }    private void stopTracking() {
         isTracking = false;
 
         saveTrackingSession(false, -1, 0, 0f);
@@ -399,6 +410,9 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
             fusedLocationClient.removeLocationUpdates(trackingCallback);
             trackingCallback = null;
         }
+
+        // Stop movement detection when stopping session
+        stopMovementDetection();
 
         Intent serviceIntent = new Intent(requireContext(), LocationService.class);
         serviceIntent.setAction(LocationService.ACTION_STOP_TRACKING);
@@ -424,9 +438,7 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                 long elapsedTime = System.currentTimeMillis() - sessionStartTime;
                 binding.chronometer.setBase(SystemClock.elapsedRealtime() - elapsedTime);
                 binding.chronometer.start();
-            }
-
-            startContinuousLocationTracking();
+            }            startContinuousLocationTracking();
 
             String statusMessage = String.format(Locale.getDefault(),
                     "▶️ Plogging resumed! Distance: %.2f km, Trash: %d items, Points: %d",
@@ -484,23 +496,19 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                                             "📍 Distance: %.2f km\n" +
                                             "🗑️ Trash: %d items\n" +
                                             "⭐ Points: %d",
-                                    totalDistance / 1000f, finalTrashCount, finalPoints);
-
-                            new MaterialAlertDialogBuilder(requireContext())
+                                    totalDistance / 1000f, finalTrashCount, finalPoints);                            new MaterialAlertDialogBuilder(requireContext())
                                     .setTitle("Plogging Selesai")
                                     .setMessage(completionMessage)
-                                    .setPositiveButton("OK", (dialog, which) -> {
+                                    .setPositiveButton("Lihat Hasil", (dialog, which) -> {
                                         try {
                                             NavController navController = Navigation.findNavController(requireView());
                                             Bundle args = new Bundle();
                                             args.putInt("RECORD_ID", record.getId());
-                                            navController.navigate(R.id.action_ploggingFragment_to_summaryFragment, args);
+                                            navController.navigate(R.id.action_ploggingFragment_to_ploggingSummaryFragment, args);
                                         } catch (Exception e) {
-                                            Toast.makeText(requireContext(), completionMessage, Toast.LENGTH_LONG).show();
+                                            Log.e(TAG, "Error navigating to plogging summary", e);
+                                            Toast.makeText(requireContext(), "Gagal membuka hasil plogging", Toast.LENGTH_SHORT).show();
                                         }
-                                    })
-                                    .setNegativeButton("Tampilkan di Peta", (dialog, which) -> {
-                                        showRouteOnMap(currentRecordId);
                                     })
                                     .setNeutralButton("Simpan ke Galeri", (dialog, which) -> {
                                         savePloggingResultToGallery(completionMessage);
@@ -993,9 +1001,7 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                     .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
                     .setInterval(2000)
                     .setFastestInterval(1000)
-                    .setSmallestDisplacement(1f);
-
-            trackingCallback = new LocationCallback() {
+                    .setSmallestDisplacement(1f);            trackingCallback = new LocationCallback() {
                 @Override
                 public void onLocationResult(LocationResult locationResult) {
                     if (locationResult == null || !isTracking) return;
@@ -1007,6 +1013,9 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                         routePoints.add(currentLatLng);
 
                         addCurrentLocationMarker(currentLatLng, location.getAccuracy());
+
+                        // Check for location movement and start movement detection if needed
+                        checkLocationMovement(location);
 
                         if (lastLocation != null) {
                             float distance = lastLocation.distanceTo(location);
@@ -1073,13 +1082,18 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         super.onDestroy();
         if (executor != null && !executor.isShutdown()) {
             executor.shutdown();
-        }
-
-        // Cancel auto-finish timers when fragment is destroyed
+        }        // Cancel auto-finish timers when fragment is destroyed
         cancelAutoFinishTimer();
 
         if (autoFinishHandler != null) {
             autoFinishHandler.removeCallbacksAndMessages(null);
+        }
+        
+        // Cancel movement detection timers when fragment is destroyed
+        stopMovementDetection();
+        
+        if (movementCheckHandler != null) {
+            movementCheckHandler.removeCallbacksAndMessages(null);
         }
     }    private void updateUIForNetworkState(boolean networkAvailable) {
         if (binding == null) return;
@@ -1570,10 +1584,175 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                     .setPositiveButton("OK", (dialog, which) -> {
                         finishPloggingConfirmed();
                     })
+                    .setCancelable(false)                    .show();
+        });
+    }
+    
+    // Location movement detection methods
+    private void checkLocationMovement(Location currentLocation) {
+        if (!isTracking || currentLocation == null) return;
+
+        // Start movement detection on first location
+        if (startLocationForMovement == null) {
+            startLocationForMovement = currentLocation;
+            movementCheckStartTime = System.currentTimeMillis();
+            hasShownMovementWarning = false;
+            startMovementDetectionTimer();
+            Log.d(TAG, "Movement detection started - monitoring user location");
+            return;
+        }
+
+        // Check if user has moved significantly
+        float distanceFromStart = startLocationForMovement.distanceTo(currentLocation);
+        if (distanceFromStart >= MINIMAL_MOVEMENT_THRESHOLD_METERS) {
+            // User has moved significantly, reset the timer
+            resetMovementDetection(currentLocation);
+        }
+    }
+
+    private void startMovementDetectionTimer() {
+        cancelMovementDetectionTimer();
+
+        movementCheckRunnable = this::checkIfUserNeedsToMove;
+        movementCheckHandler.postDelayed(movementCheckRunnable, MOVEMENT_CHECK_INTERVAL_MS);
+    }
+
+    private void checkIfUserNeedsToMove() {
+        if (!isTracking || getContext() == null || !isAdded() || hasShownMovementWarning) {
+            return;
+        }
+
+        // Check if 10 minutes have passed without significant movement
+        long elapsedTime = System.currentTimeMillis() - movementCheckStartTime;
+        if (elapsedTime >= MOVEMENT_CHECK_INTERVAL_MS) {
+            showMovementWarning();
+        }
+    }
+
+    private void showMovementWarning() {
+        if (getContext() == null || !isAdded() || hasShownMovementWarning) return;
+
+        hasShownMovementWarning = true;
+        Log.d(TAG, "Showing movement warning - user hasn't moved significantly in 10 minutes");
+
+        requireActivity().runOnUiThread(() -> {
+            if (movementWarningDialog != null && movementWarningDialog.isShowing()) {
+                movementWarningDialog.dismiss();
+            }
+
+            movementWarningDialog = new MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("🚶‍♂️ Pindah Lokasi!")
+                    .setMessage("Anda sudah berada di lokasi yang sama selama 10 menit. " +
+                            "Untuk plogging yang efektif, silakan bergerak ke area yang berbeda.\n\n" +
+                            "Session akan otomatis berakhir dalam 10 detik jika tidak ada pergerakan.")
+                    .setPositiveButton("Lanjutkan Plogging", (dialog, which) -> {
+                        acknowledgeMovementWarning();
+                    })
+                    .setNegativeButton("Akhiri Session", (dialog, which) -> {
+                        finishPloggingConfirmed();
+                    })
+                    .setCancelable(false)
+                    .show();
+
+            // Start auto-finish timer for movement warning
+            startMovementWarningTimeout();
+        });
+    }
+
+    private void startMovementWarningTimeout() {
+        cancelMovementWarningTimeout();
+
+        movementWarningTimeoutRunnable = this::autoFinishDueToNoMovement;
+        movementCheckHandler.postDelayed(movementWarningTimeoutRunnable, MOVEMENT_WARNING_TIMEOUT_MS);
+    }
+
+    private void acknowledgeMovementWarning() {
+        Log.d(TAG, "User acknowledged movement warning");
+        cancelMovementWarningTimeout();
+        
+        // Reset movement detection with current location
+        if (lastLocation != null) {
+            resetMovementDetection(lastLocation);
+        }
+        
+        showNetworkStatusMessage("✅ Lanjutkan plogging di area baru!", false);
+    }
+
+    private void autoFinishDueToNoMovement() {
+        if (!isTracking || getContext() == null || !isAdded()) return;
+
+        requireActivity().runOnUiThread(() -> {
+            Log.d(TAG, "Auto-finishing session due to no movement response");
+
+            showNetworkStatusMessage("⏰ Session berakhir otomatis - tidak ada pergerakan", true);
+
+            // Dismiss movement warning dialog if still showing
+            if (movementWarningDialog != null && movementWarningDialog.isShowing()) {
+                movementWarningDialog.dismiss();
+            }
+
+            // Show final notification
+            new MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("⏰ Session Berakhir Otomatis")
+                    .setMessage("Session plogging telah berakhir karena Anda tidak bergerak ke lokasi baru.\n\n" +
+                            "Progress Anda telah disimpan.")
+                    .setPositiveButton("OK", (dialog, which) -> {
+                        finishPloggingConfirmed();
+                    })
                     .setCancelable(false)
                     .show();
         });
-    }    private void createDefaultUser() {
+    }
+
+    private void resetMovementDetection(Location newStartLocation) {
+        Log.d(TAG, "Resetting movement detection - user has moved significantly");
+        startLocationForMovement = newStartLocation;
+        movementCheckStartTime = System.currentTimeMillis();
+        hasShownMovementWarning = false;
+        cancelMovementWarningTimeout();
+        startMovementDetectionTimer();
+    }
+
+    private void cancelMovementDetectionTimer() {
+        if (movementCheckHandler != null && movementCheckRunnable != null) {
+            movementCheckHandler.removeCallbacks(movementCheckRunnable);
+            movementCheckRunnable = null;
+        }
+    }
+
+    private void cancelMovementWarningTimeout() {
+        if (movementCheckHandler != null && movementWarningTimeoutRunnable != null) {
+            movementCheckHandler.removeCallbacks(movementWarningTimeoutRunnable);
+            movementWarningTimeoutRunnable = null;
+        }
+    }    private void stopMovementDetection() {
+        Log.d(TAG, "Stopping movement detection");
+        cancelMovementDetectionTimer();
+        cancelMovementWarningTimeout();
+        
+        if (movementWarningDialog != null && movementWarningDialog.isShowing()) {
+            movementWarningDialog.dismiss();
+            movementWarningDialog = null;
+        }
+        
+        // Comprehensive reset of all movement detection variables
+        startLocationForMovement = null;
+        movementCheckStartTime = 0;
+        hasShownMovementWarning = false;
+        
+        // Clear any remaining callbacks from handler
+        if (movementCheckHandler != null) {
+            movementCheckHandler.removeCallbacksAndMessages(null);
+        }
+        
+        // Reset runnable variables to null
+        movementCheckRunnable = null;
+        movementWarningTimeoutRunnable = null;
+        
+        Log.d(TAG, "Movement detection completely stopped and reset");
+    }
+
+    private void createDefaultUser() {
         executor.execute(() -> {
             try {
                 // Check if any user exists first

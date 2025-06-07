@@ -29,9 +29,7 @@
         <action
             android:id="@+id/action_homeFragment_to_newsFragment"
             app:destination="@id/newsFragment" />
-    </fragment>
-
-    <fragment
+    </fragment>    <fragment
         android:id="@+id/ploggingFragment"
         android:name="com.example.glean.fragment.PloggingFragment"
         android:label="Plogging"
@@ -42,6 +40,23 @@
         <action
             android:id="@+id/action_ploggingFragment_to_trashMLFragment"
             app:destination="@id/trashMLFragment" />
+        <action
+            android:id="@+id/action_ploggingFragment_to_routeMapFragment"
+            app:destination="@id/routeMapFragment" />
+        <action
+            android:id="@+id/action_ploggingFragment_to_ploggingSummaryFragment"
+            app:destination="@id/ploggingSummaryFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/routeMapFragment"
+        android:name="com.example.glean.fragment.RouteMapFragment"
+        android:label="Route Map"
+        tools:layout="@layout/fragment_route_map">
+        <argument
+            android:name="record_id"
+            app:argType="integer"
+            android:defaultValue="-1" />
     </fragment>
 
     <fragment
@@ -154,13 +169,22 @@
         <action
             android:id="@+id/action_historyFragment_to_summaryFragment"
             app:destination="@id/summaryFragment" />
-    </fragment>
-
-    <fragment
+    </fragment>    <fragment
         android:id="@+id/summaryFragment"
         android:name="com.example.glean.fragment.SummaryFragment"
         android:label="Activity Summary"
         tools:layout="@layout/fragment_summary">
+        <argument
+            android:name="RECORD_ID"
+            app:argType="integer"
+            android:defaultValue="-1" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/ploggingSummaryFragment"
+        android:name="com.example.glean.fragment.PloggingSummaryFragment"
+        android:label="Plogging Summary"
+        tools:layout="@layout/fragment_plogging_summary">
         <argument
             android:name="RECORD_ID"
             app:argType="integer"

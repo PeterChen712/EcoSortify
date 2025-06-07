@@ -1,0 +1,696 @@
+package com.example.glean.fragment;
+
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Typeface;
+import android.location.Location;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.SystemClock;
+import android.provider.MediaStore;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
+import androidx.fragment.app.Fragment;
+import androidx.navigation.NavController;
+import androidx.navigation.Navigation;
+
+import com.example.glean.R;
+import com.example.glean.databinding.FragmentPloggingSummaryBinding;
+import com.example.glean.db.AppDatabase;
+import com.example.glean.model.LocationPointEntity;
+import com.example.glean.model.RecordEntity;
+import com.example.glean.model.TrashEntity;
+import com.example.glean.model.CommunityPostModel;
+import com.example.glean.helper.FirebaseHelper;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.firebase.auth.FirebaseUser;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallback {
+
+    private static final String TAG = "PloggingSummaryFragment";
+    
+    private FragmentPloggingSummaryBinding binding;
+    private AppDatabase db;
+    private ExecutorService executor;
+    private int recordId;
+    private GoogleMap mMap;
+    
+    private FirebaseHelper firebaseHelper;
+    private RecordEntity currentRecord;
+    private Location lastKnownLocation;
+    private List<LocationPointEntity> routePoints;
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        db = AppDatabase.getInstance(requireContext());
+        executor = Executors.newSingleThreadExecutor();
+        
+        // Get record ID from arguments
+        if (getArguments() != null) {
+            recordId = getArguments().getInt("RECORD_ID", -1);
+        }
+        
+        firebaseHelper = new FirebaseHelper(requireContext());
+    }
+
+    @Nullable
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        binding = FragmentPloggingSummaryBinding.inflate(inflater, container, false);
+        return binding.getRoot();
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        
+        // Initialize map
+        SupportMapFragment mapFragment = (SupportMapFragment) getChildFragmentManager()
+                .findFragmentById(R.id.mapFragment);
+        if (mapFragment != null) {
+            mapFragment.getMapAsync(this);
+        }
+        
+        // Set click listeners
+        binding.btnBack.setOnClickListener(v -> navigateBack());
+        binding.btnShare.setOnClickListener(v -> shareActivity());
+        binding.btnShareCommunity.setOnClickListener(v -> shareToCommunitiy());
+        binding.btnSaveToGallery.setOnClickListener(v -> savePloggingResultToGallery());
+        binding.btnRetry.setOnClickListener(v -> loadActivityData());
+        
+        // Load activity data
+        loadActivityData();
+    }
+
+    @Override
+    public void onMapReady(@NonNull GoogleMap googleMap) {
+        mMap = googleMap;
+        mMap.getUiSettings().setZoomControlsEnabled(true);
+        mMap.getUiSettings().setMapToolbarEnabled(false);
+        
+        // Load route data when map is ready
+        if (recordId != -1) {
+            loadRouteData();
+        }
+    }
+
+    private void loadActivityData() {
+        if (recordId == -1) {
+            showError("Invalid record ID");
+            return;
+        }
+
+        showLoading(true);
+        
+        executor.execute(() -> {
+            try {
+                // Load record data synchronously
+                RecordEntity record = db.recordDao().getRecordByIdSync(recordId);
+                
+                requireActivity().runOnUiThread(() -> {
+                    showLoading(false);
+                    
+                    if (record != null) {
+                        currentRecord = record;
+                        displayActivityData(record);
+                        showMainContent(true);
+                    } else {
+                        showError("Plogging record not found");
+                    }
+                });
+            } catch (Exception e) {
+                Log.e(TAG, "Error loading activity data", e);
+                requireActivity().runOnUiThread(() -> {
+                    showLoading(false);
+                    showError("Failed to load plogging data: " + e.getMessage());
+                });
+            }
+        });
+    }
+
+    private void loadRouteData() {
+        if (recordId == -1 || mMap == null) return;
+
+        executor.execute(() -> {
+            try {
+                // Load location points for the route
+                List<LocationPointEntity> locationPoints = db.locationPointDao().getLocationPointsByRecordIdSync(recordId);
+                
+                requireActivity().runOnUiThread(() -> {
+                    hideMapLoading();
+                    
+                    if (locationPoints != null && !locationPoints.isEmpty()) {
+                        routePoints = locationPoints;
+                        displayRouteOnMap(locationPoints);
+                        updateRouteInfo(locationPoints.size());
+                    } else {
+                        showMapError("No route data available");
+                    }
+                });
+            } catch (Exception e) {
+                Log.e(TAG, "Error loading route data", e);
+                requireActivity().runOnUiThread(() -> {
+                    hideMapLoading();
+                    showMapError("Failed to load route");
+                });
+            }
+        });
+    }
+
+    private void displayRouteOnMap(List<LocationPointEntity> locationPoints) {
+        if (mMap == null || locationPoints.isEmpty()) return;
+
+        mMap.clear();
+
+        // Convert to LatLng list and create polyline
+        List<LatLng> routeLatLngs = new ArrayList<>();
+        for (LocationPointEntity point : locationPoints) {
+            routeLatLngs.add(new LatLng(point.getLatitude(), point.getLongitude()));
+        }
+
+        // Add polyline for the route
+        PolylineOptions polylineOptions = new PolylineOptions()
+                .addAll(routeLatLngs)
+                .width(8f)
+                .color(getResources().getColor(R.color.primary_color));
+        mMap.addPolyline(polylineOptions);
+
+        // Add start marker (green)
+        if (routeLatLngs.size() > 0) {
+            LatLng startPoint = routeLatLngs.get(0);
+            mMap.addMarker(new MarkerOptions()
+                    .position(startPoint)
+                    .title("🏁 Start Point")
+                    .snippet("Plogging session started here")
+                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
+        }
+
+        // Add finish marker (red)
+        if (routeLatLngs.size() > 1) {
+            LatLng endPoint = routeLatLngs.get(routeLatLngs.size() - 1);
+            mMap.addMarker(new MarkerOptions()
+                    .position(endPoint)
+                    .title("🏁 Finish Point")
+                    .snippet("Plogging session finished here")
+                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
+        }
+
+        // Fit camera to show entire route
+        if (routeLatLngs.size() > 1) {
+            LatLngBounds.Builder boundsBuilder = new LatLngBounds.Builder();
+            for (LatLng point : routeLatLngs) {
+                boundsBuilder.include(point);
+            }
+            LatLngBounds bounds = boundsBuilder.build();
+            
+            try {
+                int padding = 100; // padding in pixels
+                mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding));
+            } catch (Exception e) {
+                Log.e(TAG, "Error fitting camera to bounds", e);
+            }
+        } else if (routeLatLngs.size() == 1) {
+            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(routeLatLngs.get(0), 16f));
+        }
+    }
+
+    private void updateRouteInfo(int pointCount) {
+        String routeInfo = String.format(Locale.getDefault(), 
+            "Route with %d tracking points", pointCount);
+        binding.tvRouteInfo.setText(routeInfo);
+    }
+
+    private void showMapError(String message) {
+        binding.tvRouteInfo.setText(message);
+    }
+
+    private void hideMapLoading() {
+        binding.mapLoadingOverlay.setVisibility(View.GONE);
+    }
+
+    private void displayActivityData(RecordEntity record) {
+        // Set date
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
+        String formattedDate = dateFormat.format(new Date(record.getCreatedAt()));
+        binding.tvDate.setText(formattedDate);
+        
+        // Set location
+        String location = record.getDescription() != null && !record.getDescription().isEmpty() 
+            ? record.getDescription() 
+            : "Plogging Session";
+        binding.tvLocation.setText("📍 " + location);
+        
+        // Format start time
+        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm", Locale.getDefault());
+        String startTime = sdf.format(new Date(record.getCreatedAt()));
+        binding.tvStartTime.setText("Started at " + startTime);
+        
+        // Format distance
+        float distanceKm = record.getDistance() / 1000f;
+        binding.tvDistance.setText(String.format(Locale.getDefault(), "%.2f km", distanceKm));
+        
+        // Format duration
+        long durationSeconds = record.getDuration() / 1000;
+        int hours = (int) (durationSeconds / 3600);
+        int minutes = (int) ((durationSeconds % 3600) / 60);
+        int seconds = (int) (durationSeconds % 60);
+        String durationStr;
+        if (hours > 0) {
+            durationStr = String.format(Locale.getDefault(), "%d hr %d min %d sec", hours, minutes, seconds);
+        } else {
+            durationStr = String.format(Locale.getDefault(), "%d min %d sec", minutes, seconds);
+        }
+        binding.tvDuration.setText(durationStr);
+        
+        // Set points
+        binding.tvPoints.setText(String.valueOf(record.getPoints()));
+        
+        // Set trash collected
+        int trashCount = record.getPoints() / 10; // Assuming 10 points per trash item
+        binding.tvTrashCollected.setText(String.valueOf(trashCount));
+        
+        // Calculate average pace
+        if (record.getDistance() > 0 && record.getDuration() > 0) {
+            float paceMinPerKm = (record.getDuration() / 60000f) / (record.getDistance() / 1000f);
+            int paceMin = (int) paceMinPerKm;
+            int paceSec = (int) ((paceMinPerKm - paceMin) * 60);
+            binding.tvPace.setText(String.format(Locale.getDefault(), "%d:%02d min/km", paceMin, paceSec));
+        } else {
+            binding.tvPace.setText("N/A");
+        }
+    }
+
+    private void shareActivity() {
+        if (currentRecord == null) {
+            Toast.makeText(requireContext(), "No record data available", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
+        String formattedDate = dateFormat.format(new Date(currentRecord.getCreatedAt()));
+        int trashCount = currentRecord.getPoints() / 10;
+        
+        String shareText = String.format(Locale.getDefault(),
+            "I just completed an amazing plogging session! 🏃‍♂️🌱\n\n" +
+            "📅 Date: %s\n" +
+            "🏃 Distance: %.2f km\n" +
+            "⏱️ Duration: %s\n" +
+            "🗑️ Trash collected: %d items\n" +
+            "🏆 Points earned: %d\n\n" +
+            "Join me in making our environment cleaner! #Plogging #CleanEnvironment #GleanGo",
+            formattedDate,
+            currentRecord.getDistance() / 1000f,
+            formatDuration(currentRecord.getDuration()),
+            trashCount,
+            currentRecord.getPoints()
+        );
+        
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.setType("text/plain");
+        shareIntent.putExtra(Intent.EXTRA_TEXT, shareText);
+        shareIntent.putExtra(Intent.EXTRA_SUBJECT, "My Plogging Achievement");
+        
+        startActivity(Intent.createChooser(shareIntent, "Share your plogging achievement"));
+    }
+
+    private void shareToCommunitiy() {
+        if (!firebaseHelper.isUserLoggedIn()) {
+            showLoginPrompt();
+            return;
+        }
+
+        if (currentRecord == null) {
+            Toast.makeText(requireContext(), "No record data available", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Create community post from plogging data
+        FirebaseUser user = firebaseHelper.getCurrentUser();
+        String content = createPloggingPostContent(currentRecord);
+        
+        CommunityPostModel post = new CommunityPostModel(
+                user.getUid(),
+                user.getDisplayName() != null ? user.getDisplayName() : "Anonymous",
+                content
+        );
+        
+        post.setCategory("plogging");
+        post.setUserProfileUrl(user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : null);
+        
+        // Add metadata
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("distance_km", currentRecord.getDistance() / 1000f);
+        metadata.put("duration_minutes", currentRecord.getDuration() / 60000);
+        int trashCount = currentRecord.getPoints() / 10;
+        metadata.put("trash_count", trashCount);
+        metadata.put("points_earned", currentRecord.getPoints());
+        metadata.put("record_id", currentRecord.getId());
+        post.setMetadata(metadata);
+        
+        // Show sharing dialog
+        showSharingDialog(post);
+    }
+
+    private void showSharingDialog(CommunityPostModel post) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+        View dialogView = LayoutInflater.from(requireContext())
+                .inflate(R.layout.dialog_share_community, null);
+        
+        EditText etContent = dialogView.findViewById(R.id.etContent);
+        CheckBox cbIncludeLocation = dialogView.findViewById(R.id.cbIncludeLocation);
+        CheckBox cbIncludePhoto = dialogView.findViewById(R.id.cbIncludePhoto);
+        TextView tvPreview = dialogView.findViewById(R.id.tvPreview);
+        
+        etContent.setText(post.getContent());
+        tvPreview.setText("Preview: " + post.getContent());
+        
+        builder.setView(dialogView)
+                .setTitle("Share to Community")
+                .setPositiveButton("Share", (dialog, which) -> {
+                    post.setContent(etContent.getText().toString().trim());
+                    
+                    if (cbIncludeLocation.isChecked() && lastKnownLocation != null) {
+                        post.setLatitude(lastKnownLocation.getLatitude());
+                        post.setLongitude(lastKnownLocation.getLongitude());
+                        post.setLocation("Plogging location");
+                    }
+                    
+                    sharePostToFirebase(post, cbIncludePhoto.isChecked());
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void sharePostToFirebase(CommunityPostModel post, boolean includePhoto) {
+        binding.progressBar.setVisibility(View.VISIBLE);
+        
+        if (includePhoto && currentRecord != null) {
+            // Find best photo from trash collection
+            executor.execute(() -> {
+                List<TrashEntity> trashItems = db.trashDao().getTrashByRecordIdSync(currentRecord.getId());
+                TrashEntity photoTrash = null;
+                
+                for (TrashEntity trash : trashItems) {
+                    if (trash.getPhotoPath() != null && !trash.getPhotoPath().isEmpty()) {
+                        photoTrash = trash;
+                        break;
+                    }
+                }
+                
+                if (photoTrash != null) {
+                    String photoPath = photoTrash.getPhotoPath();
+                    requireActivity().runOnUiThread(() -> {
+                        uploadPhotoAndShare(post, photoPath);
+                    });
+                } else {
+                    requireActivity().runOnUiThread(() -> {
+                        sharePostWithoutPhoto(post);
+                    });
+                }
+            });
+        } else {
+            sharePostWithoutPhoto(post);
+        }
+    }
+
+    private void uploadPhotoAndShare(CommunityPostModel post, String photoPath) {
+        // Implementation for photo upload - placeholder for now
+        sharePostWithoutPhoto(post);
+    }
+
+    private void sharePostWithoutPhoto(CommunityPostModel post) {
+        firebaseHelper.createPost(post,
+                postId -> {
+                    binding.progressBar.setVisibility(View.GONE);
+                    Toast.makeText(requireContext(), "Shared to community successfully! 🎉", 
+                                   Toast.LENGTH_LONG).show();
+                },
+                error -> {
+                    binding.progressBar.setVisibility(View.GONE);
+                    Toast.makeText(requireContext(), "Failed to share: " + error.getMessage(), 
+                                   Toast.LENGTH_SHORT).show();
+                });
+    }
+
+    private void savePloggingResultToGallery() {
+        if (currentRecord == null) {
+            Toast.makeText(requireContext(), "No data to save", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        try {
+            // Create summary message
+            String summaryMessage = String.format(Locale.getDefault(),
+                    "🎉 Plogging Complete!\n" +
+                            "📍 Distance: %.2f km\n" +
+                            "🗑️ Trash: %d items\n" +
+                            "⭐ Points: %d\n" +
+                            "⏱️ Duration: %s",
+                    currentRecord.getDistance() / 1000f, 
+                    currentRecord.getPoints() / 10,
+                    currentRecord.getPoints(),
+                    formatDuration(currentRecord.getDuration()));
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                savePloggingImageAndroid10Plus(summaryMessage);
+            } else {
+                savePloggingImageLegacy(summaryMessage);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error saving to gallery", e);
+            Toast.makeText(requireContext(), "Failed to save to gallery", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @androidx.annotation.RequiresApi(api = Build.VERSION_CODES.Q)
+    private void savePloggingImageAndroid10Plus(String completionMessage) {
+        try {
+            Bitmap bitmap = createPloggingSummaryBitmap(completionMessage);
+
+            if (bitmap != null) {
+                android.content.ContentValues values = new android.content.ContentValues();
+                values.put(MediaStore.Images.Media.DISPLAY_NAME,
+                        "Plogging_Result_" + System.currentTimeMillis() + ".jpg");
+                values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
+                values.put(MediaStore.Images.Media.RELATIVE_PATH,
+                        android.os.Environment.DIRECTORY_PICTURES + "/Glean/");
+
+                Uri uri = requireContext().getContentResolver()
+                        .insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+
+                if (uri != null) {
+                    try (OutputStream outputStream = requireContext().getContentResolver()
+                            .openOutputStream(uri)) {
+                        if (outputStream != null) {
+                            bitmap.compress(Bitmap.CompressFormat.JPEG, 95, outputStream);
+                            Toast.makeText(requireContext(), "Plogging result saved to gallery! 📸", 
+                                         Toast.LENGTH_LONG).show();
+                        }
+                    }
+                } else {
+                    Toast.makeText(requireContext(), "Failed to save image", Toast.LENGTH_SHORT).show();
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error saving image (Android 10+)", e);
+            Toast.makeText(requireContext(), "Error saving to gallery", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void savePloggingImageLegacy(String completionMessage) {
+        try {
+            Bitmap bitmap = createPloggingSummaryBitmap(completionMessage);
+
+            if (bitmap != null) {
+                File picturesDir = android.os.Environment
+                        .getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_PICTURES);
+                File gleanDir = new File(picturesDir, "Glean");
+
+                if (!gleanDir.exists()) {
+                    gleanDir.mkdirs();
+                }
+
+                File imageFile = new File(gleanDir,
+                        "Plogging_Result_" + System.currentTimeMillis() + ".jpg");
+
+                try (FileOutputStream outputStream = new FileOutputStream(imageFile)) {
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 95, outputStream);
+
+                    android.media.MediaScannerConnection.scanFile(requireContext(),
+                            new String[]{imageFile.getAbsolutePath()}, null, null);
+
+                    Toast.makeText(requireContext(), "Plogging result saved to gallery! 📸", 
+                                 Toast.LENGTH_LONG).show();
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error saving image (Legacy)", e);
+            Toast.makeText(requireContext(), "Error saving to gallery", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private Bitmap createPloggingSummaryBitmap(String completionMessage) {
+        try {
+            int width = 800;
+            int height = 600;
+
+            Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(bitmap);
+
+            canvas.drawColor(Color.WHITE);
+
+            Paint textPaint = new Paint();
+            textPaint.setColor(Color.BLACK);
+            textPaint.setTextSize(24f);
+            textPaint.setAntiAlias(true);
+            textPaint.setTypeface(Typeface.DEFAULT_BOLD);
+
+            Paint titlePaint = new Paint();
+            titlePaint.setColor(Color.parseColor("#4CAF50"));
+            titlePaint.setTextSize(32f);
+            titlePaint.setAntiAlias(true);
+            titlePaint.setTypeface(Typeface.DEFAULT_BOLD);
+
+            canvas.drawText("🌱 Glean Plogging Result", 50, 80, titlePaint);
+
+            String[] lines = completionMessage.split("\n");
+            int yPosition = 150;
+
+            for (String line : lines) {
+                canvas.drawText(line, 50, yPosition, textPaint);
+                yPosition += 40;
+            }
+
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
+            String timestamp = "Generated on: " + sdf.format(new Date());
+
+            Paint timestampPaint = new Paint();
+            timestampPaint.setColor(Color.GRAY);
+            timestampPaint.setTextSize(18f);
+            timestampPaint.setAntiAlias(true);
+
+            canvas.drawText(timestamp, 50, height - 50, timestampPaint);
+            canvas.drawText("Generated by Glean App", 50, height - 20, timestampPaint);
+
+            return bitmap;
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating summary bitmap", e);
+            return null;
+        }
+    }
+
+    private String createPloggingPostContent(RecordEntity record) {
+        float distanceKm = record.getDistance() / 1000f;
+        int durationMin = (int) (record.getDuration() / 60000);
+        int trashCount = record.getPoints() / 10;
+        
+        return String.format(Locale.getDefault(),
+                "🏃‍♂️ Just completed an amazing plogging session!\n\n" +
+                "📊 Stats:\n" +
+                "• Distance: %.2f km\n" +
+                "• Duration: %d minutes\n" +
+                "• Trash collected: %d items\n" +
+                "• Points earned: %d\n\n" +
+                "Every small action makes a big difference! 🌱\n" +
+                "#GleanGo #Plogging #MakeTheWorldClean",
+                distanceKm, durationMin, trashCount, record.getPoints());
+    }
+
+    private String formatDuration(long durationMillis) {
+        long durationSeconds = durationMillis / 1000;
+        int hours = (int) (durationSeconds / 3600);
+        int minutes = (int) ((durationSeconds % 3600) / 60);
+        int seconds = (int) (durationSeconds % 60);
+        
+        if (hours > 0) {
+            return String.format(Locale.getDefault(), "%d hr %d min %d sec", hours, minutes, seconds);
+        } else {
+            return String.format(Locale.getDefault(), "%d min %d sec", minutes, seconds);
+        }
+    }
+
+    private void showLoginPrompt() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+        builder.setTitle("Join Community")
+                .setMessage("Sign in to share your achievements with the GleanGo community!")
+                .setPositiveButton("Sign In", (dialog, which) -> {
+                    NavController navController = Navigation.findNavController(requireView());
+                    navController.navigate(R.id.communityFeedFragment);
+                })
+                .setNegativeButton("Later", null)
+                .show();
+    }
+
+    private void navigateBack() {
+        NavController navController = Navigation.findNavController(requireView());
+        navController.navigateUp();
+    }
+
+    private void showLoading(boolean show) {
+        binding.progressBar.setVisibility(show ? View.VISIBLE : View.GONE);
+        binding.layoutMainContent.setVisibility(show ? View.GONE : View.VISIBLE);
+        binding.layoutError.setVisibility(View.GONE);
+    }
+
+    private void showError(String message) {
+        binding.layoutError.setVisibility(View.VISIBLE);
+        binding.layoutMainContent.setVisibility(View.GONE);
+        binding.progressBar.setVisibility(View.GONE);
+        binding.tvError.setText(message);
+    }
+
+    private void showMainContent(boolean show) {
+        binding.layoutMainContent.setVisibility(show ? View.VISIBLE : View.GONE);
+        binding.layoutError.setVisibility(show ? View.GONE : View.VISIBLE);
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        binding = null;
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (executor != null) {
+            executor.shutdown();
+        }
+    }
+}
