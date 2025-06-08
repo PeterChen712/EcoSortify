@@ -6,12 +6,14 @@ import android.content.Intent;
 import android.location.Location;
 import android.os.IBinder;
 import android.os.Looper;
+import android.util.Log;
 
 import androidx.annotation.Nullable;
 
 import com.example.glean.db.AppDatabase;
 import com.example.glean.helper.NotificationHelper;
 import com.example.glean.model.LocationPointEntity;
+import com.example.glean.model.RecordEntity;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -23,6 +25,8 @@ import java.util.concurrent.Executors;
 
 public class LocationService extends Service {
 
+    private static final String TAG = "LocationService";
+    
     public static final String ACTION_START_TRACKING = "com.example.glean.ACTION_START_TRACKING";
     public static final String ACTION_STOP_TRACKING = "com.example.glean.ACTION_STOP_TRACKING";
 
@@ -83,14 +87,18 @@ public class LocationService extends Service {
                 }
             }
         };
-    }
-
-    private void onNewLocation(Location location) {
+    }    private void onNewLocation(Location location) {
+        Log.d(TAG, "📍 LocationService received new location: (" + location.getLatitude() + ", " + location.getLongitude() + ")");
+        Log.d(TAG, "   Current record ID: " + recordId);
+        
         if (recordId != -1) {
             // Calculate distance from last location if available
             float distance = 0;
             if (lastLocation != null) {
                 distance = location.distanceTo(lastLocation);
+                Log.d(TAG, "   Distance from last location: " + distance + "m");
+            } else {
+                Log.d(TAG, "   First location point (no previous location)");
             }
             
             // Make distance effectively final for lambda
@@ -106,16 +114,42 @@ public class LocationService extends Service {
                     finalDistance
             );
             
+            Log.d(TAG, "🔄 LocationService: Saving location point to database...");
+            
             executor.execute(() -> {
-                db.locationPointDao().insert(locationPoint);
-                
-                // Update route distance in record
-                if (finalDistance > 0) {
-                    db.recordDao().updateDistance(recordId, finalDistance);
+                try {
+                    // Verify record exists before inserting
+                    RecordEntity record = db.recordDao().getRecordByIdSync(recordId);
+                    if (record == null) {
+                        Log.e(TAG, "❌ LocationService ERROR: Record ID " + recordId + " does not exist!");
+                        return;
+                    }
+                    
+                    // Get count before insertion
+                    int countBefore = db.locationPointDao().getLocationPointCountByRecordId(recordId);
+                    
+                    // Insert location point
+                    long insertedId = db.locationPointDao().insert(locationPoint);
+                    Log.d(TAG, "✅ LocationService: Location point inserted with ID " + insertedId);
+                    
+                    // Verify insertion
+                    int countAfter = db.locationPointDao().getLocationPointCountByRecordId(recordId);
+                    Log.d(TAG, "   LocationService: Points before=" + countBefore + ", after=" + countAfter);
+                    
+                    // Update route distance in record
+                    if (finalDistance > 0) {
+                        db.recordDao().updateDistance(recordId, finalDistance);
+                        Log.d(TAG, "✅ LocationService: Record distance updated by " + finalDistance + "m");
+                    }
+                    
+                } catch (Exception e) {
+                    Log.e(TAG, "❌ LocationService ERROR saving location point: " + e.getMessage(), e);
                 }
             });
             
             lastLocation = location;
+        } else {
+            Log.w(TAG, "⚠️  LocationService: Cannot save location - no active record (recordId = " + recordId + ")");
         }
     }
 

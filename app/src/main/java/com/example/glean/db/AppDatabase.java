@@ -36,7 +36,7 @@ import com.example.glean.util.Converters;
         PostEntity.class,
         CommentEntity.class
     },
-    version = 15, // Increment to version 15 after Firebase removal changes
+    version = 16, // Increment to version 16 after adding photoPath to RecordEntity
     exportSchema = false
 )
 @TypeConverters({Converters.class})

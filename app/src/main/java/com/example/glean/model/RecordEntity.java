@@ -20,9 +20,9 @@ public class RecordEntity {
     private float distance; // in meters
     private long duration; // in milliseconds
     private float averageSpeed; // in m/s
-    private int points;
-    private String routeData; // JSON string of route coordinates
+    private int points;    private String routeData; // JSON string of route coordinates
     private String imagePath; // path to captured trash image
+    private String photoPath; // path to plogging documentation photo
     private String description;
     private double startLatitude;
     private double startLongitude;
@@ -116,10 +116,16 @@ public class RecordEntity {
 
     public String getImagePath() {
         return imagePath;
+    }    public void setImagePath(String imagePath) {
+        this.imagePath = imagePath;
     }
 
-    public void setImagePath(String imagePath) {
-        this.imagePath = imagePath;
+    public String getPhotoPath() {
+        return photoPath;
+    }
+
+    public void setPhotoPath(String photoPath) {
+        this.photoPath = photoPath;
     }
 
     public String getDescription() {

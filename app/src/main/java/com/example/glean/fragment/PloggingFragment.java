@@ -1,6 +1,12 @@
 package com.example.glean.fragment;
 
 import android.Manifest;
+import android.app.Activity;
+import android.content.ContentValues;
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -8,10 +14,16 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
+import android.net.Uri;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkInfo;
@@ -42,6 +54,7 @@ import com.example.glean.R;
 import com.example.glean.databinding.FragmentPloggingBinding;
 import com.example.glean.db.AppDatabase;
 import com.example.glean.db.DaoTrash;
+import com.example.glean.model.LocationPointEntity;
 import com.example.glean.model.RecordEntity;
 import com.example.glean.model.UserEntity;
 import com.example.glean.service.LocationService;
@@ -132,10 +145,16 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
     private Location startLocationForMovement;
     private long movementCheckStartTime = 0;
     private Handler movementCheckHandler;
-    private Runnable movementCheckRunnable;
-    private Runnable movementWarningTimeoutRunnable;
+    private Runnable movementCheckRunnable;    private Runnable movementWarningTimeoutRunnable;
     private AlertDialog movementWarningDialog;
     private boolean hasShownMovementWarning = false;
+
+    // Photo capture variables
+    private ActivityResultLauncher<Intent> cameraLauncher;
+    private ActivityResultLauncher<String> cameraPermissionLauncher;
+    private Uri photoUri;
+    private String currentPhotoPath;
+    private int completedRecordId = -1;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -157,6 +176,7 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         }        initializeNetworkMonitoring();
         initializeGpsMonitoring();
         initializeGoogleServices();
+        initializeCameraLaunchers();
     }
 
     @Nullable
@@ -525,29 +545,25 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
 
                         db.recordDao().update(record);
 
-                        updateUserPoints(finalPoints);
-
-                        requireActivity().runOnUiThread(() -> {
+                        updateUserPoints(finalPoints);                        requireActivity().runOnUiThread(() -> {
                             stopTracking();
+                            completedRecordId = record.getId(); // Store for photo capture
 
                             String completionMessage = String.format(Locale.getDefault(),
                                     "🎉 Plogging Complete!\n" +
                                             "📍 Distance: %.2f km\n" +
                                             "🗑️ Trash: %d items\n" +
                                             "⭐ Points: %d",
-                                    totalDistance / 1000f, finalTrashCount, finalPoints);                            new MaterialAlertDialogBuilder(requireContext())
+                                    totalDistance / 1000f, finalTrashCount, finalPoints);
+
+                            new MaterialAlertDialogBuilder(requireContext())
                                     .setTitle("Plogging Selesai")
-                                    .setMessage(completionMessage)
-                                    .setPositiveButton("Lihat Hasil", (dialog, which) -> {
-                                        try {
-                                            NavController navController = Navigation.findNavController(requireView());
-                                            Bundle args = new Bundle();
-                                            args.putInt("RECORD_ID", record.getId());
-                                            navController.navigate(R.id.action_ploggingFragment_to_ploggingSummaryFragment, args);
-                                        } catch (Exception e) {
-                                            Log.e(TAG, "Error navigating to plogging summary", e);
-                                            Toast.makeText(requireContext(), "Gagal membuka hasil plogging", Toast.LENGTH_SHORT).show();
-                                        }
+                                    .setMessage(completionMessage + "\n\nAmbil foto dokumentasi plogging Anda?")
+                                    .setPositiveButton("Ambil Foto", (dialog, which) -> {
+                                        requestCameraPermissionAndCapture();
+                                    })
+                                    .setNegativeButton("Lihat Hasil", (dialog, which) -> {
+                                        navigateToSummary(record.getId());
                                     })
                                     .setNeutralButton("Simpan ke Galeri", (dialog, which) -> {
                                         savePloggingResultToGallery(completionMessage);
@@ -577,7 +593,128 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
 
                 }
             });
+        }    }
+
+    /**
+     * Navigate to the plogging summary fragment
+     */
+    private void navigateToSummary(int recordId) {
+        try {
+            NavController navController = Navigation.findNavController(requireView());
+            Bundle args = new Bundle();
+            args.putInt("RECORD_ID", recordId);
+            navController.navigate(R.id.action_ploggingFragment_to_ploggingSummaryFragment, args);
+        } catch (Exception e) {
+            Log.e(TAG, "Error navigating to plogging summary", e);
+            Toast.makeText(requireContext(), "Gagal membuka hasil plogging", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    /**
+     * Request camera permission and launch camera if granted
+     */
+    private void requestCameraPermissionAndCapture() {
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA) 
+                == PackageManager.PERMISSION_GRANTED) {
+            launchCamera();
+        } else {
+            cameraPermissionLauncher.launch(Manifest.permission.CAMERA);
+        }
+    }
+
+    /**
+     * Launch camera intent to capture photo
+     */
+    private void launchCamera() {
+        try {
+            Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+            
+            // Create a file to save the photo
+            java.io.File photoFile = createImageFile();
+            if (photoFile != null) {
+                photoUri = androidx.core.content.FileProvider.getUriForFile(
+                    requireContext(),
+                    "com.example.glean.fileprovider",
+                    photoFile
+                );
+                
+                cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoUri);
+                cameraLauncher.launch(cameraIntent);
+            } else {
+                Toast.makeText(requireContext(), "Error creating photo file", Toast.LENGTH_SHORT).show();
+            }
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error launching camera", e);
+            Toast.makeText(requireContext(), "Error launching camera", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * Create a unique image file for photo capture
+     */
+    private java.io.File createImageFile() throws java.io.IOException {
+        // Create an image file name
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+        String imageFileName = "PLOGGING_" + timeStamp;
+        java.io.File storageDir = requireContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        
+        java.io.File image = java.io.File.createTempFile(
+            imageFileName,  /* prefix */
+            ".jpg",         /* suffix */
+            storageDir      /* directory */
+        );
+
+        // Save the file path for later use
+        currentPhotoPath = image.getAbsolutePath();
+        return image;
+    }
+
+    /**
+     * Save the captured photo to database and show completion dialog
+     */
+    private void savePloggingPhotoToDatabase() {
+        if (completedRecordId == -1 || photoUri == null) {
+            Log.w(TAG, "Cannot save photo: invalid record ID or photo URI");
+            navigateToSummary(completedRecordId);
+            return;
+        }
+
+        executor.execute(() -> {
+            try {
+                // Update the record with photo path
+                RecordEntity record = db.recordDao().getRecordByIdSync(completedRecordId);
+                if (record != null) {
+                    record.setPhotoPath(currentPhotoPath);
+                    db.recordDao().update(record);
+                    
+                    requireActivity().runOnUiThread(() -> {
+                        Toast.makeText(requireContext(), "Foto dokumentasi tersimpan!", Toast.LENGTH_SHORT).show();
+                        
+                        // Show completion dialog with navigation options
+                        new MaterialAlertDialogBuilder(requireContext())
+                            .setTitle("Foto Tersimpan")
+                            .setMessage("Foto dokumentasi plogging berhasil disimpan! Lihat hasil plogging Anda sekarang?")
+                            .setPositiveButton("Lihat Hasil", (dialog, which) -> {
+                                navigateToSummary(completedRecordId);
+                            })
+                            .setNegativeButton("Nanti", null)
+                            .show();
+                    });
+                } else {
+                    requireActivity().runOnUiThread(() -> {
+                        Toast.makeText(requireContext(), "Error: Record not found", Toast.LENGTH_SHORT).show();
+                        navigateToSummary(completedRecordId);
+                    });
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error saving photo to database", e);
+                requireActivity().runOnUiThread(() -> {
+                    Toast.makeText(requireContext(), "Error saving photo", Toast.LENGTH_SHORT).show();
+                    navigateToSummary(completedRecordId);
+                });
+            }
+        });
     }
 
     private void restoreTrackingSession() {
@@ -1053,8 +1190,7 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                     .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
                     .setInterval(2000)
                     .setFastestInterval(1000)
-                    .setSmallestDisplacement(1f);            trackingCallback = new LocationCallback() {
-                @Override
+                    .setSmallestDisplacement(1f);            trackingCallback = new LocationCallback() {                @Override
                 public void onLocationResult(LocationResult locationResult) {
                     if (locationResult == null || !isTracking) return;
 
@@ -1069,10 +1205,99 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                         // Check for location movement and start movement detection if needed
                         checkLocationMovement(location);
 
+                        // Calculate distance from last location
+                        float distance = 0;
                         if (lastLocation != null) {
-                            float distance = lastLocation.distanceTo(location);
+                            distance = lastLocation.distanceTo(location);
                             totalDistance += distance;
+                        }                        // Save location point to database if we have an active record
+                        if (currentRecordId != -1) {
+                            final float finalDistance = distance;
+                            Log.d(TAG, "📍 Preparing to save location point for record " + currentRecordId);
+                            Log.d(TAG, "   Coordinates: (" + location.getLatitude() + ", " + location.getLongitude() + ")");
+                            Log.d(TAG, "   Distance from last: " + finalDistance + "m");
+                            Log.d(TAG, "   Total distance so far: " + totalDistance + "m");
+                            
+                            LocationPointEntity locationPoint = new LocationPointEntity(
+                                    currentRecordId,
+                                    location.getLatitude(),
+                                    location.getLongitude(),
+                                    location.getAltitude(),
+                                    System.currentTimeMillis(),
+                                    finalDistance
+                            );
+                            
+                            // Save to database in background thread with comprehensive error handling
+                            executor.execute(() -> {
+                                try {
+                                    Log.d(TAG, "🔄 Starting database save operation...");
+                                    
+                                    // First verify the record exists
+                                    RecordEntity record = db.recordDao().getRecordByIdSync(currentRecordId);
+                                    if (record == null) {
+                                        Log.e(TAG, "❌ CRITICAL ERROR: Record ID " + currentRecordId + " does not exist in database!");
+                                        Log.e(TAG, "   This will cause foreign key constraint violation");
+                                        Log.e(TAG, "   Location point cannot be saved");
+                                        return;
+                                    }
+                                    
+                                    // Get current count for verification
+                                    int countBefore = db.locationPointDao().getLocationPointCountByRecordId(currentRecordId);
+                                    Log.d(TAG, "   Location points before insert: " + countBefore);
+                                    
+                                    // Insert the location point
+                                    long insertedId = db.locationPointDao().insert(locationPoint);
+                                    Log.d(TAG, "✅ Location point inserted with ID: " + insertedId);
+                                    
+                                    // Verify insertion
+                                    int countAfter = db.locationPointDao().getLocationPointCountByRecordId(currentRecordId);
+                                    Log.d(TAG, "   Location points after insert: " + countAfter);
+                                    
+                                    if (countAfter == countBefore + 1) {
+                                        Log.d(TAG, "✅ Location point insertion verified successfully");
+                                    } else {
+                                        Log.e(TAG, "⚠️  Warning: Location point count didn't increase as expected");
+                                    }
+                                    
+                                    // Update total distance in record if there's movement
+                                    if (finalDistance > 0) {
+                                        Log.d(TAG, "🔄 Updating record distance...");
+                                        db.recordDao().updateDistance(currentRecordId, finalDistance);
+                                        
+                                        // Verify distance update
+                                        RecordEntity updatedRecord = db.recordDao().getRecordByIdSync(currentRecordId);
+                                        if (updatedRecord != null) {
+                                            Log.d(TAG, "✅ Record distance updated to: " + updatedRecord.getDistance() + "m");
+                                        }
+                                    }
+                                    
+                                    Log.d(TAG, "✅ Location point save operation completed successfully");
+                                    
+                                } catch (Exception e) {
+                                    Log.e(TAG, "❌ CRITICAL ERROR saving location point to database: " + e.getMessage(), e);
+                                    Log.e(TAG, "   Location: (" + location.getLatitude() + ", " + location.getLongitude() + ")");
+                                    Log.e(TAG, "   Record ID: " + currentRecordId);
+                                    Log.e(TAG, "   Distance: " + finalDistance + "m");
+                                    
+                                    // Additional debugging information
+                                    try {
+                                        RecordEntity record = db.recordDao().getRecordByIdSync(currentRecordId);
+                                        if (record == null) {
+                                            Log.e(TAG, "   Record verification: RECORD DOES NOT EXIST");
+                                        } else {
+                                            Log.e(TAG, "   Record verification: Record exists, User ID: " + record.getUserId());
+                                        }
+                                    } catch (Exception debugE) {
+                                        Log.e(TAG, "   Could not verify record existence: " + debugE.getMessage());
+                                    }
+                                }
+                            });
+                        } else {
+                            Log.w(TAG, "⚠️  Cannot save location point: no active record (currentRecordId = " + currentRecordId + ")");
+                        }
 
+                        // Handle session saving and UI updates
+                        if (lastLocation != null) {
                             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
                             long lastSaveTime = prefs.getLong("LAST_SAVE_TIME", 0);
                             boolean shouldSave = System.currentTimeMillis() - lastSaveTime > 10000 || totalDistance - prefs.getFloat("LAST_SAVED_DISTANCE", 0) > 10;
@@ -1736,7 +1961,51 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
             }
         } catch (Exception e) {
             Log.e(TAG, "Error initializing Google Services", e);
-        }
+        }    }
+
+    private void initializeCameraLaunchers() {
+        // Initialize camera permission launcher
+        cameraPermissionLauncher = registerForActivityResult(
+            new ActivityResultContracts.RequestPermission(),
+            isGranted -> {
+                if (isGranted) {
+                    Log.d(TAG, "Camera permission granted");
+                    launchCamera();
+                } else {
+                    Log.w(TAG, "Camera permission denied");
+                    Toast.makeText(requireContext(), "Camera permission is required to take photos", Toast.LENGTH_SHORT).show();
+                }
+            }
+        );
+
+        // Initialize camera launcher
+        cameraLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == Activity.RESULT_OK) {
+                    Log.d(TAG, "Photo captured successfully");
+                    if (photoUri != null) {
+                        savePloggingPhotoToDatabase();
+                    }
+                } else {
+                    Log.w(TAG, "Photo capture cancelled or failed");
+                    // Clean up the temporary file if photo capture failed
+                    if (photoUri != null && currentPhotoPath != null) {
+                        try {
+                            java.io.File photoFile = new java.io.File(currentPhotoPath);
+                            if (photoFile.exists()) {
+                                photoFile.delete();
+                            }
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error cleaning up photo file", e);
+                        }
+                    }
+                }
+                // Reset photo capture variables
+                photoUri = null;
+                currentPhotoPath = null;
+            }
+        );
     }
 
     // Network monitoring methods

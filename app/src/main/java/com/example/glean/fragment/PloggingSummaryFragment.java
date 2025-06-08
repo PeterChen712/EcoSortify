@@ -117,17 +117,29 @@ public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallb
         
         // Load activity data
         loadActivityData();
-    }
-
-    @Override
+    }    @Override
     public void onMapReady(@NonNull GoogleMap googleMap) {
         mMap = googleMap;
+        
+        // Enable zoom controls and proper map settings
         mMap.getUiSettings().setZoomControlsEnabled(true);
         mMap.getUiSettings().setMapToolbarEnabled(false);
+        mMap.getUiSettings().setCompassEnabled(true);
+        mMap.getUiSettings().setMyLocationButtonEnabled(false);
+        
+        // Set appropriate map type for plogging (shows streets and details clearly)
+        mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+        
+        // Set minimum zoom to prevent extreme world view
+        mMap.setMinZoomPreference(10.0f);
+        
+        Log.d(TAG, "Google Map ready, loading route data for record ID: " + recordId);
         
         // Load route data when map is ready
         if (recordId != -1) {
             loadRouteData();
+        } else {
+            Log.w(TAG, "No valid record ID to load route data");
         }
     }
 
@@ -163,15 +175,69 @@ public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallb
                 });
             }
         });
-    }
+    }    private void loadRouteData() {
+        if (recordId == -1 || mMap == null) {
+            Log.w(TAG, "Cannot load route data - recordId: " + recordId + ", mMap: " + (mMap != null));
+            return;
+        }
 
-    private void loadRouteData() {
-        if (recordId == -1 || mMap == null) return;
+        Log.d(TAG, "🗺️  Loading route data for record ID: " + recordId);
 
         executor.execute(() -> {
             try {
+                // First verify the record exists
+                RecordEntity record = db.recordDao().getRecordByIdSync(recordId);
+                if (record == null) {                    Log.e(TAG, "❌ CRITICAL: Record ID " + recordId + " does not exist in database!");
+                    requireActivity().runOnUiThread(() -> {
+                        hideMapLoading();
+                        showMapError("No route data available for this plogging session");
+                        updateRouteInfo(0);
+                    });
+                    return;
+                }
+                
+                Log.d(TAG, "✅ Record exists: " + record.toString());
+                Log.d(TAG, "   Distance in record: " + record.getDistance() + "m");
+                Log.d(TAG, "   Duration: " + record.getDuration() + "ms");
+                Log.d(TAG, "   User ID: " + record.getUserId());
+                Log.d(TAG, "   Created: " + new java.util.Date(record.getCreatedAt()));
+                
                 // Load location points for the route
                 List<LocationPointEntity> locationPoints = db.locationPointDao().getLocationPointsByRecordIdSync(recordId);
+                
+                Log.d(TAG, "📍 Query result: " + (locationPoints != null ? locationPoints.size() : 0) + " location points");
+                
+                if (locationPoints != null && !locationPoints.isEmpty()) {
+                    Log.d(TAG, "✅ Location points found:");
+                    for (int i = 0; i < Math.min(locationPoints.size(), 5); i++) {
+                        LocationPointEntity point = locationPoints.get(i);
+                        Log.d(TAG, "   Point " + (i+1) + ": (" + point.getLatitude() + ", " + point.getLongitude() + 
+                              ") distance=" + point.getDistanceFromLast() + "m timestamp=" + new java.util.Date(point.getTimestamp()));
+                    }
+                    if (locationPoints.size() > 5) {
+                        Log.d(TAG, "   ... and " + (locationPoints.size() - 5) + " more points");
+                    }
+                } else {
+                    Log.w(TAG, "⚠️  NO LOCATION POINTS found for record " + recordId);
+                    
+                    // Additional debugging - check if there are ANY location points in the database
+                    List<LocationPointEntity> allLocationPoints = db.locationPointDao().getAllLocationPointsSync();
+                    Log.d(TAG, "   Total location points in entire database: " + allLocationPoints.size());
+                    
+                    if (!allLocationPoints.isEmpty()) {
+                        Log.d(TAG, "   Sample location points from database:");
+                        for (int i = 0; i < Math.min(allLocationPoints.size(), 3); i++) {
+                            LocationPointEntity point = allLocationPoints.get(i);
+                            Log.d(TAG, "     Point: recordId=" + point.getRecordId() + 
+                                  " coords=(" + point.getLatitude() + ", " + point.getLongitude() + 
+                                  ") timestamp=" + new java.util.Date(point.getTimestamp()));
+                        }
+                    }
+                    
+                    // Check if the query itself is working
+                    int pointCountForRecord = db.locationPointDao().getLocationPointCountByRecordId(recordId);
+                    Log.d(TAG, "   Direct count query for record " + recordId + ": " + pointCountForRecord + " points");
+                }
                 
                 requireActivity().runOnUiThread(() -> {
                     hideMapLoading();
@@ -180,15 +246,23 @@ public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallb
                         routePoints = locationPoints;
                         displayRouteOnMap(locationPoints);
                         updateRouteInfo(locationPoints.size());
+                        Log.d(TAG, "✅ Successfully displayed route with " + locationPoints.size() + " points");
                     } else {
-                        showMapError("No route data available");
+                        Log.w(TAG, "No route data available for record " + recordId);
+                        showMapError("No route data available for this plogging session");
+                        // Show a default location if we have record data
+                        if (currentRecord != null) {
+                            // Try to center on a default location (you can customize this)
+                            LatLng defaultLocation = new LatLng(-5.1356, 119.4215); // Example: Makassar
+                            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(defaultLocation, 15f));
+                        }
                     }
                 });
             } catch (Exception e) {
-                Log.e(TAG, "Error loading route data", e);
+                Log.e(TAG, "Error loading route data for record " + recordId, e);
                 requireActivity().runOnUiThread(() -> {
                     hideMapLoading();
-                    showMapError("Failed to load route");
+                    showMapError("Failed to load route: " + e.getMessage());
                 });
             }
         });
@@ -203,36 +277,43 @@ public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallb
         List<LatLng> routeLatLngs = new ArrayList<>();
         for (LocationPointEntity point : locationPoints) {
             routeLatLngs.add(new LatLng(point.getLatitude(), point.getLongitude()));
-        }
-
-        // Add polyline for the route
+        }        // Add polyline for the route with better visibility
         PolylineOptions polylineOptions = new PolylineOptions()
                 .addAll(routeLatLngs)
-                .width(8f)
-                .color(getResources().getColor(R.color.primary_color));
+                .width(12f)  // Thicker line for better visibility
+                .color(getResources().getColor(R.color.primary_color))
+                .geodesic(true)  // Better for long distances
+                .pattern(null); // Solid line
         mMap.addPolyline(polylineOptions);
 
-        // Add start marker (green)
+        // Add start marker (green) with custom icon
         if (routeLatLngs.size() > 0) {
             LatLng startPoint = routeLatLngs.get(0);
             mMap.addMarker(new MarkerOptions()
                     .position(startPoint)
-                    .title("🏁 Start Point")
-                    .snippet("Plogging session started here")
+                    .title("🚀 Start Point")
+                    .snippet("Plogging dimulai di sini")
                     .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
+            
+            Log.d(TAG, "Start point: " + startPoint.latitude + ", " + startPoint.longitude);
         }
 
-        // Add finish marker (red)
+        // Add finish marker (red) with custom icon
         if (routeLatLngs.size() > 1) {
             LatLng endPoint = routeLatLngs.get(routeLatLngs.size() - 1);
             mMap.addMarker(new MarkerOptions()
                     .position(endPoint)
                     .title("🏁 Finish Point")
-                    .snippet("Plogging session finished here")
+                    .snippet("Plogging selesai di sini")
                     .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
+            
+            Log.d(TAG, "Finish point: " + endPoint.latitude + ", " + endPoint.longitude);
         }
 
-        // Fit camera to show entire route
+        // Add distance markers every 500m for longer routes
+        if (routeLatLngs.size() > 10) {
+            addDistanceMarkers(routeLatLngs);
+        }// Fit camera to show entire route with proper zoom level
         if (routeLatLngs.size() > 1) {
             LatLngBounds.Builder boundsBuilder = new LatLngBounds.Builder();
             for (LatLng point : routeLatLngs) {
@@ -241,31 +322,60 @@ public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallb
             LatLngBounds bounds = boundsBuilder.build();
             
             try {
-                int padding = 100; // padding in pixels
-                mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding));
+                // Calculate the distance between northeast and southwest corners
+                float[] results = new float[1];
+                android.location.Location.distanceBetween(
+                    bounds.southwest.latitude, bounds.southwest.longitude,
+                    bounds.northeast.latitude, bounds.northeast.longitude,
+                    results
+                );
+                float boundsDiagonalMeters = results[0];
+                
+                Log.d(TAG, "Route bounds diagonal distance: " + boundsDiagonalMeters + " meters");
+                
+                // If the route area is very small (less than 200m diagonal), use a fixed zoom
+                if (boundsDiagonalMeters < 200) {
+                    // Calculate center point of route
+                    double centerLat = (bounds.northeast.latitude + bounds.southwest.latitude) / 2;
+                    double centerLng = (bounds.northeast.longitude + bounds.southwest.longitude) / 2;
+                    LatLng center = new LatLng(centerLat, centerLng);
+                    
+                    // Use zoom level 17 for small routes (good street-level detail)
+                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(center, 17f));
+                    Log.d(TAG, "Using fixed zoom for small route area");
+                } else {
+                    // For larger routes, use bounds with appropriate padding
+                    int padding = Math.max(150, (int)(boundsDiagonalMeters * 0.1)); // Dynamic padding
+                    mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding));
+                    Log.d(TAG, "Using bounds-based zoom with padding: " + padding);
+                }
             } catch (Exception e) {
                 Log.e(TAG, "Error fitting camera to bounds", e);
+                // Fallback: center on first point with reasonable zoom
+                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(routeLatLngs.get(0), 16f));
             }
         } else if (routeLatLngs.size() == 1) {
-            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(routeLatLngs.get(0), 16f));
+            // Single point - use good street level zoom
+            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(routeLatLngs.get(0), 17f));
+            Log.d(TAG, "Single point route - using zoom level 17");
         }
-    }
-
-    private void updateRouteInfo(int pointCount) {
+    }    private void updateRouteInfo(int pointCount) {
         String routeInfo = String.format(Locale.getDefault(), 
-            "Route with %d tracking points", pointCount);
+            "📍 Route with %d tracking points", pointCount);
         binding.tvRouteInfo.setText(routeInfo);
+        binding.tvRouteInfo.setTextColor(getResources().getColor(android.R.color.black));
+        Log.d(TAG, "Updated route info: " + routeInfo);
     }
 
     private void showMapError(String message) {
-        binding.tvRouteInfo.setText(message);
+        binding.tvRouteInfo.setText("⚠️ " + message);
+        binding.tvRouteInfo.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
+        Log.w(TAG, "Map error: " + message);
     }
 
     private void hideMapLoading() {
         binding.mapLoadingOverlay.setVisibility(View.GONE);
-    }
-
-    private void displayActivityData(RecordEntity record) {
+    }    private void displayActivityData(RecordEntity record) {
         // Set date
         SimpleDateFormat dateFormat = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
         String formattedDate = dateFormat.format(new Date(record.getCreatedAt()));
@@ -315,9 +425,78 @@ public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallb
         } else {
             binding.tvPace.setText("N/A");
         }
+        
+        // Load documentation photo
+        loadPloggingDocumentationPhoto(record.getId());
     }
 
-    private void shareActivity() {
+    private void loadPloggingDocumentationPhoto(int recordId) {
+        executor.execute(() -> {
+            try {
+                // Get trash items with photos for this record
+                List<TrashEntity> trashItems = db.trashDao().getTrashByRecordIdSync(recordId);
+                TrashEntity bestPhotoTrash = null;
+                
+                // Find the best photo (prioritize recent photos)
+                for (TrashEntity trash : trashItems) {
+                    if (trash.getPhotoPath() != null && !trash.getPhotoPath().isEmpty()) {
+                        File photoFile = new File(trash.getPhotoPath());
+                        if (photoFile.exists()) {
+                            bestPhotoTrash = trash;
+                            break; // Take the first valid photo
+                        }
+                    }
+                }
+                
+                TrashEntity finalPhotoTrash = bestPhotoTrash;
+                requireActivity().runOnUiThread(() -> {
+                    if (finalPhotoTrash != null) {
+                        displayPloggingPhoto(finalPhotoTrash.getPhotoPath());
+                        Log.d(TAG, "Loaded plogging photo: " + finalPhotoTrash.getPhotoPath());
+                    } else {
+                        Log.d(TAG, "No valid photos found for record " + recordId);
+                        // Hide photo card if no photo available
+                        binding.cardPloggingPhoto.setVisibility(View.GONE);
+                    }
+                });
+                
+            } catch (Exception e) {
+                Log.e(TAG, "Error loading plogging photos", e);
+                requireActivity().runOnUiThread(() -> {
+                    binding.cardPloggingPhoto.setVisibility(View.GONE);
+                });
+            }
+        });
+    }
+    
+    private void displayPloggingPhoto(String photoPath) {
+        try {
+            // Load photo using Glide or similar image loading library
+            // For now, using simple bitmap loading
+            android.graphics.BitmapFactory.Options options = new android.graphics.BitmapFactory.Options();
+            options.inSampleSize = 2; // Reduce size to avoid memory issues
+            
+            android.graphics.Bitmap bitmap = android.graphics.BitmapFactory.decodeFile(photoPath, options);
+            
+            if (bitmap != null) {
+                binding.ivPloggingPhoto.setImageBitmap(bitmap);
+                binding.cardPloggingPhoto.setVisibility(View.VISIBLE);
+                
+                // Add click listener to view full photo
+                binding.cardPloggingPhoto.setOnClickListener(v -> {
+                    // You can implement full-screen photo view here
+                    Toast.makeText(requireContext(), "📸 Plogging Documentation", Toast.LENGTH_SHORT).show();
+                });
+                
+            } else {
+                Log.w(TAG, "Failed to decode photo: " + photoPath);
+                binding.cardPloggingPhoto.setVisibility(View.GONE);
+            }
+              } catch (Exception e) {
+            Log.e(TAG, "Error displaying photo: " + photoPath, e);
+            binding.cardPloggingPhoto.setVisibility(View.GONE);
+        }
+    }    private void savePloggingResultToGallery(String completionMessage) {
         if (currentRecord == null) {
             Toast.makeText(requireContext(), "No record data available", Toast.LENGTH_SHORT).show();
             return;
@@ -348,7 +527,9 @@ public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallb
         shareIntent.putExtra(Intent.EXTRA_SUBJECT, "My Plogging Achievement");
         
         startActivity(Intent.createChooser(shareIntent, "Share your plogging achievement"));
-    }    private void shareToCommunitiy() {
+    }
+
+    private void shareToCommunitiy() {
         if (currentUserId == -1) {
             showLoginPrompt();
             return;
@@ -702,6 +883,156 @@ public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallb
         super.onDestroy();
         if (executor != null) {
             executor.shutdown();
+        }
+    }
+
+    /**
+     * Adds distance markers every 500m along the route
+     * @param routeLatLngs List of route coordinates
+     */
+    private void addDistanceMarkers(List<LatLng> routeLatLngs) {
+        if (mMap == null || routeLatLngs == null || routeLatLngs.size() < 2) {
+            Log.w(TAG, "Cannot add distance markers: map or route data not available");
+            return;
+        }
+
+        Log.d(TAG, "Adding distance markers for route with " + routeLatLngs.size() + " points");
+        
+        float totalDistance = 0f;
+        final float MARKER_INTERVAL = 500f; // 500 meters
+        int markerCount = 1;
+        
+        // Track the last marker position to avoid duplicates
+        LatLng lastMarkerPosition = routeLatLngs.get(0);
+        
+        for (int i = 1; i < routeLatLngs.size(); i++) {
+            LatLng previousPoint = routeLatLngs.get(i - 1);
+            LatLng currentPoint = routeLatLngs.get(i);
+            
+            // Calculate distance between consecutive points
+            float[] results = new float[1];
+            android.location.Location.distanceBetween(
+                previousPoint.latitude, previousPoint.longitude,
+                currentPoint.latitude, currentPoint.longitude,
+                results
+            );
+            
+            totalDistance += results[0];
+            
+            // Check if we should add a marker at this interval
+            if (totalDistance >= markerCount * MARKER_INTERVAL) {
+                // Calculate the exact position for the marker on the route
+                LatLng markerPosition = interpolatePosition(previousPoint, currentPoint, 
+                    (markerCount * MARKER_INTERVAL - (totalDistance - results[0])) / results[0]);
+                
+                // Avoid adding markers too close to start/finish or previous markers
+                if (isValidMarkerPosition(markerPosition, lastMarkerPosition, routeLatLngs.get(0), 
+                    routeLatLngs.get(routeLatLngs.size() - 1))) {
+                    
+                    float distanceKm = (markerCount * MARKER_INTERVAL) / 1000f;
+                    String title = String.format("%.1f km", distanceKm);
+                    
+                    // Create custom marker for distance checkpoints
+                    MarkerOptions markerOptions = new MarkerOptions()
+                        .position(markerPosition)
+                        .title(title)
+                        .snippet("Checkpoint jarak")
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW))
+                        .anchor(0.5f, 0.5f);
+                    
+                    mMap.addMarker(markerOptions);
+                    lastMarkerPosition = markerPosition;
+                    
+                    Log.d(TAG, "Added distance marker at " + distanceKm + "km: " + 
+                        markerPosition.latitude + ", " + markerPosition.longitude);
+                }
+                
+                markerCount++;
+            }
+        }
+        
+        Log.d(TAG, "Total distance: " + (totalDistance / 1000f) + "km, Added " + (markerCount - 1) + " distance markers");
+    }
+    
+    /**
+     * Interpolates position between two points based on fraction
+     * @param start Start point
+     * @param end End point
+     * @param fraction Fraction between 0 and 1
+     * @return Interpolated position
+     */
+    private LatLng interpolatePosition(LatLng start, LatLng end, double fraction) {
+        double lat = start.latitude + (end.latitude - start.latitude) * fraction;
+        double lng = start.longitude + (end.longitude - start.longitude) * fraction;
+        return new LatLng(lat, lng);
+    }
+    
+    /**
+     * Checks if marker position is valid (not too close to other important markers)
+     * @param markerPos Position to check
+     * @param lastMarkerPos Last marker position
+     * @param startPos Route start position
+     * @param endPos Route end position
+     * @return True if position is valid for marker placement
+     */
+    private boolean isValidMarkerPosition(LatLng markerPos, LatLng lastMarkerPos, LatLng startPos, LatLng endPos) {
+        final float MIN_DISTANCE = 100f; // Minimum 100m between markers
+        
+        // Check distance from start point
+        float[] distanceFromStart = new float[1];
+        android.location.Location.distanceBetween(
+            markerPos.latitude, markerPos.longitude,
+            startPos.latitude, startPos.longitude,
+            distanceFromStart
+        );
+        
+        if (distanceFromStart[0] < MIN_DISTANCE) {
+            return false;
+        }
+        
+        // Check distance from end point
+        float[] distanceFromEnd = new float[1];
+        android.location.Location.distanceBetween(
+            markerPos.latitude, markerPos.longitude,
+            endPos.latitude, endPos.longitude,
+            distanceFromEnd
+        );
+        
+        if (distanceFromEnd[0] < MIN_DISTANCE) {
+            return false;
+        }
+        
+        // Check distance from last marker
+        if (lastMarkerPos != null) {
+            float[] distanceFromLast = new float[1];
+            android.location.Location.distanceBetween(
+                markerPos.latitude, markerPos.longitude,
+                lastMarkerPos.latitude, lastMarkerPos.longitude,
+                distanceFromLast
+            );
+            
+            if (distanceFromLast[0] < MIN_DISTANCE) {
+                return false;
+            }
+        }
+          return true;    }    /**
+     * Shares the plogging activity details
+     */
+    private void shareActivity() {
+        try {
+            String shareText = "Saya baru saja menyelesaikan plogging!\n" +
+                    "Jarak: " + binding.tvDistance.getText().toString() + "\n" +
+                    "Durasi: " + binding.tvDuration.getText().toString() + "\n" +
+                    "Sampah Terkumpul: " + binding.tvTrashCollected.getText().toString() + "\n" +
+                    "Mari bergabung untuk membersihkan lingkungan! #Plogging #Glean";
+
+            Intent shareIntent = new Intent(Intent.ACTION_SEND);
+            shareIntent.setType("text/plain");
+            shareIntent.putExtra(Intent.EXTRA_TEXT, shareText);
+            startActivity(Intent.createChooser(shareIntent, "Bagikan aktivitas plogging"));
+        } catch (Exception e) {
+            Log.e(TAG, "Error sharing activity", e);
+            Toast.makeText(getContext(), "Gagal membagikan aktivitas", Toast.LENGTH_SHORT).show();
         }
     }
 }

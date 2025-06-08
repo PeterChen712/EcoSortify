@@ -82,15 +82,66 @@
                 android:text="Retry"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
 
-        </LinearLayout>
-
-        <!-- Main Content -->
+        </LinearLayout>        <!-- Main Content -->
         <LinearLayout
             android:id="@+id/layoutMainContent"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:visibility="visible">
+
+            <!-- Documentation Photo Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardPloggingPhoto"
+                android:layout_width="match_parent"
+                android:layout_height="220dp"
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="8dp"
+                android:visibility="gone">
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <ImageView
+                        android:id="@+id/ivPloggingPhoto"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="centerCrop"
+                        android:background="@color/background_light" />
+
+                    <!-- Photo Overlay -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentBottom="true"
+                        android:orientation="horizontal"
+                        android:background="@drawable/gradient_overlay"
+                        android:padding="12dp"
+                        android:gravity="center_vertical">
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@drawable/ic_camera"
+                            app:tint="@android:color/white"
+                            android:layout_marginEnd="8dp" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="📸 Plogging Documentation"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="@android:color/white" />
+
+                    </LinearLayout>
+
+                </RelativeLayout>
+
+            </com.google.android.material.card.MaterialCardView>
 
             <!-- Route Map Card -->
             <com.google.android.material.card.MaterialCardView
