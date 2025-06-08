@@ -33,6 +33,7 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.example.glean.R;
+import com.example.glean.activity.CustomizeProfileActivity;
 import com.example.glean.activity.SkinSelectionActivity;
 import com.example.glean.adapter.BadgeAdapter;
 import com.example.glean.databinding.FragmentProfileBinding;
@@ -199,25 +200,14 @@ public class ProfileFragment extends Fragment {    private static final String T
                 Log.d(TAG, "Profile picture clicked");
                 checkPermissionsAndSelectImage();
             });
-        }
-          // Customize button - FIXED with enhanced navigation
+        }        // Customize button - Use CustomizeProfileActivity
         if (binding.btnCustomize != null) {
             binding.btnCustomize.setOnClickListener(v -> {
                 Log.d(TAG, "Customize button clicked");
-                navigateToProfileDecor();
+                openCustomizeProfileActivity();
             });
         } else {
             Log.w(TAG, "Customize button not found in layout");
-        }
-        
-        // Change Skin button
-        if (binding.btnChangeSkin != null) {
-            binding.btnChangeSkin.setOnClickListener(v -> {
-                Log.d(TAG, "Change skin button clicked");
-                openSkinSelection();
-            });
-        } else {
-            Log.w(TAG, "Change skin button not found in layout");
         }
           // Settings icon in header
         if (binding.btnSettings != null) {
@@ -231,8 +221,7 @@ public class ProfileFragment extends Fragment {    private static final String T
         setupThemeToggle();
     }
     
-    private void addVisualFeedback() {
-        // Add ripple effect and elevation feedback
+    private void addVisualFeedback() {        // Add ripple effect and elevation feedback
         View[] clickableViews = {
             binding.btnEditProfile,
             binding.btnSettings,
@@ -652,8 +641,19 @@ public class ProfileFragment extends Fragment {    private static final String T
         if (resultCode != Activity.RESULT_OK) {
             return;
         }
-        
-        try {
+          try {
+            // Handle customize profile activity result
+            if (requestCode == 1006 && data != null) {
+                boolean profileChanged = data.getBooleanExtra("profile_changed", false);
+                if (profileChanged) {
+                    updateProfileSkin();
+                    Toast.makeText(requireContext(), "Profile updated!", Toast.LENGTH_SHORT).show();
+                    // Refresh user data to update points if they were spent
+                    loadUserData();
+                }
+                return;
+            }
+            
             // Handle skin selection
             if (requestCode == SKIN_SELECTION_REQUEST && data != null) {
                 String selectedSkin = data.getStringExtra("selected_skin");
@@ -949,9 +949,14 @@ public class ProfileFragment extends Fragment {    private static final String T
             // Set listeners
             dialogBinding.switchNotifications.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 prefs.edit().putBoolean("NOTIFICATIONS_ENABLED", isChecked).apply();
-            });
-              dialogBinding.switchDarkMode.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            });            dialogBinding.switchDarkMode.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 prefs.edit().putBoolean("DARK_MODE", isChecked).apply();
+            });
+            
+            // Customize Profile click handler
+            dialogBinding.layoutCustomizeProfile.setOnClickListener(v -> {
+                dialog.dismiss();
+                openCustomizeProfileActivity();
             });
             
             // Reset database button handler
@@ -1240,6 +1245,21 @@ public class ProfileFragment extends Fragment {    private static final String T
                     setDefaultUIValues();
                 });            }
         });
+    }
+      
+    // Open CustomizeProfileActivity
+    private void openCustomizeProfileActivity() {
+        try {
+            Intent intent = new Intent(requireContext(), CustomizeProfileActivity.class);
+            if (currentUser != null) {
+                intent.putExtra("USER_ID", userId);
+                intent.putExtra("USER_POINTS", currentUser.getPoints());
+            }
+            startActivityForResult(intent, 1006); // New request code for customize activity
+        } catch (Exception e) {
+            Log.e(TAG, "Error opening customize profile activity", e);
+            Toast.makeText(requireContext(), "Failed to open customization", Toast.LENGTH_SHORT).show();
+        }
     }
     
     // Skin Selection Methods

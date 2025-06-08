@@ -72,24 +72,7 @@
                 android:paddingStart="24dp"
                 android:paddingTop="32dp"
                 android:paddingEnd="24dp"
-                android:paddingBottom="24dp">                <!-- Change Skin Button -->
-                <com.google.android.material.floatingactionbutton.FloatingActionButton
-                    android:id="@+id/btnChangeSkin"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="8dp"
-                    android:layout_marginBottom="8dp"
-                    android:contentDescription="Change Profile Skin"
-                    android:src="@drawable/ic_palette"
-                    app:tint="@color/white"
-                    app:backgroundTint="@color/primary_orange"
-                    app:borderWidth="0dp"
-                    app:elevation="4dp"
-                    app:fabSize="mini"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintBottom_toBottomOf="parent" />
-
-                <!-- Profile Picture with Frame -->
+                android:paddingBottom="24dp">                <!-- Profile Picture with Frame -->
                 <FrameLayout
                     android:id="@+id/profilePictureFrame"
                     android:layout_width="120dp"

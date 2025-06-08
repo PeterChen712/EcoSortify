@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="3dp"
+    android:foreground="?attr/selectableItemBackground"
+    android:clickable="true"
+    android:focusable="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp">
+
+        <!-- Skin Preview with Selection Indicator -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            android:layout_marginBottom="8dp">
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="1dp">
+
+                <View
+                    android:id="@+id/viewSkinPreview"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/profile_skin_default" />
+
+            </androidx.cardview.widget.CardView>
+
+            <!-- Selection Check Mark -->
+            <ImageView
+                android:id="@+id/ivSelected"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="top|end"
+                android:layout_margin="8dp"
+                android:background="@drawable/circle_green_background"
+                android:src="@drawable/ic_check"
+                android:padding="4dp"
+                app:tint="@color/white"
+                android:visibility="gone"
+                tools:visibility="visible"
+                android:contentDescription="Selected Skin" />
+
+            <!-- Lock Icon and Price for Locked Skins -->
+            <LinearLayout
+                android:id="@+id/layoutLocked"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:background="@drawable/rounded_background_dark_alpha"
+                android:padding="8dp"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_lock"
+                    app:tint="@color/white"
+                    android:contentDescription="Locked Skin" />
+
+                <TextView
+                    android:id="@+id/tvPrice"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="100 pts"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/white"
+                    android:layout_marginTop="4dp" />
+
+            </LinearLayout>
+
+        </FrameLayout>
+
+        <!-- Skin Info -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <!-- Skin Name -->
+                <TextView
+                    android:id="@+id/tvSkinName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Default Green"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
+
+                <!-- Status Text -->
+                <TextView
+                    android:id="@+id/tvStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Owned"
+                    android:textSize="12sp"
+                    android:textColor="@color/environmental_green"
+                    android:layout_marginTop="2dp"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    tools:text="100 points" />
+
+            </LinearLayout>
+
+            <!-- Purchase Button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnPurchase"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:text="Buy"
+                android:textSize="12sp"
+                android:textAllCaps="false"
+                android:minWidth="60dp"
+                android:layout_marginStart="8dp"
+                app:backgroundTint="@color/primary_color"
+                app:cornerRadius="16dp"
+                android:visibility="gone"
+                tools:visibility="visible"
+                style="@style/Widget.Material3.Button.UnelevatedButton" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>

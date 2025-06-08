@@ -87,11 +87,16 @@
             android:name="com.yalantis.ucrop.UCropActivity"
             android:exported="false"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
-
-        <!-- Skin Selection Activity -->
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />        <!-- Skin Selection Activity -->
         <activity
             android:name=".activity.SkinSelectionActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:parentActivityName=".activity.MainActivity" />
+
+        <!-- Customize Profile Activity -->
+        <activity
+            android:name=".activity.CustomizeProfileActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:parentActivityName=".activity.MainActivity" />

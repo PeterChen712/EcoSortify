@@ -82,14 +82,67 @@
                 android:textSize="14sp"
                 android:textColor="@color/text_secondary" />
 
-        </LinearLayout>
-
-        <com.google.android.material.switchmaterial.SwitchMaterial
+        </LinearLayout>        <com.google.android.material.switchmaterial.SwitchMaterial
             android:id="@+id/switchDarkMode"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             app:thumbTint="@color/primary"
-            app:trackTint="@color/primary" />    </LinearLayout>    <!-- Debug Options Section -->
+            app:trackTint="@color/primary" />
+
+    </LinearLayout>
+
+    <!-- Customize Profile Option -->
+    <LinearLayout
+        android:id="@+id/layoutCustomizeProfile"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="24dp"
+        android:background="?attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true"
+        android:padding="12dp">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_palette"
+            android:layout_marginEnd="16dp"
+            app:tint="@color/primary" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Customize Profile"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Change badges and profile skins"
+                android:textSize="14sp"
+                android:textColor="@color/text_secondary" />
+
+        </LinearLayout>
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_arrow_forward"
+            app:tint="@color/text_secondary" />
+
+    </LinearLayout>
+
+    <!-- Debug Options Section -->
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
