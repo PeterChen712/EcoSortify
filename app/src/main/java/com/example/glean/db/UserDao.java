@@ -73,10 +73,11 @@ public interface UserDao {
     void updateActiveDecoration(int userId, String decoration);
 
     @Query("SELECT MAX(points) FROM users")
-    int getMaxPoints();
-
+    int getMaxPoints();    @Query("SELECT * FROM users ORDER BY points DESC LIMIT :limit")
+    LiveData<List<UserEntity>> getTopUsers(int limit);
+    
     @Query("SELECT * FROM users ORDER BY points DESC LIMIT :limit")
-    LiveData<List<UserEntity>> getTopUsers(int limit);    @Query("DELETE FROM users WHERE id = :userId")
+    List<UserEntity> getTopUsersSync(int limit);@Query("DELETE FROM users WHERE id = :userId")
     void deleteById(int userId);
     
     @Query("SELECT COUNT(*) FROM users")

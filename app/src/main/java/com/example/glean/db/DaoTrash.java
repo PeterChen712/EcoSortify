@@ -65,9 +65,11 @@ public interface DaoTrash {
     
     @Query("SELECT DISTINCT trashType FROM trash WHERE trashType IS NOT NULL AND trashType != '' ORDER BY trashType")
     LiveData<List<String>> getAllTrashTypes();
-    
-    @Query("DELETE FROM trash WHERE recordId = :recordId")
+      @Query("DELETE FROM trash WHERE recordId = :recordId")
     void deleteTrashByRecordId(int recordId);
+    
+    @Query("DELETE FROM trash")
+    void deleteAll();
     
     @Query("SELECT trashType FROM trash WHERE recordId = :recordId")
     LiveData<List<String>> getTrashTypesByRecordId(int recordId);

@@ -67,9 +67,11 @@ public interface DaoRecord {
     
     @Query("SELECT * FROM records WHERE userId = :userId AND createdAt BETWEEN :startTime AND :endTime ORDER BY createdAt DESC")
     LiveData<List<RecordEntity>> getRecordsByDateRange(int userId, long startTime, long endTime);
-    
-    @Query("DELETE FROM records WHERE id = :recordId")
+      @Query("DELETE FROM records WHERE id = :recordId")
     void deleteRecordById(int recordId);
+    
+    @Query("DELETE FROM records")
+    void deleteAll();
     
     @Query("SELECT SUM(points) FROM records WHERE userId = :userId")
     int getTotalPointsByUserId(int userId);
