@@ -13,13 +13,14 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.glean.R;
 import com.example.glean.model.Badge;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class BadgeSelectionAdapter extends RecyclerView.Adapter<BadgeSelectionAdapter.BadgeViewHolder> {
     
     private final Context context;
     private List<Badge> badges;
-    private String selectedBadgeId;
+    private List<String> selectedBadgeIds = new ArrayList<>();
     private final OnBadgeClickListener listener;
     
     public interface OnBadgeClickListener {
@@ -31,15 +32,14 @@ public class BadgeSelectionAdapter extends RecyclerView.Adapter<BadgeSelectionAd
         this.badges = badges;
         this.listener = listener;
     }
-    
-    public void updateBadges(List<Badge> newBadges, String selectedId) {
+      public void updateBadges(List<Badge> newBadges, List<String> selectedIds) {
         this.badges = newBadges;
-        this.selectedBadgeId = selectedId;
+        this.selectedBadgeIds = new ArrayList<>(selectedIds);
         notifyDataSetChanged();
     }
     
-    public void updateSelectedBadge(String selectedId) {
-        this.selectedBadgeId = selectedId;
+    public void updateSelectedBadges(List<String> selectedIds) {
+        this.selectedBadgeIds = new ArrayList<>(selectedIds);
         notifyDataSetChanged();
     }
     
@@ -62,9 +62,8 @@ public class BadgeSelectionAdapter extends RecyclerView.Adapter<BadgeSelectionAd
         
         // Set badge icon from the badge's icon resource
         holder.ivBadgeIcon.setImageResource(badge.getIconResource());
-        
-        // Show/hide selection indicator
-        boolean isSelected = badge.getType().equals(selectedBadgeId);
+          // Show/hide selection indicator
+        boolean isSelected = selectedBadgeIds.contains(badge.getType());
         holder.ivSelected.setVisibility(isSelected ? View.VISIBLE : View.GONE);
         
         // Show/hide lock indicator

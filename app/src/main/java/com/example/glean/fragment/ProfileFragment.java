@@ -215,17 +215,8 @@ public class ProfileFragment extends Fragment {    private static final String T
                 Log.d(TAG, "Settings icon clicked");
                 showSettingsDialog();
             });
-        }
-          // Theme toggle (if exists)
+        }        // Theme toggle (if exists)
         setupThemeToggle();
-        
-        // View All Badges button
-        if (binding.btnViewAllBadges != null) {
-            binding.btnViewAllBadges.setOnClickListener(v -> {
-                Log.d(TAG, "View All Badges button clicked");
-                openCustomizeProfileActivity(); // Navigate to Customize Profile to view all badges
-            });
-        }
     }
     
     private void addVisualFeedback() {        // Add ripple effect and elevation feedback

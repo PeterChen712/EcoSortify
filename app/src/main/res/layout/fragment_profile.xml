@@ -282,7 +282,7 @@
                 android:padding="16dp">                <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="🏆 Achievements"
+                    android:text="🏆 Badges"
                     android:textColor="@color/text_primary"
                     android:textSize="18sp"
                     android:textStyle="bold" />
@@ -293,21 +293,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:nestedScrollingEnabled="false"
-                    tools:itemCount="6"
-                    tools:listitem="@layout/item_badge_selection" />
-
-                <!-- View All Badges Button -->
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnViewAllBadges"
-                    style="@style/Widget.Material3.Button.TextButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
-                    android:layout_marginTop="8dp"
-                    android:text="View All Badges"
-                    android:textColor="@color/primary_color"
-                    app:icon="@drawable/ic_arrow_forward"
-                    app:iconGravity="end" />
+                    tools:itemCount="6"                    tools:listitem="@layout/item_badge_selection" />
 
             </LinearLayout>
 

@@ -6,6 +6,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -25,14 +26,15 @@ import java.util.List;
 
 public class BadgeSelectionFragment extends Fragment implements BadgeSelectionAdapter.OnBadgeClickListener {
     private static final String TAG = "BadgeSelectionFragment";
+    private static final int MAX_SELECTED_BADGES = 3;
     
     private FragmentBadgeSelectionBinding binding;
     private BadgeSelectionAdapter adapter;
     private AppDatabase db;
     private UserEntity currentUser;
     private List<Badge> availableBadges;
-    private String selectedBadgeId = null;
-    private String originalBadgeId = null;
+    private List<String> selectedBadgeIds = new ArrayList<>();
+    private List<String> originalBadgeIds = new ArrayList<>();
     
     @Nullable
     @Override
@@ -69,29 +71,47 @@ public class BadgeSelectionFragment extends Fragment implements BadgeSelectionAd
             });
         }
     }
-    
-    private void loadCurrentBadge() {
-        // Get current active badge from user preferences
+      private void loadCurrentBadge() {
+        // Get current selected badges from user preferences
         SharedPreferences prefs = requireActivity().getSharedPreferences("profile_settings", 0);
-        String currentBadgeId = prefs.getString("active_badge", "starter");
-        originalBadgeId = currentBadgeId;
-        selectedBadgeId = currentBadgeId;
+        String selectedBadgesJson = prefs.getString("selected_badges", "");
         
-        // Find and display current badge
-        Badge currentBadge = findBadgeById(currentBadgeId);
-        if (currentBadge != null) {
-            updateCurrentBadgeDisplay(currentBadge);
+        if (selectedBadgesJson.isEmpty()) {
+            // Migrate from old single badge system
+            String legacyBadge = prefs.getString("active_badge", "starter");
+            selectedBadgeIds.add(legacyBadge);
+        } else {
+            // Parse JSON array of selected badges
+            try {
+                String[] badgeArray = selectedBadgesJson.split(",");
+                for (String badge : badgeArray) {
+                    if (!badge.trim().isEmpty() && selectedBadgeIds.size() < MAX_SELECTED_BADGES) {
+                        selectedBadgeIds.add(badge.trim());
+                    }
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error parsing selected badges", e);
+                selectedBadgeIds.add("starter"); // Fallback
+            }
         }
+        
+        if (selectedBadgeIds.isEmpty()) {
+            selectedBadgeIds.add("starter"); // Ensure at least one badge
+        }
+        
+        originalBadgeIds = new ArrayList<>(selectedBadgeIds);
+        
+        // Update current badge display to show selected count
+        updateCurrentBadgeDisplay();
     }
-    
-    private void loadAvailableBadges() {
+      private void loadAvailableBadges() {
         availableBadges = generateUserBadges(currentUser);
         
         if (availableBadges.isEmpty()) {
             showEmptyState();
         } else {
             hideEmptyState();
-            adapter.updateBadges(availableBadges, selectedBadgeId);
+            adapter.updateBadges(availableBadges, selectedBadgeIds);
         }
     }
       private List<Badge> generateUserBadges(UserEntity user) {
@@ -158,17 +178,25 @@ public class BadgeSelectionFragment extends Fragment implements BadgeSelectionAd
         defaultBadge.setIconResource(R.drawable.ic_star);
         return defaultBadge;
     }
-    
-    private void updateCurrentBadgeDisplay(Badge badge) {
+      private void updateCurrentBadgeDisplay() {
         if (binding.tvCurrentBadgeName != null) {
-            binding.tvCurrentBadgeName.setText(badge.getName());
-        }
-        if (binding.tvCurrentBadgeDescription != null) {
-            binding.tvCurrentBadgeDescription.setText(badge.getDescription());
+            if (selectedBadgeIds.size() == 1) {
+                Badge badge = findBadgeById(selectedBadgeIds.get(0));
+                binding.tvCurrentBadgeName.setText(badge.getName());
+                binding.tvCurrentBadgeDescription.setText(badge.getDescription());
+            } else {
+                binding.tvCurrentBadgeName.setText("Selected Badges (" + selectedBadgeIds.size() + "/" + MAX_SELECTED_BADGES + ")");
+                binding.tvCurrentBadgeDescription.setText("Choose up to " + MAX_SELECTED_BADGES + " badges to display in your profile");
+            }
         }
         if (binding.ivCurrentBadge != null) {
-            // Set badge icon - you can customize this based on badge type
-            binding.ivCurrentBadge.setImageResource(R.drawable.ic_star);
+            // Set icon for first selected badge or default
+            Badge firstBadge = findBadgeById(selectedBadgeIds.get(0));
+            if (firstBadge.getIconResource() != 0) {
+                binding.ivCurrentBadge.setImageResource(firstBadge.getIconResource());
+            } else {
+                binding.ivCurrentBadge.setImageResource(R.drawable.ic_star);
+            }
         }
     }
     
@@ -180,31 +208,61 @@ public class BadgeSelectionFragment extends Fragment implements BadgeSelectionAd
     private void hideEmptyState() {
         binding.rvBadges.setVisibility(View.VISIBLE);
         binding.layoutEmptyBadges.setVisibility(View.GONE);
-    }
-      @Override
+    }      @Override
     public void onBadgeClick(Badge badge) {
-        if (badge.isEarned()) {
-            selectedBadgeId = badge.getType();
-            adapter.updateSelectedBadge(selectedBadgeId);
-            updateCurrentBadgeDisplay(badge);
-            
-            // Notify parent activity of changes
-            if (getActivity() instanceof CustomizeProfileActivity) {
-                boolean hasChanges = !selectedBadgeId.equals(originalBadgeId);
-                ((CustomizeProfileActivity) getActivity()).setHasChanges(hasChanges);
+        if (!badge.isEarned()) {
+            return; // Can't select unearned badges
+        }
+        
+        String badgeId = badge.getType();
+        
+        if (selectedBadgeIds.contains(badgeId)) {
+            // Deselect badge (but ensure at least one remains selected)
+            if (selectedBadgeIds.size() > 1) {
+                selectedBadgeIds.remove(badgeId);
+                adapter.updateSelectedBadges(selectedBadgeIds);
+                updateCurrentBadgeDisplay();
+                
+                // Notify parent activity of changes
+                if (getActivity() instanceof CustomizeProfileActivity) {
+                    boolean hasChanges = !selectedBadgeIds.equals(originalBadgeIds);
+                    ((CustomizeProfileActivity) getActivity()).setHasChanges(hasChanges);
+                }
+                
+                Log.d(TAG, "Badge deselected: " + badge.getName() + ". Selected count: " + selectedBadgeIds.size());
+            } else {
+                Toast.makeText(requireContext(), "At least one badge must be selected", Toast.LENGTH_SHORT).show();
             }
-            
-            Log.d(TAG, "Badge selected: " + badge.getName());
+        } else {
+            // Select badge (if not at max limit)
+            if (selectedBadgeIds.size() < MAX_SELECTED_BADGES) {
+                selectedBadgeIds.add(badgeId);
+                adapter.updateSelectedBadges(selectedBadgeIds);
+                updateCurrentBadgeDisplay();
+                
+                // Notify parent activity of changes
+                if (getActivity() instanceof CustomizeProfileActivity) {
+                    boolean hasChanges = !selectedBadgeIds.equals(originalBadgeIds);
+                    ((CustomizeProfileActivity) getActivity()).setHasChanges(hasChanges);
+                }
+                
+                Log.d(TAG, "Badge selected: " + badge.getName() + ". Selected count: " + selectedBadgeIds.size());
+            } else {
+                Toast.makeText(requireContext(), "Maximum " + MAX_SELECTED_BADGES + " badges can be selected", Toast.LENGTH_SHORT).show();
+            }
         }
     }
-    
-    public void saveSelection() {
-        if (selectedBadgeId != null && !selectedBadgeId.equals(originalBadgeId)) {
-            // Save selected badge to preferences
+      public void saveSelection() {
+        if (!selectedBadgeIds.equals(originalBadgeIds)) {
+            // Save selected badges to preferences as comma-separated string
             SharedPreferences prefs = requireActivity().getSharedPreferences("profile_settings", 0);
-            prefs.edit().putString("active_badge", selectedBadgeId).apply();
+            String selectedBadgesJson = String.join(",", selectedBadgeIds);
+            prefs.edit().putString("selected_badges", selectedBadgesJson).apply();
             
-            Log.d(TAG, "Badge selection saved: " + selectedBadgeId);
+            // Also maintain legacy single badge for backward compatibility (use first selected)
+            prefs.edit().putString("active_badge", selectedBadgeIds.get(0)).apply();
+            
+            Log.d(TAG, "Badge selection saved: " + selectedBadgesJson);
         }
     }
     
