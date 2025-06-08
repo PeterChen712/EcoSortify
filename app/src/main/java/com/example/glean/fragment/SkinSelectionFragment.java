@@ -169,35 +169,40 @@ public class SkinSelectionFragment extends Fragment implements SkinSelectionAdap
             Log.d(TAG, "Skin selected: " + skin.getName());
         }
     }
-    
-    @Override
+      @Override
     public void onSkinPurchase(ProfileSkin skin) {
         if (currentUser.getPoints() >= skin.getPrice()) {
             // Deduct points and unlock skin
             int newPoints = currentUser.getPoints() - skin.getPrice();
             
-            // Update user points in database
-            db.userDao().updatePoints(currentUser.getId(), newPoints);
-            
-            // Update owned skins in preferences
-            SharedPreferences prefs = requireActivity().getSharedPreferences("profile_settings", 0);
-            String ownedSkinsStr = prefs.getString("owned_skins", "default");
-            if (!ownedSkinsStr.contains(skin.getId())) {
-                ownedSkinsStr += "," + skin.getId();
-                prefs.edit().putString("owned_skins", ownedSkinsStr).apply();
-            }
-            
-            // Update UI
-            skin.setUnlocked(true);
-            currentUser.setPoints(newPoints);
-            updateUserPointsDisplay();
-            adapter.notifyDataSetChanged();
-            
-            Toast.makeText(requireContext(), 
-                    "Successfully purchased " + skin.getName() + "!", 
-                    Toast.LENGTH_SHORT).show();
-            
-            Log.d(TAG, "Skin purchased: " + skin.getName() + ", Points remaining: " + newPoints);
+            // Update user points in database using background thread
+            new Thread(() -> {
+                db.userDao().updatePoints(currentUser.getId(), newPoints);
+                
+                // Update UI on main thread
+                requireActivity().runOnUiThread(() -> {
+                    // Update current user points locally
+                    currentUser.setPoints(newPoints);
+                    
+                    // Update owned skins in preferences
+                    SharedPreferences prefs = requireActivity().getSharedPreferences("profile_settings", 0);
+                    String ownedSkinsStr = prefs.getString("owned_skins", "default");
+                    if (!ownedSkinsStr.contains(skin.getId())) {
+                        ownedSkinsStr += "," + skin.getId();
+                        prefs.edit().putString("owned_skins", ownedSkinsStr).apply();
+                    }
+                      // Update UI
+                    skin.setUnlocked(true);
+                    updateUserPointsDisplay();
+                    adapter.notifyDataSetChanged();
+                    
+                    Toast.makeText(requireContext(), 
+                            "Successfully purchased " + skin.getName() + "!", 
+                            Toast.LENGTH_SHORT).show();
+                    
+                    Log.d(TAG, "Skin purchased: " + skin.getName() + ", Points remaining: " + newPoints);
+                });
+            }).start();
         } else {
             Toast.makeText(requireContext(), 
                     "Not enough points! You need " + skin.getPrice() + " points.", 

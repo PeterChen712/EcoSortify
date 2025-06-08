@@ -1272,14 +1272,15 @@ public class ProfileFragment extends Fragment {    private static final String T
             Toast.makeText(requireContext(), "Failed to open skin selection", Toast.LENGTH_SHORT).show();
         }
     }
-    
-    private void updateProfileSkin() {
+      private void updateProfileSkin() {
         if (binding.profileSkinBackground != null) {
             SharedPreferences prefs = requireActivity().getSharedPreferences("profile_settings", 0);
-            String currentSkin = prefs.getString("current_skin", "default");
+            String currentSkin = prefs.getString("selected_skin", "default");
             
             int skinResource = getSkinResource(currentSkin);
             binding.profileSkinBackground.setBackgroundResource(skinResource);
+            
+            Log.d(TAG, "Profile skin updated to: " + currentSkin);
         }
     }
     

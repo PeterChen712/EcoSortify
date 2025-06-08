@@ -51,11 +51,10 @@ public class SkinSelectionActivity extends AppCompatActivity implements SkinAdap
         
         sharedPreferences = getSharedPreferences("profile_settings", MODE_PRIVATE);
     }
-    
-    private void setupData() {
+      private void setupData() {
         // Get user points from SharedPreferences or database
         userPoints = sharedPreferences.getInt("user_points", 0);
-        currentSkinId = sharedPreferences.getString("current_skin", "default");
+        currentSkinId = sharedPreferences.getString("selected_skin", "default");
         
         // Initialize skin list
         skinList = new ArrayList<>();
@@ -113,10 +112,9 @@ public class SkinSelectionActivity extends AppCompatActivity implements SkinAdap
         for (ProfileSkin s : skinList) {
             s.setSelected(s.getId().equals(skin.getId()));
         }
-        
-        // Save to SharedPreferences
+          // Save to SharedPreferences
         sharedPreferences.edit()
-                .putString("current_skin", skin.getId())
+                .putString("selected_skin", skin.getId())
                 .apply();
         
         // Update UI

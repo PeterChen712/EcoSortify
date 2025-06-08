@@ -92,20 +92,31 @@ public class CustomizeProfileActivity extends AppCompatActivity {
         });
     }
     
-    private void saveChanges() {
-        // Get current fragments and save their changes
-        Fragment currentFragment = getSupportFragmentManager()
-                .findFragmentByTag("f" + binding.viewPager.getCurrentItem());
+    private void saveChanges() {        // Save changes from both fragments
+        FragmentStateAdapter adapter = (FragmentStateAdapter) binding.viewPager.getAdapter();
         
-        if (currentFragment instanceof BadgeSelectionFragment) {
-            ((BadgeSelectionFragment) currentFragment).saveSelection();
-        } else if (currentFragment instanceof SkinSelectionFragment) {
-            ((SkinSelectionFragment) currentFragment).saveSelection();
+        // Save badge selection
+        try {
+            Fragment badgeFragment = getSupportFragmentManager().findFragmentByTag("f0");
+            if (badgeFragment instanceof BadgeSelectionFragment) {
+                ((BadgeSelectionFragment) badgeFragment).saveSelection();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error saving badge selection", e);
         }
         
-        // Set result and finish
+        // Save skin selection  
+        try {
+            Fragment skinFragment = getSupportFragmentManager().findFragmentByTag("f1");
+            if (skinFragment instanceof SkinSelectionFragment) {
+                ((SkinSelectionFragment) skinFragment).saveSelection();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error saving skin selection", e);
+        }
+          // Set result and finish
         Intent resultIntent = new Intent();
-        resultIntent.putExtra("changes_made", hasChanges);
+        resultIntent.putExtra("profile_changed", hasChanges);
         setResult(RESULT_OK, resultIntent);
         
         Toast.makeText(this, "Changes saved successfully!", Toast.LENGTH_SHORT).show();
