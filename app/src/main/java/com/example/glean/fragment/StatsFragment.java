@@ -84,7 +84,6 @@ public class StatsFragment extends Fragment {
         // Set click listeners
         binding.btnViewHistory.setOnClickListener(v -> navigateToHistory());
         binding.btnViewChallenges.setOnClickListener(v -> navigateToChallenges());
-        binding.btnStartSession.setOnClickListener(v -> navigateToMainFragment());
         
         // Setup time filter chips
         setupTimeFilterChips();
@@ -93,9 +92,7 @@ public class StatsFragment extends Fragment {
         setupCharts();
           // Load data
         loadData();
-    }
-    
-    private void setupTimeFilterChips() {
+    }      private void setupTimeFilterChips() {
         // Set default selection to 7 days
         binding.chip7days.setChecked(true);
         currentTimeFilter = 7;
@@ -151,8 +148,7 @@ public class StatsFragment extends Fragment {
         }
         
         return filteredRecords;
-    }
-      private void setupCharts() {
+    }      private void setupCharts() {
         // Set up bar chart
         binding.barChartDistance.setDrawGridBackground(false);
         binding.barChartDistance.setDrawBarShadow(false);
@@ -167,19 +163,8 @@ public class StatsFragment extends Fragment {
         XAxis xAxis = binding.barChartDistance.getXAxis();
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
         xAxis.setDrawGridLines(false);
-        xAxis.setGranularity(1f);        // Set up line chart
-        binding.lineChartProgress.setDrawGridBackground(false);
-        binding.lineChartProgress.setDrawBorders(false);
-        binding.lineChartProgress.setDescription(description);
-        binding.lineChartProgress.setTouchEnabled(true);
-        binding.lineChartProgress.setPinchZoom(true);
-        
-        // Set up pie chart
-        binding.pieChartWaste.setUsePercentValues(true);
-        binding.pieChartWaste.setDescription(description);
-        binding.pieChartWaste.setHoleRadius(40f);
-        binding.pieChartWaste.setTransparentCircleRadius(45f);
-    }    private void loadData() {
+        xAxis.setGranularity(1f);
+    }private void loadData() {
         binding.progressIndicator.setVisibility(View.VISIBLE);
         
         if (userId != -1) {
@@ -210,25 +195,14 @@ public class StatsFragment extends Fragment {
             binding.progressIndicator.setVisibility(View.GONE);
             showNoDataState();
         }
-    }
-      private void showDataViews() {
-        // Show all chart cards
+    }      private void showDataViews() {
+        // Show distance chart card
         binding.cardDistanceChart.setVisibility(View.VISIBLE);
-        binding.cardProgressChart.setVisibility(View.VISIBLE);
-        binding.cardWasteChart.setVisibility(View.VISIBLE);
-        
-        // Hide no data card
-        binding.cardNoData.setVisibility(View.GONE);
     }
     
     private void showNoDataState() {
-        // Hide all chart cards
+        // Hide distance chart card
         binding.cardDistanceChart.setVisibility(View.GONE);
-        binding.cardProgressChart.setVisibility(View.GONE);
-        binding.cardWasteChart.setVisibility(View.GONE);
-        
-        // Show no data card
-        binding.cardNoData.setVisibility(View.VISIBLE);
     }
     
     private void updateUserStats() {
@@ -256,8 +230,7 @@ public class StatsFragment extends Fragment {
         } else {
             binding.tvAverageTime.setText("0");
         }
-    }
-      private void updateCharts() {
+    }      private void updateCharts() {
         if (recordList.isEmpty()) {
             showNoDataState();
             return;
@@ -265,8 +238,6 @@ public class StatsFragment extends Fragment {
         
         showDataViews();
         updateDistanceBarChart();
-        updateProgressLineChart();
-        updateTrashTypePieChart();
     }
       private void updateDistanceBarChart() {
         List<BarEntry> entries = new ArrayList<>();
@@ -348,181 +319,7 @@ public class StatsFragment extends Fragment {
             xAxis.setLabelCount(Math.min(labels.size(), 10));
             
             binding.barChartDistance.animateY(1000);
-            binding.barChartDistance.invalidate();
-        }
-    }    private void updateProgressLineChart() {
-        if (binding.lineChartProgress == null) return;
-        
-        try {
-            // Clear any existing data
-            binding.lineChartProgress.clear();
-            
-            // Get filtered records based on current time filter
-            List<RecordEntity> filteredRecords = getFilteredRecords();
-            
-            if (filteredRecords == null || filteredRecords.isEmpty()) {
-                binding.lineChartProgress.setNoDataText("No progress data available for selected period");
-                binding.lineChartProgress.invalidate();
-                return;
-            }
-            
-            // Prepare data entries for the line chart
-            ArrayList<Entry> entries = new ArrayList<>();
-            
-            // Group records by date and calculate daily progress
-            Map<String, Integer> dailyTrashCount = new HashMap<>();
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-            
-            for (RecordEntity record : filteredRecords) {
-                String dateKey = dateFormat.format(new Date(record.getCreatedAt()));
-                dailyTrashCount.put(dateKey, dailyTrashCount.getOrDefault(dateKey, 0) + record.getPoints() / 10); // Convert points back to trash count
-            }
-            
-            // Sort dates and create cumulative entries
-            List<String> sortedDates = new ArrayList<>(dailyTrashCount.keySet());
-            Collections.sort(sortedDates);
-            
-            int cumulativeCount = 0;
-            for (int i = 0; i < sortedDates.size(); i++) {
-                cumulativeCount += dailyTrashCount.get(sortedDates.get(i));
-                entries.add(new Entry(i, cumulativeCount));
-            }
-            
-            if (entries.isEmpty()) {
-                binding.lineChartProgress.setNoDataText("No progress data available for selected period");
-                binding.lineChartProgress.invalidate();
-                return;
-            }
-            
-            // Create dataset
-            LineDataSet dataSet = new LineDataSet(entries, "Cumulative Trash Collected");
-            dataSet.setColor(Color.GREEN);
-            dataSet.setCircleColor(Color.GREEN);
-            dataSet.setLineWidth(3f);
-            dataSet.setCircleRadius(5f);
-            dataSet.setValueTextSize(10f);
-            dataSet.setValueTextColor(Color.BLACK);
-            dataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
-            dataSet.setDrawFilled(true);
-            dataSet.setFillColor(Color.GREEN);
-            dataSet.setFillAlpha(30);
-            
-            // Create LineData and set to chart
-            LineData lineData = new LineData(dataSet);
-            binding.lineChartProgress.setData(lineData);
-            
-            // Customize chart appearance
-            binding.lineChartProgress.getDescription().setEnabled(false);
-            binding.lineChartProgress.setTouchEnabled(true);
-            binding.lineChartProgress.setDragEnabled(true);
-            binding.lineChartProgress.setScaleEnabled(true);
-            binding.lineChartProgress.setPinchZoom(true);
-            
-            // Customize X-axis
-            XAxis xAxis = binding.lineChartProgress.getXAxis();
-            xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
-            xAxis.setGranularity(1f);
-            xAxis.setValueFormatter(new ValueFormatter() {
-                @Override
-                public String getFormattedValue(float value) {
-                    int index = (int) value;
-                    if (index >= 0 && index < sortedDates.size()) {
-                        try {
-                            Date date = dateFormat.parse(sortedDates.get(index));
-                            SimpleDateFormat displayFormat = new SimpleDateFormat("MM/dd", Locale.getDefault());
-                            return displayFormat.format(date);
-                        } catch (ParseException e) {
-                            return "";
-                        }
-                    }
-                    return "";
-                }
-            });
-            
-            // Customize Y-axis
-            YAxis leftAxis = binding.lineChartProgress.getAxisLeft();
-            leftAxis.setAxisMinimum(0f);
-            leftAxis.setGranularity(1f);
-            
-            YAxis rightAxis = binding.lineChartProgress.getAxisRight();
-            rightAxis.setEnabled(false);
-            
-            // Refresh chart
-            binding.lineChartProgress.animateX(1000);
-            binding.lineChartProgress.invalidate();
-            
-        } catch (Exception e) {
-            if (binding.lineChartProgress != null) {
-                binding.lineChartProgress.setNoDataText("Error loading progress data");
-                binding.lineChartProgress.invalidate();
-            }
-        }
-    }
-      private void updateTrashTypePieChart() {
-        // For now, use sample data since we need to implement trash type tracking
-        Map<String, Integer> trashCounts = new HashMap<>();
-        
-        // Get filtered records based on current time filter
-        List<RecordEntity> filteredRecords = getFilteredRecords();
-        
-        // Calculate total trash collected from points (assuming 10 points per trash item)
-        int totalTrash = 0;
-        for (RecordEntity record : filteredRecords) {
-            totalTrash += record.getPoints() / 10; // Convert points back to trash count
-        }
-        
-        if (totalTrash > 0) {
-            // Distribute trash types proportionally (sample distribution)
-            trashCounts.put("Plastic", (int)(totalTrash * 0.4));
-            trashCounts.put("Paper", (int)(totalTrash * 0.25));
-            trashCounts.put("Metal", (int)(totalTrash * 0.15));
-            trashCounts.put("Glass", (int)(totalTrash * 0.10));
-            trashCounts.put("Other", (int)(totalTrash * 0.10));
-        }
-        
-        updatePieChartData(trashCounts);
-    }
-      private void updatePieChartData(Map<String, Integer> trashCounts) {
-        List<PieEntry> entries = new ArrayList<>();
-        
-        // Add entries for each trash type
-        for (Map.Entry<String, Integer> entry : trashCounts.entrySet()) {
-            if (entry.getValue() > 0) {
-                entries.add(new PieEntry(entry.getValue(), entry.getKey()));
-            }
-        }
-        
-        // If no trash data, show placeholders
-        if (entries.isEmpty()) {
-            entries.add(new PieEntry(1, "No Data"));
-            
-            // Clear the chart and show no data message
-            if (binding.pieChartWaste != null) {
-                binding.pieChartWaste.clear();
-                binding.pieChartWaste.setNoDataText("No waste data available for selected period");
-                binding.pieChartWaste.invalidate();
-            }
-            return;
-        }
-        
-        PieDataSet dataSet = new PieDataSet(entries, "Trash Types");
-        dataSet.setColors(ColorTemplate.COLORFUL_COLORS);
-        dataSet.setValueTextSize(12f);
-        dataSet.setValueTextColor(Color.WHITE);
-        dataSet.setValueFormatter(new ValueFormatter() {
-            @Override
-            public String getFormattedValue(float value) {
-                return String.format(Locale.getDefault(), "%.0f", value);
-            }
-        });
-        
-        PieData pieData = new PieData(dataSet);
-        
-        if (binding.pieChartWaste != null) {
-            binding.pieChartWaste.setData(pieData);
-            binding.pieChartWaste.animateY(1000);
-            binding.pieChartWaste.invalidate();
-        }
+            binding.barChartDistance.invalidate();        }
     }
     
     private String formatDuration(long seconds) {

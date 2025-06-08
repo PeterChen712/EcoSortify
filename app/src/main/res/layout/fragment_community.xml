@@ -4,23 +4,23 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/background_color">
-
-    <!-- Header -->
+    android:background="@color/background_color">    <!-- Header with Fixed Height -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="56dp"
         android:orientation="horizontal"
-        android:padding="16dp"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
         android:background="@color/primary_color"
         android:gravity="center_vertical">
 
         <ImageView
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
             android:src="@drawable/ic_community"
             android:layout_marginEnd="12dp"
-            app:tint="@color/white" />
+            app:tint="@color/white"
+            android:contentDescription="Community Icon" />
 
         <TextView
             android:layout_width="0dp"
@@ -29,7 +29,8 @@
             android:text="Komunitas"
             android:textColor="@color/white"
             android:textSize="20sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:gravity="center_vertical" />
 
     </LinearLayout>
 

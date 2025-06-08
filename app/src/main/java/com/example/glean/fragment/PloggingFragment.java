@@ -197,11 +197,11 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         if (mapFragment != null) {
             mapFragment.getMapAsync(this);
         }        restoreTrackingSession();        updateUIForTrackingState(isTracking);
-        updateUIForNetworkState(isNetworkAvailable);
-          // Set up button click listeners for new UI structure
+        updateUIForNetworkState(isNetworkAvailable);          // Set up button click listeners for new UI structure
         binding.btnStartStop.setOnClickListener(v -> toggleTracking());
         binding.btnCollectTrash.setOnClickListener(v -> navigateToTrashCollection());
         binding.btnFinish.setOnClickListener(v -> finishPlogging());
+        binding.btnHelp.setOnClickListener(v -> showHelpDialog());
 
         checkNetworkStatus();
         checkGpsStatus();
@@ -2197,9 +2197,33 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         prefs.edit()
             .putLong("NETWORK_LOSS_TIME", 0)
             .putBoolean("AUTO_FINISH_ACTIVE", false)
-            .apply();
+            .apply();    }
+
+    private void showHelpDialog() {
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(requireContext());
+        builder.setTitle("Plogging Help")
+                .setMessage("🏃‍♂️ Welcome to Plogging!\n\n" +
+                        "Plogging combines jogging with picking up litter to help keep our environment clean.\n\n" +
+                        "📍 How to use:\n" +
+                        "• Tap 'Start' to begin tracking your route\n" +
+                        "• Use 'Collect Trash' when you find litter\n" +
+                        "• Tap 'Finish' when done to save your session\n\n" +
+                        "🌱 Features:\n" +
+                        "• GPS tracking of your route\n" +
+                        "• Distance measurement\n" +
+                        "• Trash collection counter\n" +
+                        "• Points system for motivation\n\n" +
+                        "💡 Tips:\n" +
+                        "• Make sure GPS is enabled\n" +
+                        "• Stay connected to internet for best experience\n" +
+                        "• Take photos when collecting trash\n\n" +
+                        "Together we can make a difference! 🌍")
+                .setPositiveButton("Got it!", (dialog, which) -> dialog.dismiss())
+                .setIcon(R.drawable.ic_help)
+                .show();
     }
-      private void autoFinishDueToNetworkLoss() {
+
+    private void autoFinishDueToNetworkLoss() {
         if (hasActiveSession()) {
             showNetworkStatusMessage("⏰ Session auto-finished due to prolonged internet loss", true);
             finishPloggingConfirmed();

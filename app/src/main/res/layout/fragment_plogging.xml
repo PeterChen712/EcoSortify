@@ -4,22 +4,62 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background_light">
-
-    <!-- Normal Plogging Content -->
+    android:background="@color/background_light">    <!-- Normal Plogging Content -->
     <LinearLayout
         android:id="@+id/layout_plogging_content"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:visibility="visible">
+        android:visibility="visible">        <!-- Header with Fixed Height -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:background="@color/primary_color"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp">
+
+            <!-- Plogging Icon -->
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_marginEnd="12dp"
+                android:src="@drawable/ic_plogging"
+                app:tint="@color/white"
+                android:contentDescription="Plogging Icon" />
+
+            <!-- Title Text -->
+            <TextView
+                android:id="@+id/tv_header_title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Plogging"
+                android:textColor="@color/white"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:gravity="center_vertical" />
+
+            <!-- Help Button -->
+            <ImageButton
+                android:id="@+id/btn_help"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Help"
+                android:src="@drawable/ic_help"
+                app:tint="@color/white"
+                android:padding="12dp" />
+
+        </LinearLayout>
 
         <fragment
             android:id="@+id/map"
             android:name="com.google.android.gms.maps.SupportMapFragment"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1" />        <!-- Enhanced Control Panel with Modern Design -->
+            android:layout_weight="1" /><!-- Enhanced Control Panel with Modern Design -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/control_panel"
             android:layout_width="match_parent"
