@@ -70,8 +70,7 @@ public class SosialFragment extends Fragment implements PostAdapter.OnPostClickL
         Log.d("SosialFragment", "Loading posts from database...");
         
         // Load posts from database
-        repository.getAllPosts().observe(getViewLifecycleOwner(), new Observer<List<PostEntity>>() {
-            @Override
+        repository.getAllPosts().observe(getViewLifecycleOwner(), new Observer<List<PostEntity>>() {            @Override
             public void onChanged(List<PostEntity> postEntities) {
                 Log.d("SosialFragment", "Posts loaded from database: " + (postEntities != null ? postEntities.size() : 0));
                 posts.clear();
@@ -79,9 +78,7 @@ public class SosialFragment extends Fragment implements PostAdapter.OnPostClickL
                     posts.addAll(postEntities);
                     Log.d("SosialFragment", "Using database posts");
                 } else {
-                    Log.d("SosialFragment", "Database empty, initializing sample posts");
-                    // Add sample posts if database is empty
-                    initializeSamplePosts();
+                    Log.d("SosialFragment", "No posts found in database, seeder should have run automatically");
                 }
                 
                 postAdapter.notifyDataSetChanged();
@@ -95,55 +92,10 @@ public class SosialFragment extends Fragment implements PostAdapter.OnPostClickL
                     binding.emptyStateLayout.setVisibility(View.GONE);
                     binding.recyclerViewPosts.setVisibility(View.VISIBLE);
                 }
-            }
-        });
+            }        });
     }
-      private void initializeSamplePosts() {
-        Log.d("SosialFragment", "Initializing sample posts to database...");
-        // Sample posts
-        PostEntity post1 = new PostEntity();
-        post1.setUserId(1);
-        post1.setUsername("EcoWarrior");
-        post1.setContent("Hari ini berhasil mengumpulkan 5kg sampah plastik di pantai! 🌊♻️ #PloggingChallenge");
-        post1.setImageUrl("sample_image_1");
-        post1.setLikeCount(24);
-        post1.setCommentCount(8);        post1.setTimestamp(System.currentTimeMillis() - 3600000); // 1 hour ago
-        repository.insertPost(post1, new CommunityRepository.OnPostInsertedListener() {
-            @Override
-            public void onPostInserted(PostEntity post) {
-                Log.d("SosialFragment", "Post 1 inserted successfully with ID: " + post.getId());
-            }
-        });
-        
-        PostEntity post2 = new PostEntity();
-        post2.setUserId(2);
-        post2.setUsername("GreenHero");
-        post2.setContent("Plogging pagi ini di taman kota. Setiap langkah untuk bumi yang lebih bersih! 🏃‍♂️🌱");
-        post2.setImageUrl("sample_image_2");
-        post2.setLikeCount(18);
-        post2.setCommentCount(5);        post2.setTimestamp(System.currentTimeMillis() - 7200000); // 2 hours ago
-        repository.insertPost(post2, new CommunityRepository.OnPostInsertedListener() {
-            @Override
-            public void onPostInserted(PostEntity post) {
-                Log.d("SosialFragment", "Post 2 inserted successfully with ID: " + post.getId());
-            }
-        });
-        
-        PostEntity post3 = new PostEntity();
-        post3.setUserId(3);
-        post3.setUsername("CleanTeam");
-        post3.setContent("Tim kami berhasil membersihkan area seluas 2 hektar! Terima kasih untuk semua volunteer 💪");
-        post3.setImageUrl("sample_image_3");
-        post3.setLikeCount(45);
-        post3.setCommentCount(12);
-        post3.setTimestamp(System.currentTimeMillis() - 14400000); // 4 hours ago
-        repository.insertPost(post3, new CommunityRepository.OnPostInsertedListener() {
-            @Override
-            public void onPostInserted(PostEntity post) {
-                Log.d("SosialFragment", "Post 3 inserted successfully with ID: " + post.getId());
-            }
-        });
-    }    @Override
+    
+    @Override
     public void onPostClick(PostEntity post) {
         // Navigate to post detail
         Intent intent = new Intent(requireContext(), PostDetailActivity.class);

@@ -1,4 +1,4 @@
-package com.example.glean.dao;
+package com.example.glean.db;
 
 import androidx.lifecycle.LiveData;
 import androidx.room.Dao;
@@ -45,6 +45,15 @@ public interface UserDao {
     @Query("SELECT * FROM users")
     LiveData<List<UserEntity>> getAllUsers();
 
+    @Query("SELECT * FROM users")
+    List<UserEntity> getAllUsersSync();
+
+    @Query("SELECT * FROM users WHERE email = :email")
+    UserEntity getUserByEmailSync(String email);
+
+    @Query("SELECT * FROM users LIMIT 1")
+    UserEntity getFirstUser();
+
     @Query("SELECT COUNT(*) FROM users WHERE username = :username")
     int checkUsernameExists(String username);
 
@@ -67,8 +76,12 @@ public interface UserDao {
     int getMaxPoints();
 
     @Query("SELECT * FROM users ORDER BY points DESC LIMIT :limit")
-    LiveData<List<UserEntity>> getTopUsers(int limit);
-
-    @Query("DELETE FROM users WHERE id = :userId")
+    LiveData<List<UserEntity>> getTopUsers(int limit);    @Query("DELETE FROM users WHERE id = :userId")
     void deleteById(int userId);
+    
+    @Query("SELECT COUNT(*) FROM users")
+    int getUserCount();
+    
+    @Query("DELETE FROM users")
+    void deleteAll();
 }

@@ -53,4 +53,13 @@ public interface PostDao {
     
     @Query("DELETE FROM posts WHERE id = :postId")
     void deletePostById(int postId);
+    
+    @Query("SELECT COUNT(*) FROM posts")
+    int getPostCount();
+    
+    @Query("SELECT COUNT(*) FROM posts WHERE location = :location AND userId = :userId")
+    int checkPostExistsByLocationAndUser(String location, int userId);
+    
+    @Query("DELETE FROM posts")
+    void deleteAll();
 }

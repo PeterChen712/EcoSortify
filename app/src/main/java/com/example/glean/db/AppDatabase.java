@@ -10,9 +10,10 @@ import androidx.room.migration.Migration;
 import androidx.sqlite.db.SupportSQLiteDatabase;
 
 import com.example.glean.db.CommentDao;
+import com.example.glean.db.DatabaseSeeder;
 import com.example.glean.db.DaoRecord;
 import com.example.glean.db.DaoTrash;
-import com.example.glean.db.DaoUser;
+import com.example.glean.db.UserDao;
 import com.example.glean.db.LocationPointDao;
 import com.example.glean.db.NewsDao;
 import com.example.glean.db.PostDao;
@@ -35,15 +36,14 @@ import com.example.glean.util.Converters;
         PostEntity.class,
         CommentEntity.class
     },
-    version = 13, // Increment to version 13 for new entities
+    version = 14, // Increment to version 14 for seeder implementation
     exportSchema = false
 )
 @TypeConverters({Converters.class})
 public abstract class AppDatabase extends RoomDatabase {
     
     private static final String DATABASE_NAME = "glean_database";
-    private static volatile AppDatabase INSTANCE;
-      public abstract DaoUser userDao();
+    private static volatile AppDatabase INSTANCE;    public abstract UserDao userDao();
     public abstract DaoRecord recordDao();
     public abstract DaoTrash trashDao();
     public abstract LocationPointDao locationPointDao();
@@ -61,19 +61,13 @@ public abstract class AppDatabase extends RoomDatabase {
                             DATABASE_NAME
                     )
                     // Use destructive migration to handle schema mismatches
-                    .fallbackToDestructiveMigration()
-                    // Optional: Add callback to populate initial data
+                    .fallbackToDestructiveMigration()                    // Optional: Add callback to populate initial data
                     .addCallback(new RoomDatabase.Callback() {
                         @Override
                         public void onCreate(SupportSQLiteDatabase db) {
                             super.onCreate(db);
-                            // Database is created fresh - can add any initial setup here if needed
-                        }
-                        
-                        @Override
-                        public void onOpen(SupportSQLiteDatabase db) {
-                            super.onOpen(db);
-                            // Database is opened - can add any setup here if needed
+                            // Database is created fresh - seed initial data
+                            seedInitialData(context);
                         }
                     })
                     .build();
@@ -91,5 +85,13 @@ public abstract class AppDatabase extends RoomDatabase {
             INSTANCE.close();
             INSTANCE = null;
         }
+    }
+    
+    /**
+     * Seed initial data when database is created or opened
+     */
+    private static void seedInitialData(Context context) {
+        DatabaseSeeder seeder = new DatabaseSeeder(context);
+        seeder.seedDatabaseIfEmpty();
     }
 }
