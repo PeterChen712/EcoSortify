@@ -83,9 +83,8 @@ public class DatabaseSeeder {
         post1.setUsername("EcoWarrior");
         post1.setUserAvatar("https://i.pravatar.cc/150?img=1");
         post1.setContent("Hari ini berhasil mengumpulkan 5kg sampah plastik di pantai Losari! 🌊♻️ Setiap botol plastik yang kita ambil adalah satu langkah menuju laut yang lebih bersih. Mari bersama-sama jaga pantai kita! #PloggingChallenge #BersihPantai");
-        post1.setImageUrl("https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop");
-        post1.setLikeCount(24);
-        post1.setCommentCount(8);
+        post1.setImageUrl("https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop");        post1.setLikeCount(0);
+        post1.setCommentCount(0);
         post1.setTimestamp(System.currentTimeMillis() - (3 * 60 * 60 * 1000L)); // 3 hours ago
         post1.setLocation("Pantai Losari, Makassar");
         post1.setTrashWeight(5.0f);
@@ -100,9 +99,8 @@ public class DatabaseSeeder {
         post2.setUsername("EcoWarrior");
         post2.setUserAvatar("https://i.pravatar.cc/150?img=1");
         post2.setContent("Pagi yang produktif di sekitar kampus UNHAS! 🎓🌿 Sebagai mahasiswa, kita punya tanggung jawab untuk menjaga lingkungan kampus tetap bersih. Hari ini terkumpul 2.8kg sampah plastik dan kertas. #CampusClean #UNHAS");
-        post2.setImageUrl("https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=400&h=300&fit=crop");
-        post2.setLikeCount(32);
-        post2.setCommentCount(7);
+        post2.setImageUrl("https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=400&h=300&fit=crop");        post2.setLikeCount(0);
+        post2.setCommentCount(0);
         post2.setTimestamp(System.currentTimeMillis() - (18 * 60 * 60 * 1000L)); // 18 hours ago
         post2.setLocation("Universitas Hasanuddin, Makassar");
         post2.setTrashWeight(2.8f);
@@ -117,16 +115,16 @@ public class DatabaseSeeder {
     /**
      * Force reset and reseed the database - useful for testing
      * This will clear all existing data and populate fresh seed data
-     */
-    public void forceReseedDatabase() {
+     */    public void forceReseedDatabase() {
         executor.execute(() -> {
             Log.d(TAG, "Force reseeding database - clearing existing data...");
             
-            // Clear existing data
+            // Clear existing data - including comments to remove any unwanted automatic comments
+            database.commentDao().deleteAll();
             database.postDao().deleteAll();
             database.userDao().deleteAll();
             
-            Log.d(TAG, "Existing data cleared. Starting fresh seeding...");
+            Log.d(TAG, "Existing data cleared (including all comments). Starting fresh seeding...");
             
             // Seed fresh data
             seedUsers();

@@ -38,6 +38,7 @@ import com.example.glean.databinding.FragmentProfileBinding;
 import com.example.glean.databinding.DialogEditProfileBinding;
 import com.example.glean.databinding.DialogSettingsBinding;
 import com.example.glean.db.AppDatabase;
+import com.example.glean.util.DatabaseHelper;
 import com.example.glean.model.Badge;
 import com.example.glean.model.UserEntity;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
@@ -922,9 +923,26 @@ public class ProfileFragment extends Fragment {    private static final String T
             dialogBinding.switchNotifications.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 prefs.edit().putBoolean("NOTIFICATIONS_ENABLED", isChecked).apply();
             });
-            
-            dialogBinding.switchDarkMode.setOnCheckedChangeListener((buttonView, isChecked) -> {
+              dialogBinding.switchDarkMode.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 prefs.edit().putBoolean("DARK_MODE", isChecked).apply();
+            });
+            
+            // Reset database button handler
+            dialogBinding.btnResetDatabase.setOnClickListener(v -> {
+                new MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("Reset Database")
+                    .setMessage("This will reset all app data including posts, likes, and comments. Are you sure?")                    .setPositiveButton("Reset", (confirmDialog, which) -> {
+                        try {
+                            DatabaseHelper.resetAppData(requireContext());
+                            Toast.makeText(requireContext(), "Database reset successfully! Please restart the app.", Toast.LENGTH_LONG).show();
+                        } catch (Exception e) {
+                            Log.e("ProfileFragment", "Error resetting database", e);
+                            Toast.makeText(requireContext(), "Error resetting database: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                        }
+                        confirmDialog.dismiss();
+                    })
+                    .setNegativeButton("Cancel", null)
+                    .show();
             });
             
             dialogBinding.btnSave.setOnClickListener(v -> {

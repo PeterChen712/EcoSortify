@@ -47,4 +47,10 @@ public interface CommentDao {
     
     @Query("DELETE FROM comments WHERE id = :commentId")
     void deleteCommentById(int commentId);
+    
+    @Query("DELETE FROM comments")
+    void deleteAll();
+    
+    @Query("SELECT COUNT(*) FROM comments")
+    int getCommentCount();
 }

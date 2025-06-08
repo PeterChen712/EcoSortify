@@ -207,13 +207,12 @@ public class PostDetailActivity extends AppCompatActivity {
         // Load comments from database
         repository.getCommentsByPostId(post.getId()).observe(this, new Observer<List<CommentEntity>>() {
             @Override
-            public void onChanged(List<CommentEntity> commentEntities) {
-                comments.clear();
+            public void onChanged(List<CommentEntity> commentEntities) {                comments.clear();
                 if (commentEntities != null && !commentEntities.isEmpty()) {
                     comments.addAll(commentEntities);
                 } else {
-                    // Add sample comments if database is empty for this post
-                    initializeSampleComments();
+                    // No sample comments - let the post show 0 comments as intended
+                    // initializeSampleComments(); // REMOVED: This was adding unwanted sample comments
                 }
                 commentAdapter.notifyDataSetChanged();
             }
