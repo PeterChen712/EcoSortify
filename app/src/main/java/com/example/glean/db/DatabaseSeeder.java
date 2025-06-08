@@ -45,11 +45,11 @@ public class DatabaseSeeder {
             Log.d(TAG, "EcoWarrior already exists, skipping user seeding");
             return;
         }
-        
-        // Hanya 1 user - EcoWarrior
+          // Hanya 1 user - EcoWarrior
         UserEntity user = new UserEntity();
         user.setUsername("EcoWarrior");
         user.setEmail("ecowarrior@glean.app");
+        user.setPassword("ecowarrior123"); // Password untuk testing
         user.setFirstName("Eko");
         user.setLastName("Pejuang");
         user.setProfileImagePath("https://i.pravatar.cc/150?img=1");
