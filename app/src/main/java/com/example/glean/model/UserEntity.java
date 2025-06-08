@@ -173,6 +173,16 @@ public class UserEntity {
         }
     }
     
+    public String getName() {
+        if (username != null && !username.isEmpty()) {
+            return username;
+        } else if (firstName != null && !firstName.isEmpty()) {
+            return firstName + (lastName != null && !lastName.isEmpty() ? " " + lastName : "");
+        } else {
+            return email != null ? email.split("@")[0] : "User";
+        }
+    }
+    
     @Override
     public String toString() {
         return "UserEntity{" +

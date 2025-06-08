@@ -36,7 +36,7 @@ import com.example.glean.util.Converters;
         PostEntity.class,
         CommentEntity.class
     },
-    version = 14, // Increment to version 14 for seeder implementation
+    version = 15, // Increment to version 15 after Firebase removal changes
     exportSchema = false
 )
 @TypeConverters({Converters.class})

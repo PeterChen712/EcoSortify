@@ -1,6 +1,7 @@
 package com.example.glean.fragment;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -34,8 +35,9 @@ import com.example.glean.db.AppDatabase;
 import com.example.glean.model.LocationPointEntity;
 import com.example.glean.model.RecordEntity;
 import com.example.glean.model.TrashEntity;
-import com.example.glean.model.CommunityPostModel;
-import com.example.glean.helper.FirebaseHelper;
+import com.example.glean.model.PostEntity;
+import com.example.glean.model.UserEntity;
+import com.example.glean.repository.CommunityRepository;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -45,7 +47,6 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
-import com.google.firebase.auth.FirebaseUser;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -60,9 +61,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallback {
-
-    private static final String TAG = "PloggingSummaryFragment";
+public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallback {    private static final String TAG = "PloggingSummaryFragment";
     
     private FragmentPloggingSummaryBinding binding;
     private AppDatabase db;
@@ -70,23 +69,25 @@ public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallb
     private int recordId;
     private GoogleMap mMap;
     
-    private FirebaseHelper firebaseHelper;
+    private CommunityRepository repository;
+    private int currentUserId;
     private RecordEntity currentRecord;
     private Location lastKnownLocation;
-    private List<LocationPointEntity> routePoints;
-
-    @Override
+    private List<LocationPointEntity> routePoints;    @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         db = AppDatabase.getInstance(requireContext());
         executor = Executors.newSingleThreadExecutor();
+        repository = new CommunityRepository(requireContext());
+        
+        // Get current user ID from SharedPreferences
+        SharedPreferences prefs = requireContext().getSharedPreferences("user_prefs", requireContext().MODE_PRIVATE);
+        currentUserId = prefs.getInt("current_user_id", -1);
         
         // Get record ID from arguments
         if (getArguments() != null) {
             recordId = getArguments().getInt("RECORD_ID", -1);
         }
-        
-        firebaseHelper = new FirebaseHelper(requireContext());
     }
 
     @Nullable
@@ -347,10 +348,8 @@ public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallb
         shareIntent.putExtra(Intent.EXTRA_SUBJECT, "My Plogging Achievement");
         
         startActivity(Intent.createChooser(shareIntent, "Share your plogging achievement"));
-    }
-
-    private void shareToCommunitiy() {
-        if (!firebaseHelper.isUserLoggedIn()) {
+    }    private void shareToCommunitiy() {
+        if (currentUserId == -1) {
             showLoginPrompt();
             return;
         }
@@ -360,34 +359,42 @@ public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallb
             return;
         }
 
-        // Create community post from plogging data
-        FirebaseUser user = firebaseHelper.getCurrentUser();
-        String content = createPloggingPostContent(currentRecord);
-        
-        CommunityPostModel post = new CommunityPostModel(
-                user.getUid(),
-                user.getDisplayName() != null ? user.getDisplayName() : "Anonymous",
-                content
-        );
-        
-        post.setCategory("plogging");
-        post.setUserProfileUrl(user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : null);
-        
-        // Add metadata
-        Map<String, Object> metadata = new HashMap<>();
-        metadata.put("distance_km", currentRecord.getDistance() / 1000f);
-        metadata.put("duration_minutes", currentRecord.getDuration() / 60000);
-        int trashCount = currentRecord.getPoints() / 10;
-        metadata.put("trash_count", trashCount);
-        metadata.put("points_earned", currentRecord.getPoints());
-        metadata.put("record_id", currentRecord.getId());
-        post.setMetadata(metadata);
-        
-        // Show sharing dialog
-        showSharingDialog(post);
-    }
+        // Get user data from local database
+        executor.execute(() -> {
+            UserEntity user = db.userDao().getUserByIdSync(currentUserId);
+            if (user == null) {
+                requireActivity().runOnUiThread(() -> {
+                    Toast.makeText(requireContext(), "User not found", Toast.LENGTH_SHORT).show();
+                });
+                return;
+            }
 
-    private void showSharingDialog(CommunityPostModel post) {
+            String content = createPloggingPostContent(currentRecord);
+            
+            PostEntity post = new PostEntity();
+            post.setUserId(currentUserId);
+            post.setAuthorName(user.getName());
+            post.setContent(content);
+            post.setCategory("plogging");
+            post.setCreatedAt(System.currentTimeMillis());
+            
+            // Add metadata as JSON string
+            String metadata = String.format(
+                    "{\"distance_km\":%.2f,\"duration_minutes\":%d,\"trash_count\":%d,\"points_earned\":%d,\"record_id\":%d}",
+                    currentRecord.getDistance() / 1000f,
+                    currentRecord.getDuration() / 60000,
+                    currentRecord.getPoints() / 10,
+                    currentRecord.getPoints(),
+                    currentRecord.getId()
+            );
+            post.setMetadata(metadata);
+            
+            requireActivity().runOnUiThread(() -> {
+                // Show sharing dialog
+                showSharingDialog(post);
+            });
+        });
+    }    private void showSharingDialog(PostEntity post) {
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
         View dialogView = LayoutInflater.from(requireContext())
                 .inflate(R.layout.dialog_share_community, null);
@@ -399,8 +406,7 @@ public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallb
         
         etContent.setText(post.getContent());
         tvPreview.setText("Preview: " + post.getContent());
-        
-        builder.setView(dialogView)
+          builder.setView(dialogView)
                 .setTitle("Share to Community")
                 .setPositiveButton("Share", (dialog, which) -> {
                     post.setContent(etContent.getText().toString().trim());
@@ -411,13 +417,13 @@ public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallb
                         post.setLocation("Plogging location");
                     }
                     
-                    sharePostToFirebase(post, cbIncludePhoto.isChecked());
+                    sharePostToLocal(post, cbIncludePhoto.isChecked());
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
     }
 
-    private void sharePostToFirebase(CommunityPostModel post, boolean includePhoto) {
+    private void sharePostToLocal(PostEntity post, boolean includePhoto) {
         binding.progressBar.setVisibility(View.VISIBLE);
         
         if (includePhoto && currentRecord != null) {
@@ -449,23 +455,28 @@ public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallb
         }
     }
 
-    private void uploadPhotoAndShare(CommunityPostModel post, String photoPath) {
-        // Implementation for photo upload - placeholder for now
+    private void uploadPhotoAndShare(PostEntity post, String photoPath) {
+        // For local database, we store the local photo path directly
+        post.setImageUrl(photoPath);
         sharePostWithoutPhoto(post);
-    }
-
-    private void sharePostWithoutPhoto(CommunityPostModel post) {
-        firebaseHelper.createPost(post,
-                postId -> {
+    }    private void sharePostWithoutPhoto(PostEntity post) {
+        executor.execute(() -> {
+            try {
+                repository.insertPost(post, insertedPost -> {
+                    requireActivity().runOnUiThread(() -> {
+                        binding.progressBar.setVisibility(View.GONE);
+                        Toast.makeText(requireContext(), "Shared to community successfully! 🎉", 
+                                       Toast.LENGTH_LONG).show();
+                    });
+                });
+            } catch (Exception e) {
+                requireActivity().runOnUiThread(() -> {
                     binding.progressBar.setVisibility(View.GONE);
-                    Toast.makeText(requireContext(), "Shared to community successfully! 🎉", 
-                                   Toast.LENGTH_LONG).show();
-                },
-                error -> {
-                    binding.progressBar.setVisibility(View.GONE);
-                    Toast.makeText(requireContext(), "Failed to share: " + error.getMessage(), 
+                    Toast.makeText(requireContext(), "Failed to share: " + e.getMessage(),
                                    Toast.LENGTH_SHORT).show();
                 });
+            }
+        });
     }
 
     private void savePloggingResultToGallery() {

@@ -8,10 +8,8 @@ public class CommentModel {
     private String userProfileUrl;
     private String content;
     private long timestamp;
-    private int likeCount;
-
-    public CommentModel() {
-        // Required for Firebase
+    private int likeCount;    public CommentModel() {
+        // Default constructor
     }
 
     public CommentModel(String postId, String userId, String userName, String content) {

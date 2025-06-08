@@ -19,10 +19,8 @@ public class CommunityPostModel {
     private String category; // "plogging", "tips", "achievement"
     private Map<String, Object> metadata; // Additional data like distance, trash_count
     private List<String> tags;
-    private boolean isPublic;
-
-    public CommunityPostModel() {
-        // Required for Firebase
+    private boolean isPublic;    public CommunityPostModel() {
+        // Default constructor
     }
 
     public CommunityPostModel(String userId, String userName, String content) {

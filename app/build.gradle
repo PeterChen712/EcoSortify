@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.google.gms.google.services)
 }
 
 android {
@@ -86,20 +85,10 @@ dependencies {
     
     // Image Cropping
     implementation 'com.github.yalantis:ucrop:2.2.8'
-    
-    // Google Play Services
+      // Google Play Services
     implementation 'com.google.android.gms:play-services-maps:18.2.0'
     implementation 'com.google.android.gms:play-services-location:21.2.0'
     implementation 'com.google.android.gms:play-services-base:18.2.0'
-    implementation 'com.google.android.gms:play-services-auth:21.0.0'
-    
-    // Firebase BOM (manages all Firebase versions)
-    implementation platform('com.google.firebase:firebase-bom:32.8.1')
-    implementation 'com.google.firebase:firebase-auth'
-    implementation 'com.google.firebase:firebase-firestore'
-    implementation 'com.google.firebase:firebase-storage'
-    implementation 'com.google.firebase:firebase-messaging'
-    implementation 'com.google.firebase:firebase-analytics'
     
     // Charts
     implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
@@ -112,6 +101,9 @@ dependencies {
     
     // Gemini API - ONLY AI Classification Solution
     implementation 'com.google.ai.client.generativeai:generativeai:0.7.0'
+    
+    // Google Guava (needed for Gemini AI)
+    implementation 'com.google.guava:guava:32.1.3-android'
     
     // Image processing
     implementation 'androidx.exifinterface:exifinterface:1.3.6'

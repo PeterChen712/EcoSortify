@@ -1,7 +1,9 @@
 package com.example.glean.fragment;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,35 +20,47 @@ import com.bumptech.glide.Glide;
 import com.example.glean.R;
 import com.example.glean.adapter.CommentAdapter;
 import com.example.glean.databinding.FragmentPostDetailBinding;
-import com.example.glean.helper.FirebaseHelper;
-import com.example.glean.model.CommentModel;
-import com.example.glean.model.CommunityPostModel;
-import com.google.firebase.auth.FirebaseUser;
+import com.example.glean.db.AppDatabase;
+import com.example.glean.model.CommentEntity;
+import com.example.glean.model.PostEntity;
+import com.example.glean.model.UserEntity;
+import com.example.glean.repository.CommunityRepository;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class PostDetailFragment extends Fragment {
 
     private FragmentPostDetailBinding binding;
-    private FirebaseHelper firebaseHelper;
+    private AppDatabase database;
+    private CommunityRepository repository;
     private CommentAdapter commentAdapter;
-    private List<CommentModel> commentList;
-    private String postId;
-    private CommunityPostModel currentPost;
+    private List<CommentEntity> commentList;
+    private int postId;
+    private PostEntity currentPost;
+    private ExecutorService executor;
+    private int currentUserId;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        firebaseHelper = new FirebaseHelper(requireContext());
+        database = AppDatabase.getInstance(requireContext());
+        repository = new CommunityRepository(requireContext());
         commentList = new ArrayList<>();
+        executor = Executors.newSingleThreadExecutor();
+        
+        // Get current user ID from SharedPreferences
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
+        currentUserId = prefs.getInt("USER_ID", -1);
         
         // Get post ID from arguments
         if (getArguments() != null) {
-            postId = getArguments().getString("POST_ID");
+            postId = getArguments().getInt("POST_ID", -1);
         }
     }
 
@@ -77,15 +91,13 @@ public class PostDetailFragment extends Fragment {
         binding.btnShare.setOnClickListener(v -> sharePost());
         
         // Enable/disable comment input based on login status
-        if (!firebaseHelper.isUserLoggedIn()) {
+        if (currentUserId == -1) {
             binding.etComment.setEnabled(false);
             binding.btnSendComment.setEnabled(false);
             binding.etComment.setHint("Sign in to comment");
         }
-    }
-
-    private void loadPostDetails() {
-        if (postId == null) {
+    }    private void loadPostDetails() {
+        if (postId == -1) {
             Toast.makeText(requireContext(), "Invalid post", Toast.LENGTH_SHORT).show();
             navigateBack();
             return;
@@ -93,29 +105,25 @@ public class PostDetailFragment extends Fragment {
 
         binding.progressBar.setVisibility(View.VISIBLE);
         
-        // Load post from Firestore
-        firebaseHelper.getPost(postId,
-                post -> {
-                    binding.progressBar.setVisibility(View.GONE);
-                    currentPost = post;
-                    displayPostDetails(post);
-                },
-                error -> {
-                    binding.progressBar.setVisibility(View.GONE);
-                    Toast.makeText(requireContext(), "Error loading post: " + error.getMessage(), 
-                                   Toast.LENGTH_SHORT).show();
-                    navigateBack();
-                });
-    }
-
-    private void displayPostDetails(CommunityPostModel post) {
+        // Load post from local database
+        repository.getPostById(postId).observe(getViewLifecycleOwner(), post -> {
+            binding.progressBar.setVisibility(View.GONE);
+            if (post != null) {
+                currentPost = post;
+                displayPostDetails(post);
+            } else {
+                Toast.makeText(requireContext(), "Post not found", Toast.LENGTH_SHORT).show();
+                navigateBack();
+            }
+        });
+    }    private void displayPostDetails(PostEntity post) {
         // User info
-        binding.tvUserName.setText(post.getUserName());
+        binding.tvUserName.setText(post.getUsername());
         
         // Profile image
-        if (post.getUserProfileUrl() != null && !post.getUserProfileUrl().isEmpty()) {
+        if (post.getUserAvatar() != null && !post.getUserAvatar().isEmpty()) {
             Glide.with(this)
-                    .load(post.getUserProfileUrl())
+                    .load(post.getUserAvatar())
                     .placeholder(R.drawable.profile_placeholder)
                     .circleCrop()
                     .into(binding.ivUserProfile);
@@ -147,41 +155,34 @@ public class PostDetailFragment extends Fragment {
             binding.tvLocation.setVisibility(View.GONE);
         }
 
-        // Category
-        if (post.getCategory() != null) {
-            binding.tvCategory.setVisibility(View.VISIBLE);
-            binding.tvCategory.setText(post.getCategory().toUpperCase());
-        }
+        // Category - since PostEntity doesn't have category, we'll hide it
+        binding.tvCategory.setVisibility(View.GONE);
 
         // Interaction counts
         binding.tvLikeCount.setText(String.valueOf(post.getLikeCount()));
         binding.tvCommentCount.setText(String.valueOf(post.getCommentCount()));
 
         // Check if current user liked this post
-        checkUserLikedPost();
-    }
+        binding.btnLike.setImageResource(post.isLiked() ? 
+            android.R.drawable.btn_star_big_on : android.R.drawable.btn_star_big_off);
+    }    private void loadComments() {
+        if (postId == -1) return;
 
-    private void loadComments() {
-        if (postId == null) return;
-
-        firebaseHelper.getComments(postId,
-                comments -> {
-                    commentList.clear();
-                    commentList.addAll(comments);
-                    commentAdapter.notifyDataSetChanged();
-                    
-                    if (comments.isEmpty()) {
-                        binding.tvNoComments.setVisibility(View.VISIBLE);
-                    } else {
-                        binding.tvNoComments.setVisibility(View.GONE);
-                    }
-                },
-                error -> Toast.makeText(requireContext(), "Error loading comments: " + error.getMessage(), 
-                                        Toast.LENGTH_SHORT).show());
-    }
-
-    private void sendComment() {
-        if (!firebaseHelper.isUserLoggedIn()) {
+        repository.getCommentsByPostId(postId).observe(getViewLifecycleOwner(), comments -> {
+            commentList.clear();
+            if (comments != null) {
+                commentList.addAll(comments);
+            }
+            commentAdapter.notifyDataSetChanged();
+            
+            if (commentList.isEmpty()) {
+                binding.tvNoComments.setVisibility(View.VISIBLE);
+            } else {
+                binding.tvNoComments.setVisibility(View.GONE);
+            }
+        });
+    }    private void sendComment() {
+        if (currentUserId == -1) {
             Toast.makeText(requireContext(), "Please sign in to comment", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -192,24 +193,34 @@ public class PostDetailFragment extends Fragment {
             return;
         }
 
-        FirebaseUser user = firebaseHelper.getCurrentUser();
-        if (user == null) return;
-
-        CommentModel comment = new CommentModel(postId, user.getUid(), 
-                user.getDisplayName() != null ? user.getDisplayName() : "Anonymous", 
-                commentText);
-        comment.setUserProfileUrl(user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : null);
-
         binding.btnSendComment.setEnabled(false);
         
-        firebaseHelper.addComment(comment,
-                commentId -> {
+        // Get current user data
+        executor.execute(() -> {
+            UserEntity user = database.userDao().getUserByIdSync(currentUserId);
+            if (user == null) {
+                requireActivity().runOnUiThread(() -> {
+                    binding.btnSendComment.setEnabled(true);
+                    Toast.makeText(requireContext(), "User not found", Toast.LENGTH_SHORT).show();
+                });
+                return;
+            }
+
+            CommentEntity comment = new CommentEntity();
+            comment.setPostId(postId);
+            comment.setUserId(currentUserId);
+            comment.setUsername(user.getUsername() != null ? user.getUsername() : "Anonymous");
+            comment.setContent(commentText);
+            comment.setTimestamp(System.currentTimeMillis());
+            comment.setUserAvatar(user.getProfileImagePath());
+
+            repository.insertComment(comment, insertedComment -> {
+                requireActivity().runOnUiThread(() -> {
                     binding.btnSendComment.setEnabled(true);
                     binding.etComment.setText("");
                     
                     // Add comment to local list
-                    comment.setId(commentId);
-                    commentList.add(comment);
+                    commentList.add(insertedComment);
                     commentAdapter.notifyItemInserted(commentList.size() - 1);
                     
                     // Update comment count
@@ -222,62 +233,41 @@ public class PostDetailFragment extends Fragment {
                     
                     // Scroll to bottom to show new comment
                     binding.rvComments.scrollToPosition(commentList.size() - 1);
-                },
-                error -> {
-                    binding.btnSendComment.setEnabled(true);
-                    Toast.makeText(requireContext(), "Error posting comment: " + error.getMessage(), 
-                                   Toast.LENGTH_SHORT).show();
                 });
-    }
-
-    private void toggleLike() {
-        if (!firebaseHelper.isUserLoggedIn()) {
+            });
+        });
+    }    private void toggleLike() {
+        if (currentUserId == -1) {
             Toast.makeText(requireContext(), "Please sign in to like posts", Toast.LENGTH_SHORT).show();
             return;
         }
 
         if (currentPost == null) return;
 
-        firebaseHelper.toggleLike(postId,
-                isLiked -> {
-                    if (isLiked) {
-                        currentPost.setLikeCount(currentPost.getLikeCount() + 1);
-                        binding.btnLike.setImageResource(android.R.drawable.btn_star_big_on); // Use built-in filled star
-                    } else {
-                        currentPost.setLikeCount(currentPost.getLikeCount() - 1);
-                        binding.btnLike.setImageResource(android.R.drawable.btn_star_big_off); // Use built-in outline star
-                    }
-                    binding.tvLikeCount.setText(String.valueOf(currentPost.getLikeCount()));
-                },
-                error -> Toast.makeText(requireContext(), "Error: " + error.getMessage(), 
-                                    Toast.LENGTH_SHORT).show());
-    }
-
-    private void checkUserLikedPost() {
-        if (!firebaseHelper.isUserLoggedIn() || currentPost == null) {
+        // Toggle like state locally
+        boolean newLikedState = !currentPost.isLiked();
+        currentPost.setLiked(newLikedState);
+        
+        // Update like count
+        if (newLikedState) {
+            currentPost.setLikeCount(currentPost.getLikeCount() + 1);
+            binding.btnLike.setImageResource(android.R.drawable.btn_star_big_on);
+        } else {
+            currentPost.setLikeCount(currentPost.getLikeCount() - 1);
             binding.btnLike.setImageResource(android.R.drawable.btn_star_big_off);
-            return;
         }
-
-        // Check if user liked this post
-        firebaseHelper.isPostLikedByUser(postId,
-                isLiked -> {
-                    if (isLiked) {
-                        binding.btnLike.setImageResource(android.R.drawable.btn_star_big_on);
-                    } else {
-                        binding.btnLike.setImageResource(android.R.drawable.btn_star_big_off);
-                    }
-                },
-                error -> binding.btnLike.setImageResource(android.R.drawable.btn_star_big_off));
-    }
-
-    private void sharePost() {
+        
+        binding.tvLikeCount.setText(String.valueOf(currentPost.getLikeCount()));
+        
+        // Update in database
+        repository.updatePostLike(postId, currentPost.getLikeCount(), newLikedState);
+    }private void sharePost() {
         if (currentPost == null) return;
 
         Intent shareIntent = new Intent(Intent.ACTION_SEND);
         shareIntent.setType("text/plain");
         
-        String shareText = "Check out this post from " + currentPost.getUserName() + ":\n\n" +
+        String shareText = "Check out this post from " + currentPost.getUsername() + ":\n\n" +
                           currentPost.getContent() + "\n\n" +
                           "Shared via GleanGo - Make Your World Clean! 🌱";
         
@@ -289,11 +279,14 @@ public class PostDetailFragment extends Fragment {
 
     private void navigateBack() {        NavController navController = Navigation.findNavController(requireView());
         navController.navigateUp();
-    }
-
-    @Override
+    }    @Override
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;
+        
+        // Shutdown executor service to prevent memory leaks
+        if (executor != null && !executor.isShutdown()) {
+            executor.shutdown();
+        }
     }
 }

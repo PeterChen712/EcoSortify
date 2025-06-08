@@ -3,12 +3,15 @@ package com.example.glean.fragment;
 import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
+
+import java.util.List;
 import android.provider.MediaStore;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -27,41 +30,46 @@ import androidx.navigation.Navigation;
 import com.bumptech.glide.Glide;
 import com.example.glean.R;
 import com.example.glean.databinding.FragmentCreatePostBinding;
-import com.example.glean.helper.FirebaseHelper;
-import com.example.glean.model.CommunityPostModel;
+import com.example.glean.db.AppDatabase;
+import com.example.glean.model.PostEntity;
+import com.example.glean.model.UserEntity;
+import com.example.glean.repository.CommunityRepository;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
-import com.google.firebase.auth.FirebaseUser;
 
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Locale;
-import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class CreatePostFragment extends Fragment {
 
     private static final int REQUEST_IMAGE_CAPTURE = 1001;
     private static final int REQUEST_IMAGE_GALLERY = 1002;
-    private static final int REQUEST_LOCATION_PERMISSION = 1003;
-
-    private FragmentCreatePostBinding binding;
-    private FirebaseHelper firebaseHelper;
+    private static final int REQUEST_LOCATION_PERMISSION = 1003;    private FragmentCreatePostBinding binding;
+    private AppDatabase db;
+    private CommunityRepository repository;
+    private ExecutorService executor;
+    private int currentUserId;
     private FusedLocationProviderClient fusedLocationClient;
     
     private Uri imageUri;
     private String currentPhotoPath;
     private Location currentLocation;
-    private String selectedCategory = "plogging";
-
-    @Override
+    private String selectedCategory = "plogging";    @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        firebaseHelper = new FirebaseHelper(requireContext());
+        db = AppDatabase.getInstance(requireContext());
+        repository = new CommunityRepository(requireContext());
+        executor = Executors.newSingleThreadExecutor();
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
+        
+        // Get current user ID from SharedPreferences
+        SharedPreferences prefs = requireContext().getSharedPreferences("user_prefs", requireContext().MODE_PRIVATE);
+        currentUserId = prefs.getInt("current_user_id", -1);
     }
 
     @Nullable
@@ -69,13 +77,11 @@ public class CreatePostFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         binding = FragmentCreatePostBinding.inflate(inflater, container, false);
         return binding.getRoot();
-    }
-
-    @Override
+    }    @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         
-        if (!firebaseHelper.isUserLoggedIn()) {
+        if (currentUserId == -1) {
             Toast.makeText(requireContext(), "Please sign in to create posts", Toast.LENGTH_SHORT).show();
             navigateBack();
             return;
@@ -209,81 +215,81 @@ public class CreatePostFragment extends Fragment {
                 new String[]{Manifest.permission.ACCESS_FINE_LOCATION,
                            Manifest.permission.ACCESS_COARSE_LOCATION},
                 REQUEST_LOCATION_PERMISSION);
-    }
-
-    private void createPost() {
+    }    private void createPost() {
         String content = binding.etContent.getText().toString().trim();
         if (content.isEmpty()) {
             binding.etContent.setError("Please enter some content");
             return;
         }
 
-        FirebaseUser user = firebaseHelper.getCurrentUser();
-        if (user == null) {
-            Toast.makeText(requireContext(), "Please sign in first", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
         binding.btnPost.setEnabled(false);
         binding.progressBar.setVisibility(View.VISIBLE);
 
-        // Create post object
-        CommunityPostModel post = new CommunityPostModel(
-                user.getUid(),
-                user.getDisplayName() != null ? user.getDisplayName() : "Anonymous",
-                content
-        );
-        
-        post.setCategory(selectedCategory);
-        post.setUserProfileUrl(user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : null);
-        
-        // Add location if available
-        if (currentLocation != null) {
-            post.setLatitude(currentLocation.getLatitude());
-            post.setLongitude(currentLocation.getLongitude());
-            post.setLocation(binding.tvLocationStatus.getText().toString().replace("📍 ", ""));
-        }
+        // Get user data from local database
+        executor.execute(() -> {
+            UserEntity user = db.userDao().getUserByIdSync(currentUserId);
+            if (user == null) {
+                requireActivity().runOnUiThread(() -> {
+                    binding.btnPost.setEnabled(true);
+                    binding.progressBar.setVisibility(View.GONE);
+                    Toast.makeText(requireContext(), "User not found", Toast.LENGTH_SHORT).show();
+                });
+                return;
+            }
 
-        // Add metadata for plogging posts
-        if ("plogging".equals(selectedCategory)) {
-            Map<String, Object> metadata = new HashMap<>();
-            metadata.put("created_via", "community_post");
-            metadata.put("has_image", imageUri != null);
-            post.setMetadata(metadata);
-        }
+            // Create post object
+            PostEntity post = new PostEntity();
+            post.setUserId(currentUserId);
+            post.setAuthorName(user.getName());
+            post.setContent(content);
+            post.setCategory(selectedCategory);
+            post.setCreatedAt(System.currentTimeMillis());
+            
+            // Add location if available
+            if (currentLocation != null) {
+                post.setLatitude(currentLocation.getLatitude());
+                post.setLongitude(currentLocation.getLongitude());
+                post.setLocation(binding.tvLocationStatus.getText().toString().replace("📍 ", ""));
+            }
 
-        // Upload image first if exists
-        if (imageUri != null && currentPhotoPath != null) {
-            firebaseHelper.uploadPostImage(currentPhotoPath,
-                    imageUrl -> {
-                        post.setImageUrl(imageUrl);
-                        savePost(post);
-                    },
-                    error -> {
+            // Add metadata for plogging posts
+            if ("plogging".equals(selectedCategory)) {
+                String metadata = String.format(
+                        "{\"created_via\":\"community_post\",\"has_image\":%b}",
+                        imageUri != null
+                );
+                post.setMetadata(metadata);
+            }
+
+            // Set image path if exists
+            if (imageUri != null && currentPhotoPath != null) {
+                post.setImageUrl(currentPhotoPath);
+            }
+
+            requireActivity().runOnUiThread(() -> {
+                savePost(post);
+            });
+        });
+    }    private void savePost(PostEntity post) {
+        executor.execute(() -> {
+            try {
+                repository.insertPost(post, insertedPost -> {
+                    requireActivity().runOnUiThread(() -> {
                         binding.btnPost.setEnabled(true);
                         binding.progressBar.setVisibility(View.GONE);
-                        Toast.makeText(requireContext(), "Error uploading image: " + error.getMessage(), 
-                                       Toast.LENGTH_SHORT).show();
+                        Toast.makeText(requireContext(), "Post created successfully!", Toast.LENGTH_SHORT).show();
+                        navigateBack();
                     });
-        } else {
-            savePost(post);
-        }
-    }
-
-    private void savePost(CommunityPostModel post) {
-        firebaseHelper.createPost(post,
-                postId -> {
+                });
+            } catch (Exception e) {
+                requireActivity().runOnUiThread(() -> {
                     binding.btnPost.setEnabled(true);
                     binding.progressBar.setVisibility(View.GONE);
-                    Toast.makeText(requireContext(), "Post created successfully!", Toast.LENGTH_SHORT).show();
-                    navigateBack();
-                },
-                error -> {
-                    binding.btnPost.setEnabled(true);
-                    binding.progressBar.setVisibility(View.GONE);
-                    Toast.makeText(requireContext(), "Error creating post: " + error.getMessage(), 
+                    Toast.makeText(requireContext(), "Error creating post: " + e.getMessage(), 
                                    Toast.LENGTH_SHORT).show();
                 });
+            }
+        });
     }
 
     private void removeImage() {

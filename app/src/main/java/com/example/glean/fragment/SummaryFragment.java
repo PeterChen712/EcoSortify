@@ -25,9 +25,11 @@ import com.example.glean.databinding.FragmentSummaryBinding;
 import com.example.glean.db.AppDatabase;
 import com.example.glean.model.RecordEntity;
 import com.example.glean.model.TrashEntity;
-import com.example.glean.model.CommunityPostModel;
-import com.example.glean.helper.FirebaseHelper;
-import com.google.firebase.auth.FirebaseUser;
+import com.example.glean.model.PostEntity;
+import com.example.glean.model.UserEntity;
+import com.example.glean.repository.CommunityRepository;
+import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -44,24 +46,25 @@ public class SummaryFragment extends Fragment {
     private AppDatabase db;
     private ExecutorService executor;
     private int recordId;
-    
-    private FirebaseHelper firebaseHelper;
-    private CommunityPostModel pendingPost;
-    private RecordEntity currentRecord; // Add this missing variable
-    private Location lastKnownLocation; // Add this missing variable
-
-    @Override
+      private CommunityRepository repository;
+    private PostEntity pendingPost;
+    private RecordEntity currentRecord;
+    private Location lastKnownLocation;
+    private int currentUserId;    @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         db = AppDatabase.getInstance(requireContext());
+        repository = new CommunityRepository(requireContext());
         executor = Executors.newSingleThreadExecutor();
+        
+        // Get current user ID from SharedPreferences
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
+        currentUserId = prefs.getInt("USER_ID", -1);
         
         // Get record ID from arguments
         if (getArguments() != null) {
             recordId = getArguments().getInt("RECORD_ID", -1);
         }
-        
-        firebaseHelper = new FirebaseHelper(requireContext());
     }
 
     @Nullable
@@ -221,10 +224,8 @@ public class SummaryFragment extends Fragment {
     public void onDestroy() {
         super.onDestroy();
         executor.shutdown();
-    }
-
-    private void shareToCommunitiy() {
-        if (!firebaseHelper.isUserLoggedIn()) {
+    }    private void shareToCommunitiy() {
+        if (currentUserId == -1) {
             showLoginPrompt();
             return;
         }
@@ -234,34 +235,33 @@ public class SummaryFragment extends Fragment {
             return;
         }
 
-        // Create community post from plogging data
-        FirebaseUser user = firebaseHelper.getCurrentUser();
-        String content = createPloggingPostContent(currentRecord);
-        
-        CommunityPostModel post = new CommunityPostModel(
-                user.getUid(),
-                user.getDisplayName() != null ? user.getDisplayName() : "Anonymous",
-                content
-        );
-        
-        post.setCategory("plogging");
-        post.setUserProfileUrl(user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : null);
-        
-        // Add metadata - use correct field names
-        Map<String, Object> metadata = new HashMap<>();
-        metadata.put("distance_km", currentRecord.getDistance() / 1000f);
-        metadata.put("duration_minutes", currentRecord.getDuration() / 60000);
-        int trashCount = currentRecord.getPoints() / 10; // Calculate trash count from points
-        metadata.put("trash_count", trashCount);
-        metadata.put("points_earned", currentRecord.getPoints());
-        metadata.put("record_id", currentRecord.getId());
-        post.setMetadata(metadata);
-        
-        // Show sharing dialog
-        showSharingDialog(post);
+        // Get user data and create community post from plogging data
+        executor.execute(() -> {
+            UserEntity user = db.userDao().getUserByIdSync(currentUserId);
+            if (user == null) {
+                requireActivity().runOnUiThread(() -> {
+                    Toast.makeText(requireContext(), "User not found", Toast.LENGTH_SHORT).show();
+                });
+                return;
+            }
+
+            requireActivity().runOnUiThread(() -> {
+                String content = createPloggingPostContent(currentRecord);
+                
+                PostEntity post = new PostEntity();
+                post.setUserId(currentUserId);
+                post.setUsername(user.getUsername() != null ? user.getUsername() : "Anonymous");
+                post.setContent(content);
+                post.setTimestamp(System.currentTimeMillis());
+                post.setUserAvatar(user.getProfileImagePath());
+                
+                // Show sharing dialog
+                showSharingDialog(post);
+            });
+        });
     }
 
-    private void showSharingDialog(CommunityPostModel post) {
+    private void showSharingDialog(PostEntity post) {
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
         View dialogView = LayoutInflater.from(requireContext())
                 .inflate(R.layout.dialog_share_community, null);
@@ -285,13 +285,13 @@ public class SummaryFragment extends Fragment {
                         post.setLocation("Plogging location");
                     }
                     
-                    sharePostToFirebase(post, cbIncludePhoto.isChecked());
+                    sharePostToLocal(post, cbIncludePhoto.isChecked());
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
     }
 
-    private void sharePostToFirebase(CommunityPostModel post, boolean includePhoto) {
+    private void sharePostToLocal(PostEntity post, boolean includePhoto) {
         // Comment out until progressBar and btnShareCommunity are added to layout
         // binding.progressBar.setVisibility(View.VISIBLE);
         // binding.btnShareCommunity.setEnabled(false);
@@ -324,43 +324,37 @@ public class SummaryFragment extends Fragment {
         } else {
             sharePostWithoutPhoto(post);
         }
+    }    private void uploadPhotoAndShare(PostEntity post, String photoPath) {
+        // For local database, we store the local photo path directly
+        post.setImageUrl(photoPath);
+        sharePostWithoutPhoto(post);
     }
 
-    private void uploadPhotoAndShare(CommunityPostModel post, String photoPath) {
-        firebaseHelper.uploadPostImage(photoPath,
-                imageUrl -> {
-                    post.setImageUrl(imageUrl);
-                    sharePostWithoutPhoto(post);
-                },
-                error -> {
-                    Toast.makeText(requireContext(), "Failed to upload photo: " + error.getMessage(), 
-                                   Toast.LENGTH_SHORT).show();
-                    sharePostWithoutPhoto(post);
-                });
-    }
-
-    private void sharePostWithoutPhoto(CommunityPostModel post) {
-        firebaseHelper.createPost(post,
-                postId -> {
+    private void sharePostWithoutPhoto(PostEntity post) {
+        executor.execute(() -> {
+            try {                repository.insertPost(post, insertedPost -> {
+                    requireActivity().runOnUiThread(() -> {
                     // Comment out until UI elements are added to layout
                     // binding.progressBar.setVisibility(View.GONE);
                     // binding.btnShareCommunity.setEnabled(true);
                     
                     Toast.makeText(requireContext(), "Shared to community successfully! 🎉", 
-                                   Toast.LENGTH_LONG).show();
-                    
-                    // Show success animation or update UI
-                    // binding.btnShareCommunity.setText("✓ Shared");
-                    // binding.btnShareCommunity.setBackgroundTintList(
-                    //         ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.success)));
-                },
-                error -> {
+                                   Toast.LENGTH_LONG).show();                        // Show success animation or update UI
+                        // binding.btnShareCommunity.setText("✓ Shared");
+                        // binding.btnShareCommunity.setBackgroundTintList(
+                        //         ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.success)));
+                    });
+                });
+            } catch (Exception e) {
+                requireActivity().runOnUiThread(() -> {
                     // Comment out until UI elements are added to layout
                     // binding.progressBar.setVisibility(View.GONE);
                     // binding.btnShareCommunity.setEnabled(true);
-                    Toast.makeText(requireContext(), "Failed to share: " + error.getMessage(), 
+                    Toast.makeText(requireContext(), "Failed to share: " + e.getMessage(), 
                                    Toast.LENGTH_SHORT).show();
                 });
+            }
+        });
     }
 
     private String createPloggingPostContent(RecordEntity record) {
