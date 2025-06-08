@@ -1,50 +1,106 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background_light"
-    android:fillViewport="true">
+    android:orientation="vertical"
+    android:background="@color/background_light">
 
+    <!-- Header with Fixed Height - Consistent with Community & Stats -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingBottom="32dp">
+        android:layout_height="56dp"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:background="@color/primary_color"
+        android:gravity="center_vertical">
 
-        <!-- Header Section -->
-        <androidx.constraintlayout.widget.ConstraintLayout
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_person"
+            android:layout_marginEnd="12dp"
+            app:tint="@color/white"
+            android:contentDescription="Profile Icon" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Profile"
+            android:textColor="@color/white"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:gravity="center_vertical" />
+
+        <!-- Settings Button -->
+        <ImageView
+            android:id="@+id/btnSettings"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Settings"
+            android:src="@drawable/ic_settings"
+            android:clickable="true"
+            android:focusable="true"
+            android:padding="4dp"
+            app:tint="@color/white" />
+
+    </LinearLayout>
+
+    <!-- Profile Content in ScrollView -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@color/primary"
-            android:paddingStart="24dp"
-            android:paddingTop="32dp"
-            android:paddingEnd="24dp"
-            android:paddingBottom="24dp">
+            android:orientation="vertical"
+            android:paddingBottom="32dp">
 
-            <!-- Settings Button -->
-            <ImageButton
-                android:id="@+id/btnSettings"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Settings"
-                android:src="@drawable/ic_settings"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:tint="@color/white" />            <!-- Profile Picture with Frame -->
-            <FrameLayout
-                android:id="@+id/profilePictureFrame"
-                android:layout_width="120dp"
-                android:layout_height="120dp"
-                android:layout_marginTop="16dp"
-                android:clickable="true"
-                android:focusable="true"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/btnSettings">
+            <!-- Profile Skin Background Section -->
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/profileSkinBackground"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/profile_skin_default"
+                android:paddingStart="24dp"
+                android:paddingTop="32dp"
+                android:paddingEnd="24dp"
+                android:paddingBottom="24dp">                <!-- Change Skin Button -->
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/btnChangeSkin"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:layout_marginBottom="8dp"
+                    android:contentDescription="Change Profile Skin"
+                    android:src="@drawable/ic_palette"
+                    app:tint="@color/white"
+                    app:backgroundTint="@color/primary_orange"
+                    app:borderWidth="0dp"
+                    app:elevation="4dp"
+                    app:fabSize="mini"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintBottom_toBottomOf="parent" />
+
+                <!-- Profile Picture with Frame -->
+                <FrameLayout
+                    android:id="@+id/profilePictureFrame"
+                    android:layout_width="120dp"
+                    android:layout_height="120dp"
+                    android:layout_marginTop="16dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent">
 
                 <de.hdodenhof.circleimageview.CircleImageView
                     android:id="@+id/ivProfilePic"
@@ -79,30 +135,31 @@
                     android:background="@drawable/circle_white_background"
                     android:src="@drawable/ic_camera"
                     android:padding="6dp"
-                    app:tint="@color/environmental_green"
-                    android:contentDescription="Edit Profile Picture" />
+                    app:tint="@color/environmental_green"                    android:contentDescription="Edit Profile Picture" />
 
-            </FrameLayout><!-- User Name -->
-            <TextView
-                android:id="@+id/tvName"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:gravity="center"
-                android:text="Loading..."
-                android:textColor="@color/white"
-                android:textSize="24sp"
-                android:textStyle="bold"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/profilePictureFrame" />
+                </FrameLayout>
 
-            <!-- User Email -->
-            <TextView
-                android:id="@+id/tvEmail"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                <!-- User Name -->
+                <TextView
+                    android:id="@+id/tvName"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:gravity="center"
+                    android:text="Loading..."
+                    android:textColor="@color/white"
+                    android:textSize="24sp"
+                    android:textStyle="bold"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/profilePictureFrame" />
+
+                <!-- User Email -->
+                <TextView
+                    android:id="@+id/tvEmail"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
                 android:gravity="center"
                 android:text="loading@email.com"
                 android:textColor="@color/white"
@@ -322,10 +379,10 @@
                     app:iconGravity="start"
                     app:iconTint="@color/error_color" />
 
-            </LinearLayout>
-
-        </androidx.cardview.widget.CardView>
+            </LinearLayout>        </androidx.cardview.widget.CardView>
 
     </LinearLayout>
 
 </ScrollView>
+
+</LinearLayout>

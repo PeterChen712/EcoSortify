@@ -26,9 +26,16 @@
     <color name="red_heart">#E91E63</color>    <!-- Environmental colors -->
     <color name="environmental_green">#4CAF50</color>
     <color name="primary_green">#4CAF50</color>
+    <color name="primary_dark_green">#388E3C</color>
+    <color name="primary_light">#C8E6C9</color>
     <color name="primary_orange">#FF9800</color>
     <color name="primary_blue">#2196F3</color>
     <color name="primary_purple">#9C27B0</color>
+    
+    <!-- Green variants -->
+    <color name="green_500">#4CAF50</color>
+    <color name="green_600">#43A047</color>
+    <color name="green_700">#388E3C</color>
     
     <!-- Additional missing colors -->
     <color name="background">#F5F5F5</color>
@@ -65,27 +72,19 @@
     <color name="progress_fill">#4CAF50</color>
     <color name="profile_frame_gold">#FFD700</color>
     <color name="profile_frame_silver">#C0C0C0</color>
-    <color name="profile_frame_bronze">#CD7F32</color>
-    <color name="dialog_background">#FFFFFF</color>
+    <color name="profile_frame_bronze">#CD7F32</color>    <color name="dialog_background">#FFFFFF</color>
     <color name="overlay_background">#80000000</color>
 
-    <!-- Green theme colors for welcome section -->
-    <color name="green_500">#4CAF50</color>
-    <color name="green_600">#43A047</color>
-    <color name="green_700">#388E3C</color>
-    
     <!-- Surface colors -->
     <color name="surface_variant">#F3F4F6</color>
-    <color name="outline_variant">#E5E7EB</color>    <!-- Status colors -->
+    <color name="outline_variant">#E5E7EB</color><!-- Status colors -->
     <color name="success_green">#10B981</color>
     <color name="warning_yellow">#F59E0B</color>
     <color name="error_red">#EF4444</color>
     
-    <!-- Missing colors for HomeFragment -->
-    <color name="light_green">#E8F5E8</color>
-      <!-- Additional colors for Community feature -->
+    <!-- Missing colors for HomeFragment -->    <color name="light_green">#E8F5E8</color>
+    <!-- Additional colors for Community feature -->
     <color name="background_color">#F5F5F5</color>
-    <color name="primary_light">#C8E6C9</color>
     <color name="success_color">#4CAF50</color>
     <color name="background_secondary">#EEEEEE</color>
     

@@ -33,6 +33,7 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.example.glean.R;
+import com.example.glean.activity.SkinSelectionActivity;
 import com.example.glean.adapter.BadgeAdapter;
 import com.example.glean.databinding.FragmentProfileBinding;
 import com.example.glean.databinding.DialogEditProfileBinding;
@@ -55,11 +56,11 @@ import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class ProfileFragment extends Fragment {    private static final String TAG = "ProfileFragment";
-    private static final int PICK_IMAGE_REQUEST = 1001;
+public class ProfileFragment extends Fragment {    private static final String TAG = "ProfileFragment";    private static final int PICK_IMAGE_REQUEST = 1001;
     private static final int CAMERA_REQUEST = 1002;
     private static final int REQUEST_STORAGE_PERMISSION = 1003;
     private static final int REQUEST_CAMERA_PERMISSION = 1004;
+    private static final int SKIN_SELECTION_REQUEST = 1005;
 
     private FragmentProfileBinding binding;
     
@@ -144,10 +145,10 @@ public class ProfileFragment extends Fragment {    private static final String T
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        
-        try {
+          try {
             setupUI();
             loadUserData();
+            updateProfileSkin(); // Apply current skin
         } catch (Exception e) {
             Log.e(TAG, "Error setting up ProfileFragment", e);
             Toast.makeText(requireContext(), "Error loading profile", Toast.LENGTH_SHORT).show();
@@ -199,8 +200,7 @@ public class ProfileFragment extends Fragment {    private static final String T
                 checkPermissionsAndSelectImage();
             });
         }
-        
-        // Customize button - FIXED with enhanced navigation
+          // Customize button - FIXED with enhanced navigation
         if (binding.btnCustomize != null) {
             binding.btnCustomize.setOnClickListener(v -> {
                 Log.d(TAG, "Customize button clicked");
@@ -208,6 +208,23 @@ public class ProfileFragment extends Fragment {    private static final String T
             });
         } else {
             Log.w(TAG, "Customize button not found in layout");
+        }
+        
+        // Change Skin button
+        if (binding.btnChangeSkin != null) {
+            binding.btnChangeSkin.setOnClickListener(v -> {
+                Log.d(TAG, "Change skin button clicked");
+                openSkinSelection();
+            });
+        } else {
+            Log.w(TAG, "Change skin button not found in layout");
+        }
+          // Settings icon in header
+        if (binding.btnSettings != null) {
+            binding.btnSettings.setOnClickListener(v -> {
+                Log.d(TAG, "Settings icon clicked");
+                showSettingsDialog();
+            });
         }
         
         // Theme toggle (if exists)
@@ -628,8 +645,7 @@ public class ProfileFragment extends Fragment {    private static final String T
             Log.e(TAG, "Error selecting image from gallery", e);
             Toast.makeText(requireContext(), "Error opening image picker", Toast.LENGTH_SHORT).show();
         }
-    }
-      @Override
+    }    @Override
     public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         
@@ -638,6 +654,17 @@ public class ProfileFragment extends Fragment {    private static final String T
         }
         
         try {
+            // Handle skin selection
+            if (requestCode == SKIN_SELECTION_REQUEST && data != null) {
+                String selectedSkin = data.getStringExtra("selected_skin");
+                if (selectedSkin != null) {
+                    updateProfileSkin();
+                    Toast.makeText(requireContext(), "Profile skin updated!", Toast.LENGTH_SHORT).show();
+                }
+                return;
+            }
+            
+            // Handle image selection and cropping
             if (requestCode == PICK_IMAGE_REQUEST && data != null && data.getData() != null) {
                 // Gallery image selected
                 selectedImageUri = data.getData();
@@ -1211,8 +1238,44 @@ public class ProfileFragment extends Fragment {    private static final String T
                 requireActivity().runOnUiThread(() -> {
                     Toast.makeText(requireContext(), "Error creating profile", Toast.LENGTH_SHORT).show();
                     setDefaultUIValues();
-                });
-            }
+                });            }
         });
     }
+    
+    // Skin Selection Methods
+    private void openSkinSelection() {
+        try {
+            Intent intent = new Intent(requireContext(), SkinSelectionActivity.class);
+            startActivityForResult(intent, SKIN_SELECTION_REQUEST);
+        } catch (Exception e) {
+            Log.e(TAG, "Error opening skin selection", e);
+            Toast.makeText(requireContext(), "Failed to open skin selection", Toast.LENGTH_SHORT).show();
+        }
+    }
+    
+    private void updateProfileSkin() {
+        if (binding.profileSkinBackground != null) {
+            SharedPreferences prefs = requireActivity().getSharedPreferences("profile_settings", 0);
+            String currentSkin = prefs.getString("current_skin", "default");
+            
+            int skinResource = getSkinResource(currentSkin);
+            binding.profileSkinBackground.setBackgroundResource(skinResource);
+        }
+    }
+    
+    private int getSkinResource(String skinId) {
+        switch (skinId) {
+            case "nature":
+                return R.drawable.profile_skin_nature;
+            case "ocean":
+                return R.drawable.profile_skin_ocean;
+            case "sunset":
+                return R.drawable.profile_skin_sunset;
+            case "galaxy":
+                return R.drawable.profile_skin_galaxy;
+            default:
+                return R.drawable.profile_skin_default;
+        }
+    }
+  
 }

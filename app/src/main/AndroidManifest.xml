@@ -82,14 +82,19 @@
             android:name=".activity.PostDetailActivity"
             android:exported="false"
             android:screenOrientation="portrait"
-            android:parentActivityName=".activity.MainActivity" />
-
-        <!-- UCrop Activity for Image Cropping -->
+            android:parentActivityName=".activity.MainActivity" />        <!-- UCrop Activity for Image Cropping -->
         <activity
             android:name="com.yalantis.ucrop.UCropActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
+
+        <!-- Skin Selection Activity -->
+        <activity
+            android:name=".activity.SkinSelectionActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:parentActivityName=".activity.MainActivity" />
 
         <!-- Background Location Service -->
         <service
