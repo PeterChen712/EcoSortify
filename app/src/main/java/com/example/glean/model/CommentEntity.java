@@ -1,38 +1,53 @@
 package com.example.glean.model;
 
+import androidx.room.Entity;
+import androidx.room.Ignore;
+import androidx.room.PrimaryKey;
+
+@Entity(tableName = "comments")
 public class CommentEntity {
-    private String id;
-    private String postId;
+    @PrimaryKey(autoGenerate = true)
+    private int id;
+    private int postId;
+    private int userId;
     private String username;
     private String content;
     private long timestamp;
     private String userAvatar;
+      public CommentEntity() {}
     
-    public CommentEntity() {}
-    
-    public CommentEntity(String id, String postId, String username, String content, long timestamp) {
-        this.id = id;
+    @Ignore
+    public CommentEntity(int postId, int userId, String username, String content, long timestamp) {
         this.postId = postId;
+        this.userId = userId;
         this.username = username;
         this.content = content;
         this.timestamp = timestamp;
     }
     
     // Getters and Setters
-    public String getId() {
+    public int getId() {
         return id;
     }
     
-    public void setId(String id) {
+    public void setId(int id) {
         this.id = id;
     }
     
-    public String getPostId() {
+    public int getPostId() {
         return postId;
     }
     
-    public void setPostId(String postId) {
+    public void setPostId(int postId) {
         this.postId = postId;
+    }
+
+    public int getUserId() {
+        return userId;
+    }
+    
+    public void setUserId(int userId) {
+        this.userId = userId;
     }
     
     public String getUsername() {

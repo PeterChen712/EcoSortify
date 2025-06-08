@@ -1,7 +1,14 @@
 package com.example.glean.model;
 
+import androidx.room.Entity;
+import androidx.room.Ignore;
+import androidx.room.PrimaryKey;
+
+@Entity(tableName = "posts")
 public class PostEntity {
-    private String id;
+    @PrimaryKey(autoGenerate = true)
+    private int id;
+    private int userId;
     private String username;
     private String userAvatar;
     private String content;
@@ -14,12 +21,12 @@ public class PostEntity {
     private String location;
     private float trashWeight;
     private float distance;
+      public PostEntity() {}
     
-    public PostEntity() {}
-    
-    public PostEntity(String id, String username, String content, String imageUrl, 
+    @Ignore
+    public PostEntity(int userId, String username, String content, String imageUrl, 
                      int likeCount, int commentCount, long timestamp) {
-        this.id = id;
+        this.userId = userId;
         this.username = username;
         this.content = content;
         this.imageUrl = imageUrl;
@@ -29,12 +36,20 @@ public class PostEntity {
     }
     
     // Getters and Setters
-    public String getId() {
+    public int getId() {
         return id;
     }
     
-    public void setId(String id) {
+    public void setId(int id) {
         this.id = id;
+    }
+
+    public int getUserId() {
+        return userId;
+    }
+    
+    public void setUserId(int userId) {
+        this.userId = userId;
     }
     
     public String getUsername() {

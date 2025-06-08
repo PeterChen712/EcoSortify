@@ -9,13 +9,17 @@ import androidx.room.TypeConverters;
 import androidx.room.migration.Migration;
 import androidx.sqlite.db.SupportSQLiteDatabase;
 
+import com.example.glean.db.CommentDao;
 import com.example.glean.db.DaoRecord;
 import com.example.glean.db.DaoTrash;
 import com.example.glean.db.DaoUser;
 import com.example.glean.db.LocationPointDao;
 import com.example.glean.db.NewsDao;
+import com.example.glean.db.PostDao;
+import com.example.glean.model.CommentEntity;
 import com.example.glean.model.LocationPointEntity;
 import com.example.glean.model.NewsItem;
+import com.example.glean.model.PostEntity;
 import com.example.glean.model.RecordEntity;
 import com.example.glean.model.TrashEntity;
 import com.example.glean.model.UserEntity;
@@ -27,9 +31,11 @@ import com.example.glean.util.Converters;
         RecordEntity.class, 
         TrashEntity.class,
         LocationPointEntity.class,
-        NewsItem.class
+        NewsItem.class,
+        PostEntity.class,
+        CommentEntity.class
     },
-    version = 12, // Increment to version 12 for fresh start
+    version = 13, // Increment to version 13 for new entities
     exportSchema = false
 )
 @TypeConverters({Converters.class})
@@ -37,12 +43,13 @@ public abstract class AppDatabase extends RoomDatabase {
     
     private static final String DATABASE_NAME = "glean_database";
     private static volatile AppDatabase INSTANCE;
-    
-    public abstract DaoUser userDao();
+      public abstract DaoUser userDao();
     public abstract DaoRecord recordDao();
     public abstract DaoTrash trashDao();
     public abstract LocationPointDao locationPointDao();
     public abstract NewsDao newsDao();
+    public abstract PostDao postDao();
+    public abstract CommentDao commentDao();
     
     public static AppDatabase getInstance(Context context) {
         if (INSTANCE == null) {
