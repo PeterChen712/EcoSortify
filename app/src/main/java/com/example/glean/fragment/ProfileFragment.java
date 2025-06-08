@@ -36,6 +36,7 @@ import com.example.glean.R;
 import com.example.glean.activity.CustomizeProfileActivity;
 import com.example.glean.activity.SkinSelectionActivity;
 import com.example.glean.adapter.BadgeAdapter;
+import com.example.glean.adapter.ProfileBadgeAdapter;
 import com.example.glean.databinding.FragmentProfileBinding;
 import com.example.glean.databinding.DialogEditProfileBinding;
 import com.example.glean.databinding.DialogSettingsBinding;
@@ -155,11 +156,10 @@ public class ProfileFragment extends Fragment {    private static final String T
             Toast.makeText(requireContext(), "Error loading profile", Toast.LENGTH_SHORT).show();
         }
     }
-    
-    private void setupUI() {
-        // Setup RecyclerView for badges
+      private void setupUI() {
+        // Setup RecyclerView for badges with same design as Customize Profile
         if (binding.rvBadges != null) {
-            binding.rvBadges.setLayoutManager(new GridLayoutManager(requireContext(), 4));
+            binding.rvBadges.setLayoutManager(new GridLayoutManager(requireContext(), 3)); // Match CustomizeProfile 3-column layout
         }
         
         // Set click listeners with safe null checks
@@ -216,9 +216,16 @@ public class ProfileFragment extends Fragment {    private static final String T
                 showSettingsDialog();
             });
         }
-        
-        // Theme toggle (if exists)
+          // Theme toggle (if exists)
         setupThemeToggle();
+        
+        // View All Badges button
+        if (binding.btnViewAllBadges != null) {
+            binding.btnViewAllBadges.setOnClickListener(v -> {
+                Log.d(TAG, "View All Badges button clicked");
+                openCustomizeProfileActivity(); // Navigate to Customize Profile to view all badges
+            });
+        }
     }
     
     private void addVisualFeedback() {        // Add ripple effect and elevation feedback
@@ -468,50 +475,71 @@ public class ProfileFragment extends Fragment {    private static final String T
             }
         });
     }
-    
-    private void setupBadges(UserEntity user) {
-        List<Badge> badges = new ArrayList<>();
+      private void setupBadges(UserEntity user) {
+        List<Badge> badges = generateUserBadges(user);
         
-        // Generate badges based on user achievements
+        if (binding.rvBadges != null) {
+            // Use the new ProfileBadgeAdapter that matches Customize Profile design
+            ProfileBadgeAdapter adapter = new ProfileBadgeAdapter(requireContext(), badges, badge -> {
+                // Navigate to Customize Profile when badge is clicked
+                Intent intent = new Intent(requireContext(), CustomizeProfileActivity.class);
+                startActivityForResult(intent, 1006);
+            });
+            binding.rvBadges.setAdapter(adapter);
+        }
+    }
+    
+    // Generate badges using the same logic as BadgeSelectionFragment for consistency
+    private List<Badge> generateUserBadges(UserEntity user) {
+        List<Badge> badges = new ArrayList<>();
         int points = user.getPoints();
         int badgeIdCounter = 1;
         
-        if (points >= 2000) {
-            badges.add(new Badge(badgeIdCounter++, "🏆 Legend", "Legend badge for top performers", "achievement", 3, true));
-        }
-        if (points >= 1000) {
-            badges.add(new Badge(badgeIdCounter++, "🥇 Expert Plogger", "Expert level plogger", "points", 3, true));
-        }
-        if (points >= 500) {
-            badges.add(new Badge(badgeIdCounter++, "🌍 Eco Warrior", "Environmental champion", "points", 2, true));
-        }
-        if (points >= 200) {
-            badges.add(new Badge(badgeIdCounter++, "🏅 Green Champion", "Green environmental champion", "points", 2, true));
+        // Always available badges
+        Badge starter = new Badge(badgeIdCounter++, "Starter", "Your first badge", "starter", 1, true);
+        starter.setIconResource(R.drawable.ic_star);
+        badges.add(starter);
+        
+        // Achievement-based badges (same logic as BadgeSelectionFragment)
+        if (points >= 50) {
+            Badge greenHelper = new Badge(badgeIdCounter++, "Green Helper", "Eco-friendly contributor", "green_helper", 1, true);
+            greenHelper.setIconResource(R.drawable.ic_leaf);
+            badges.add(greenHelper);
         }
         if (points >= 100) {
-            badges.add(new Badge(badgeIdCounter++, "🌱 Green Helper", "Helpful green contributor", "points", 1, true));
+            Badge ecoWarrior = new Badge(badgeIdCounter++, "Eco Warrior", "Environmental champion", "eco_warrior", 2, true);
+            ecoWarrior.setIconResource(R.drawable.ic_award);
+            badges.add(ecoWarrior);
         }
-        if (points >= 50) {
-            badges.add(new Badge(badgeIdCounter++, "🌿 Beginner", "Starting your eco journey", "points", 1, true));
+        if (points >= 200) {
+            Badge greenChampion = new Badge(badgeIdCounter++, "Green Champion", "Green environmental champion", "green_champion", 2, true);
+            greenChampion.setIconResource(R.drawable.ic_award);
+            badges.add(greenChampion);
         }
-        if (points >= 10) {
-            badges.add(new Badge(badgeIdCounter++, "⭐ Starter", "First steps in plogging", "points", 1, true));
+        if (points >= 500) {
+            Badge earthGuardian = new Badge(badgeIdCounter++, "Earth Guardian", "Protector of the environment", "earth_guardian", 3, true);
+            earthGuardian.setIconResource(R.drawable.ic_globe);
+            badges.add(earthGuardian);
+        }
+        if (points >= 1000) {
+            Badge expertPlogger = new Badge(badgeIdCounter++, "Expert Plogger", "Master of plogging", "expert_plogger", 3, true);
+            expertPlogger.setIconResource(R.drawable.ic_crown);
+            badges.add(expertPlogger);
+        }
+        if (points >= 2000) {
+            Badge ecoLegend = new Badge(badgeIdCounter++, "Eco Legend", "Legendary environmental hero", "eco_legend", 3, true);
+            ecoLegend.setIconResource(R.drawable.ic_crown);
+            badges.add(ecoLegend);
         }
         
-        // Add special badges
+        // Special badges
         if (points >= 1500) {
-            badges.add(new Badge(badgeIdCounter++, "🧹 Master Cleaner", "Master of cleanup activities", "cleanup", 3, true));
+            Badge masterCleaner = new Badge(badgeIdCounter++, "Master Cleaner", "Expert in cleanup activities", "master_cleaner", 3, true);
+            masterCleaner.setIconResource(R.drawable.ic_cleaning);
+            badges.add(masterCleaner);
         }
         
-        // Ensure at least one badge
-        if (badges.isEmpty()) {
-            badges.add(new Badge(badgeIdCounter, "🌟 New Member", "Welcome to the community", "achievement", 1, true));
-        }
-        
-        if (binding.rvBadges != null) {
-            BadgeAdapter adapter = new BadgeAdapter(requireContext(), badges);
-            binding.rvBadges.setAdapter(adapter);
-        }
+        return badges;
     }
     
     private void updateProfileDecorations(UserEntity user) {
@@ -641,12 +669,15 @@ public class ProfileFragment extends Fragment {    private static final String T
         if (resultCode != Activity.RESULT_OK) {
             return;
         }
-          try {
-            // Handle customize profile activity result
+          try {            // Handle customize profile activity result
             if (requestCode == 1006 && data != null) {
                 boolean profileChanged = data.getBooleanExtra("profile_changed", false);
                 if (profileChanged) {
                     updateProfileSkin();
+                    // Refresh badge display to show updated active badge
+                    if (currentUser != null) {
+                        setupBadges(currentUser);
+                    }
                     Toast.makeText(requireContext(), "Profile updated!", Toast.LENGTH_SHORT).show();
                     // Refresh user data to update points if they were spent
                     loadUserData();
