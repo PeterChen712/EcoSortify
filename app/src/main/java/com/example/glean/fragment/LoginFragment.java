@@ -66,13 +66,22 @@ public class LoginFragment extends Fragment {
 
         // Authenticate user
         executor.execute(() -> {
-            UserEntity user = db.userDao().getUserByEmailSync(email);
-
-            requireActivity().runOnUiThread(() -> {
+            UserEntity user = db.userDao().getUserByEmailSync(email);            requireActivity().runOnUiThread(() -> {
                 if (user != null && user.getPassword().equals(password)) {
-                    // Save user ID in SharedPreferences
-                    SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
-                    prefs.edit().putInt("USER_ID", user.getId()).apply();
+                    // Save user ID to ALL SharedPreferences locations used by different fragments
+                    int userId = user.getId();
+                    
+                    // Save to default preferences (used by HomeFragment, StatsFragment, etc.)
+                    SharedPreferences defaultPrefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
+                    defaultPrefs.edit().putInt("USER_ID", userId).apply();
+                    
+                    // Save to USER_PREFS (used by ProfileFragment, ProfileDecorFragment)
+                    SharedPreferences userPrefs = requireActivity().getSharedPreferences("USER_PREFS", 0);
+                    userPrefs.edit().putInt("USER_ID", userId).apply();
+                    
+                    // Save to user_prefs with current_user_id key (used by CommunityFeedFragment, CreatePostFragment, etc.)
+                    SharedPreferences communityPrefs = requireContext().getSharedPreferences("user_prefs", requireContext().MODE_PRIVATE);
+                    communityPrefs.edit().putInt("current_user_id", userId).apply();
 
                     // Navigate to main activity
                     Intent intent = new Intent(requireContext(), MainActivity.class);

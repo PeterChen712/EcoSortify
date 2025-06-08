@@ -55,11 +55,26 @@ public class SummaryFragment extends Fragment {
         super.onCreate(savedInstanceState);
         db = AppDatabase.getInstance(requireContext());
         repository = new CommunityRepository(requireContext());
-        executor = Executors.newSingleThreadExecutor();
-        
-        // Get current user ID from SharedPreferences
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
+        executor = Executors.newSingleThreadExecutor();        // Get current user ID from SharedPreferences with fallback pattern
+        SharedPreferences prefs = requireActivity().getSharedPreferences("USER_PREFS", 0);
         currentUserId = prefs.getInt("USER_ID", -1);
+        android.util.Log.d("SummaryFragment", "USER_PREFS - currentUserId: " + currentUserId);
+        
+        // Fallback to default preferences if not found
+        if (currentUserId == -1) {
+            SharedPreferences defaultPrefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
+            currentUserId = defaultPrefs.getInt("USER_ID", -1);
+            android.util.Log.d("SummaryFragment", "DefaultPrefs - currentUserId: " + currentUserId);
+        }
+        
+        // Additional fallback to user_prefs pattern used by other fragments
+        if (currentUserId == -1) {
+            SharedPreferences userPrefs = requireContext().getSharedPreferences("user_prefs", requireContext().MODE_PRIVATE);
+            currentUserId = userPrefs.getInt("current_user_id", -1);
+            android.util.Log.d("SummaryFragment", "user_prefs - currentUserId: " + currentUserId);
+        }
+        
+        android.util.Log.d("SummaryFragment", "Final currentUserId: " + currentUserId);
         
         // Get record ID from arguments
         if (getArguments() != null) {
@@ -81,12 +96,11 @@ public class SummaryFragment extends Fragment {
         // Set click listeners
         binding.btnBack.setOnClickListener(v -> navigateBack());
         binding.btnShare.setOnClickListener(v -> shareActivity());
-        
-        // Load activity data
+          // Load activity data
         loadActivityData();
         
-        // Add share to community button - comment out until layout is updated
-        // binding.btnShareCommunity.setOnClickListener(v -> shareToCommunitiy());
+        // Add share to community button
+        binding.btnShareCommunity.setOnClickListener(v -> shareToCommunitiy());
     }
 
     private void loadActivityData() {
