@@ -1,9 +1,11 @@
 package com.example.glean.fragment;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -66,11 +68,23 @@ public class StatsFragment extends Fragment {    private FragmentStatsBinding bi
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         binding = FragmentStatsBinding.inflate(inflater, container, false);
         return binding.getRoot();
-    }
-
-    @Override
+    }    @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        
+        // Setup navigation for history button
+        binding.btnViewHistory.setOnClickListener(v -> {
+            // Navigate to History activity or fragment
+            try {
+                Intent intent = new Intent(requireContext(), Class.forName("com.example.glean.activity.HistoryActivity"));
+                startActivity(intent);
+            } catch (ClassNotFoundException e) {
+                // If HistoryActivity doesn't exist, show a message
+                android.widget.Toast.makeText(requireContext(), 
+                    "Fitur riwayat akan segera hadir!", 
+                    android.widget.Toast.LENGTH_SHORT).show();
+            }
+        });
         
         // Load data
         loadData();
@@ -135,12 +149,11 @@ public class StatsFragment extends Fragment {    private FragmentStatsBinding bi
             totalDistance += record.getDistance();
             totalDuration += record.getDuration();
         }
-        
-        // Update UI with real user data
+          // Update UI with real user data
         binding.tvTotalRuns.setText(String.valueOf(totalRuns));
         binding.tvTotalPoints.setText(String.valueOf(totalPoints));
         binding.tvTotalDistance.setText(totalDistance > 0 ? 
-            String.format("%.1f", totalDistance / 1000) : "0.0");
+            String.format(Locale.getDefault(), "%.2f", totalDistance / 1000) : "0,00");
         
         // Calculate and display achievements/badges count based on points
         int badgeCount = calculateBadgeCount(totalPoints);
@@ -281,11 +294,10 @@ public class StatsFragment extends Fragment {    private FragmentStatsBinding bi
         leftAxis.setAxisMinimum(0f);
         leftAxis.setTextColor(getResources().getColor(R.color.text_secondary, null));
         leftAxis.setAxisLineColor(getResources().getColor(R.color.text_tertiary, null));
-        leftAxis.setGridColor(getResources().getColor(R.color.text_tertiary, null));
-        leftAxis.setValueFormatter(new ValueFormatter() {
+        leftAxis.setGridColor(getResources().getColor(R.color.text_tertiary, null));        leftAxis.setValueFormatter(new ValueFormatter() {
             @Override
             public String getFormattedValue(float value) {
-                return String.format(Locale.getDefault(), "%.1f km", value);
+                return String.format(Locale.getDefault(), "%.2f km", value);
             }
         });
         
@@ -305,8 +317,7 @@ public class StatsFragment extends Fragment {    private FragmentStatsBinding bi
         // Refresh chart
         chart.invalidate();
     }
-    
-    private Map<String, Float> calculateDailyDistances() {
+      private Map<String, Float> calculateDailyDistances() {
         Map<String, Float> dailyDistances = new HashMap<>();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
         
@@ -317,16 +328,20 @@ public class StatsFragment extends Fragment {    private FragmentStatsBinding bi
             if (record.getCreatedAt() >= oneWeekAgo) {
                 String dateKey = sdf.format(new Date(record.getCreatedAt()));
                 float currentDistance = dailyDistances.getOrDefault(dateKey, 0f);
-                dailyDistances.put(dateKey, currentDistance + record.getDistance());
+                float newDistance = currentDistance + record.getDistance();
+                dailyDistances.put(dateKey, newDistance);
+                
+                // Debug logging for small distances
+                Log.d("StatsFragment", "Date: " + dateKey + ", Record distance: " + 
+                    record.getDistance() + "m, Total distance: " + newDistance + "m");
             }
         }
         
         return dailyDistances;
     }
-    
-    private boolean allDistancesZero(Map<String, Float> dailyDistances) {
+      private boolean allDistancesZero(Map<String, Float> dailyDistances) {
         for (Float distance : dailyDistances.values()) {
-            if (distance > 0) {
+            if (distance > 0.01) { // Consider distances > 0.01 meters as valid
                 return false;
             }
         }

@@ -15,12 +15,10 @@
         android:paddingStart="16dp"
         android:paddingEnd="16dp"
         android:background="@color/primary_color"
-        android:gravity="center_vertical">
-
-        <ImageView
+        android:gravity="center_vertical">        <ImageView
             android:layout_width="24dp"
             android:layout_height="24dp"
-            android:src="@drawable/ic_stats"
+            android:src="@drawable/ic_bar_chart"
             android:layout_marginEnd="12dp"
             app:tint="@color/white"
             android:contentDescription="Statistics Icon" />
@@ -433,7 +431,7 @@
                                     android:layout_height="20dp"
                                     android:layout_gravity="center"
                                     android:contentDescription="Weekly Distance Icon"
-                                    android:src="@drawable/ic_route"
+                                    android:src="@drawable/ic_trending_up"
                                     app:tint="@android:color/white" />
 
                             </androidx.cardview.widget.CardView>

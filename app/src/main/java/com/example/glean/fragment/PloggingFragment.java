@@ -2202,22 +2202,22 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
     private void showHelpDialog() {
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(requireContext());
         builder.setTitle("Plogging Help")
-                .setMessage("🏃‍♂️ Welcome to Plogging!\n\n" +
-                        "Plogging combines jogging with picking up litter to help keep our environment clean.\n\n" +
-                        "📍 How to use:\n" +
-                        "• Tap 'Start' to begin tracking your route\n" +
-                        "• Use 'Collect Trash' when you find litter\n" +
-                        "• Tap 'Finish' when done to save your session\n\n" +
-                        "🌱 Features:\n" +
-                        "• GPS tracking of your route\n" +
-                        "• Distance measurement\n" +
-                        "• Trash collection counter\n" +
-                        "• Points system for motivation\n\n" +
-                        "💡 Tips:\n" +
-                        "• Make sure GPS is enabled\n" +
-                        "• Stay connected to internet for best experience\n" +
-                        "• Take photos when collecting trash\n\n" +
-                        "Together we can make a difference! 🌍")
+                .setMessage("🏃‍♂️ Selamat datang di Plogging!\n\n" +
+                    "Plogging itu lari sambil memungut sampah, biar lingkungan makin bersih dan sehat.\n\n" +
+                    "📍 Cara pakai:\n" +
+                    "• Tap 'Mulai' untuk mulai merekam rute lari kamu\n" +
+                    "• Gunakan 'Ambil Sampah' saat menemukan sampah di jalan\n" +
+                    "• Tap 'Selesai' kalau sudah selesai, supaya datanya tersimpan\n\n" +
+                    "🌱 Fitur:\n" +
+                    "• Lacak rute lari pakai GPS\n" +
+                    "• Hitung jarak tempuh kamu\n" +
+                    "• Hitung jumlah sampah yang berhasil dikumpulkan\n" +
+                    "• Ada poin biar makin semangat\n\n" +
+                    "💡 Tips:\n" +
+                    "• Pastikan GPS aktif\n" +
+                    "• Koneksi internet stabil biar aplikasi lancar\n" +
+                    "• Jangan lupa foto waktu ambil sampah, ya!\n\n" +
+                    "Bareng-bareng kita bisa bikin lingkungan lebih baik! 🌍")
                 .setPositiveButton("Got it!", (dialog, which) -> dialog.dismiss())
                 .setIcon(R.drawable.ic_help)
                 .show();
