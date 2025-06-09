@@ -77,8 +77,7 @@
                 android:orientation="vertical"
                 android:padding="20dp">
 
-                <!-- Stats Section with Enhanced Design -->
-                <LinearLayout
+                <!-- Stats Section with Enhanced Design -->                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
@@ -88,42 +87,45 @@
                     <!-- Distance Card -->
                     <com.google.android.material.card.MaterialCardView
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
+                        android:layout_height="120dp"
                         android:layout_weight="1"
-                        android:layout_marginEnd="8dp"
+                        android:layout_marginEnd="6dp"
                         app:cardCornerRadius="12dp"
                         app:cardElevation="4dp"
-                        android:backgroundTint="#E3F2FD">
+                        android:backgroundTint="#F0F8FF">
 
                         <LinearLayout
                             android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
+                            android:layout_height="match_parent"
                             android:gravity="center"
                             android:orientation="vertical"
-                            android:padding="16dp">
+                            android:padding="12dp">
 
                             <ImageView
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
+                                android:layout_width="28dp"
+                                android:layout_height="28dp"
                                 android:layout_marginBottom="8dp"
-                                android:src="@drawable/ic_distance"
-                                app:tint="@color/primary_color" />
+                                android:src="@drawable/ic_run"
+                                app:tint="#4A90E2" />
 
                             <TextView
                                 android:id="@+id/tv_distance"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="0.0 km"
-                                android:textSize="18sp"
+                                android:textSize="16sp"
                                 android:textStyle="bold"
-                                android:textColor="@color/primary_dark" />
+                                android:textColor="#2E5984"
+                                android:gravity="center" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Distance"
-                                android:textSize="12sp"
-                                android:textColor="@color/text_secondary" />
+                                android:text="Jarak"
+                                android:textSize="11sp"
+                                android:textColor="@color/text_secondary"
+                                android:gravity="center"
+                                android:layout_marginTop="4dp" />
 
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
@@ -131,24 +133,24 @@
                     <!-- Duration Card -->
                     <com.google.android.material.card.MaterialCardView
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
+                        android:layout_height="120dp"
                         android:layout_weight="1"
-                        android:layout_marginStart="4dp"
-                        android:layout_marginEnd="4dp"
+                        android:layout_marginStart="3dp"
+                        android:layout_marginEnd="3dp"
                         app:cardCornerRadius="12dp"
                         app:cardElevation="4dp"
-                        android:backgroundTint="#FFF3E0">
+                        android:backgroundTint="#FFF8F0">
 
                         <LinearLayout
                             android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
+                            android:layout_height="match_parent"
                             android:gravity="center"
                             android:orientation="vertical"
-                            android:padding="16dp">
+                            android:padding="12dp">
 
                             <ImageView
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
+                                android:layout_width="28dp"
+                                android:layout_height="28dp"
                                 android:layout_marginBottom="8dp"
                                 android:src="@drawable/ic_timer"
                                 app:tint="#FF9800" />
@@ -157,16 +159,19 @@
                                 android:id="@+id/chronometer"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:textSize="18sp"
+                                android:textSize="16sp"
                                 android:textStyle="bold"
-                                android:textColor="#F57C00" />
+                                android:textColor="#E65100"
+                                android:gravity="center" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Duration"
-                                android:textSize="12sp"
-                                android:textColor="@color/text_secondary" />
+                                android:text="Durasi"
+                                android:textSize="11sp"
+                                android:textColor="@color/text_secondary"
+                                android:gravity="center"
+                                android:layout_marginTop="4dp" />
 
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
@@ -174,42 +179,45 @@
                     <!-- Trash Count Card -->
                     <com.google.android.material.card.MaterialCardView
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
+                        android:layout_height="120dp"
                         android:layout_weight="1"
-                        android:layout_marginStart="8dp"
+                        android:layout_marginStart="6dp"
                         app:cardCornerRadius="12dp"
                         app:cardElevation="4dp"
-                        android:backgroundTint="#E8F5E8">
+                        android:backgroundTint="#F0FFF0">
 
                         <LinearLayout
                             android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
+                            android:layout_height="match_parent"
                             android:gravity="center"
                             android:orientation="vertical"
-                            android:padding="16dp">
+                            android:padding="12dp">
 
                             <ImageView
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
+                                android:layout_width="28dp"
+                                android:layout_height="28dp"
                                 android:layout_marginBottom="8dp"
                                 android:src="@drawable/ic_trash"
-                                app:tint="@color/environmental_green" />
+                                app:tint="#4CAF50" />
 
                             <TextView
                                 android:id="@+id/tv_trash_count"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="0"
-                                android:textSize="18sp"
+                                android:textSize="16sp"
                                 android:textStyle="bold"
-                                android:textColor="@color/environmental_green" />
+                                android:textColor="#2E7D32"
+                                android:gravity="center" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Trash"
-                                android:textSize="12sp"
-                                android:textColor="@color/text_secondary" />
+                                android:text="Sampah"
+                                android:textSize="11sp"
+                                android:textColor="@color/text_secondary"
+                                android:gravity="center"
+                                android:layout_marginTop="4dp" />
 
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
