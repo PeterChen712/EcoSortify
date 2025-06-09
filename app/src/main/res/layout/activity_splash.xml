@@ -5,14 +5,12 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@android:color/white"
-    tools:context=".SplashActivity">
-
-    <ImageView
+    tools:context=".SplashActivity">    <ImageView
         android:id="@+id/iv_logo"
         android:layout_width="150dp"
         android:layout_height="150dp"
         android:layout_marginBottom="24dp"
-        android:src="@android:drawable/ic_menu_agenda"
+        android:src="@mipmap/ic_launcher"
         android:contentDescription="GleanGo Logo"
         app:layout_constraintBottom_toTopOf="@+id/tv_app_name"
         app:layout_constraintEnd_toEndOf="parent"

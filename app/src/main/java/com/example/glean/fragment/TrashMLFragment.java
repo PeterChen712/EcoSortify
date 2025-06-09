@@ -105,90 +105,74 @@ public class TrashMLFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         binding = FragmentTrashMlBinding.inflate(inflater, container, false);
         return binding.getRoot();
-    }
-
-    @Override
+    }    @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         
         // Initialize UI dengan safe binding
         setupUIElements();
-          // Set initial instructions
-        updateInstructionText("📸 Tap 'Ambil Foto' untuk memulai deteksi sampah dengan AI.");
-    }
-    
-    private void setupUIElements() {
+        
+        // Set initial instructions
+        updateInstructionText("Ketuk box hijau untuk mengambil foto sampah dengan kamera.");
+    }      private void setupUIElements() {
         try {
-            // Setup buttons dengan safe access
-            setupTakePhotoButton();
-            setupClassifyButton();
-            setupSaveButton();
-            setupBackButton();
+            // Setup camera box click listener (for taking photos)
+            setupCameraBoxClickListener();
+            
+            // Setup start detection button (for AI processing)
+            setupStartDetectionButton();
+            
+            // Setup retake photo button
+            setupRetakePhotoButton();
             
             Log.d(TAG, "UI elements setup completed successfully");
         } catch (Exception e) {
             Log.e(TAG, "Error setting up UI elements: " + e.getMessage());
             Toast.makeText(requireContext(), "UI setup error, using fallback mode", Toast.LENGTH_SHORT).show();
         }
-    }
-    
-    private void setupTakePhotoButton() {
+    }      private void setupCameraBoxClickListener() {
         try {
-            // Try multiple possible button IDs
-            View takePhotoBtn = findViewSafely("btnTakePhoto", "button_take_photo", "btn_take_photo", "takePhotoButton");
-            if (takePhotoBtn != null) {
-                takePhotoBtn.setOnClickListener(v -> checkPermissionsAndTakePhoto());
-                Log.d(TAG, "Take photo button setup successfully");
+            // Setup camera box click untuk take photo
+            View cameraBox = findViewSafely("card_camera_preview", "cardCameraPreview");
+            if (cameraBox != null) {
+                cameraBox.setOnClickListener(v -> checkPermissionsAndTakePhoto());
+                Log.d(TAG, "Camera box click listener setup successfully");
             } else {
-                Log.w(TAG, "Take photo button not found in layout");
+                Log.w(TAG, "Camera box not found in layout");
             }
         } catch (Exception e) {
-            Log.e(TAG, "Error setting up take photo button: " + e.getMessage());
+            Log.e(TAG, "Error setting up camera box click listener: " + e.getMessage());
         }
     }
     
-    private void setupClassifyButton() {
+      private void setupStartDetectionButton() {
         try {
-            View classifyBtn = findViewSafely("btnClassify", "button_classify", "btn_classify", "classifyButton");
-            if (classifyBtn != null) {
-                classifyBtn.setOnClickListener(v -> classifyTrash());
-                classifyBtn.setEnabled(false); // Initially disabled
-                Log.d(TAG, "Classify button setup successfully");
+            // Button untuk memulai AI processing (hanya aktif setelah foto diambil)
+            View startDetectionBtn = findViewSafely("btnStartDetection", "btn_start_detection", "button_start_detection");
+            if (startDetectionBtn != null) {
+                startDetectionBtn.setOnClickListener(v -> classifyTrash());
+                startDetectionBtn.setEnabled(false); // Initially disabled
+                Log.d(TAG, "Start detection button setup successfully");
             } else {
-                Log.w(TAG, "Classify button not found in layout");
+                Log.w(TAG, "Start detection button not found in layout");
             }
         } catch (Exception e) {
-            Log.e(TAG, "Error setting up classify button: " + e.getMessage());
+            Log.e(TAG, "Error setting up start detection button: " + e.getMessage());
         }
     }
     
-    private void setupSaveButton() {
+    private void setupRetakePhotoButton() {
         try {
-            View saveBtn = findViewSafely("btnSave", "button_save", "btn_save", "saveButton");
-            if (saveBtn != null) {
-                saveBtn.setOnClickListener(v -> saveTrashItem());
-                saveBtn.setEnabled(false); // Initially disabled
-                Log.d(TAG, "Save button setup successfully");
+            // Setup retake photo button
+            View retakeBtn = findViewSafely("fab_retake_photo", "fabRetakePhoto");
+            if (retakeBtn != null) {
+                retakeBtn.setOnClickListener(v -> retakePhoto());
+                Log.d(TAG, "Retake photo button setup successfully");
             } else {
-                Log.w(TAG, "Save button not found in layout");
+                Log.w(TAG, "Retake photo button not found in layout");
             }
         } catch (Exception e) {
-            Log.e(TAG, "Error setting up save button: " + e.getMessage());
-        }
-    }
-    
-    private void setupBackButton() {
-        try {
-            View backBtn = findViewSafely("btnBack", "button_back", "btn_back", "backButton");
-            if (backBtn != null) {
-                backBtn.setOnClickListener(v -> navigateBack());
-                Log.d(TAG, "Back button setup successfully");
-            } else {
-                // Try to use toolbar back button or activity back
-                Log.d(TAG, "Back button not found, will use system back");
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error setting up back button: " + e.getMessage());
+            Log.e(TAG, "Error setting up retake photo button: " + e.getMessage());
         }
     }
     
@@ -212,21 +196,20 @@ public class TrashMLFragment extends Fragment {
         }
         return null;
     }
-    
-    private void updateInstructionText(String instruction) {
+      private void updateInstructionText(String instruction) {
         try {
-            // Try to find instruction TextView
-            View instructionView = findViewSafely("tvInstructions", "tvInstruction", "tvStatus", "tvInfo", "textInstructions");
-            if (instructionView instanceof android.widget.TextView) {
-                ((android.widget.TextView) instructionView).setText(instruction);
+            // Update text in main camera card
+            View mainCardText = findViewSafely("tvCameraInstruction", "tv_camera_instruction");
+            if (mainCardText instanceof android.widget.TextView) {
+                ((android.widget.TextView) mainCardText).setText(instruction);
                 return;
             }
             
-            // Try to find result TextView as fallback
-            View resultView = findViewSafely("tvClassificationResult", "tvResult", "textResult", "tvDescription");
-            if (resultView instanceof android.widget.TextView) {
-                ((android.widget.TextView) resultView).setText(instruction);
-                resultView.setVisibility(View.VISIBLE);
+            // Fallback to status text
+            View statusView = findViewSafely("tvStatus", "tv_status");
+            if (statusView instanceof android.widget.TextView) {
+                ((android.widget.TextView) statusView).setText(instruction);
+                statusView.setVisibility(View.VISIBLE);
                 return;
             }
             
@@ -276,9 +259,7 @@ public class TrashMLFragment extends Fragment {
         File image = File.createTempFile(imageFileName, ".jpg", storageDir);
         currentPhotoPath = image.getAbsolutePath();
         return image;
-    }
-    
-    @Override
+    }      @Override
     public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         
@@ -287,21 +268,26 @@ public class TrashMLFragment extends Fragment {
                 capturedImage = BitmapFactory.decodeFile(photoFile.getAbsolutePath());
                   if (capturedImage != null) {
                     displayCapturedImage();
-                    enableButton("btnClassify", "button_classify", "btn_classify");
-                    updateInstructionText("✅ Foto berhasil diambil! Tap 'Deteksi dengan Gemini AI' untuk menganalisis.");
+                    enableStartDetectionButton();
+                    updateInstructionText("Foto berhasil diambil! Sekarang Anda dapat menekan tombol 'Mulai Deteksi' untuk menganalisis sampah.");
                 } else {
-                    updateInstructionText("❌ Gagal memuat foto yang diambil");
+                    updateInstructionText("Gagal memuat foto yang diambil. Silakan coba lagi.");
                 }
             }
         }
-    }
-    
-    private void displayCapturedImage() {
+    }      private void displayCapturedImage() {
         try {
-            // Find ImageView
-            View imageView = findViewSafely("ivImage", "imageView", "ivTrashImage", "ivPhoto", "capturedImageView");
+            // Hide camera instruction view
+            View cameraInstruction = findViewSafely("layout_camera_instruction");
+            if (cameraInstruction != null) {
+                cameraInstruction.setVisibility(View.GONE);
+            }
+            
+            // Show captured image
+            View imageView = findViewSafely("imageView", "image_view", "image_view_main", "ivTrashImage", "ivPhoto");
             
             if (imageView instanceof android.widget.ImageView && capturedImage != null) {
+                imageView.setVisibility(View.VISIBLE);
                 try {
                     // Use Glide with enhanced error handling
                     Glide.with(this)
@@ -315,19 +301,27 @@ public class TrashMLFragment extends Fragment {
                 } catch (Exception e) {
                     Log.e(TAG, "Glide error, using direct bitmap: " + e.getMessage());
                     ((android.widget.ImageView) imageView).setImageBitmap(capturedImage);
-                }            } else {
+                }
+                
+                // Show retake photo overlay
+                View photoOverlay = findViewSafely("layout_photo_overlay");
+                if (photoOverlay != null) {
+                    photoOverlay.setVisibility(View.VISIBLE);
+                }
+                
+            } else {
                 Log.w(TAG, "ImageView not found or image is null");
-                updateInstructionText("📷 Foto berhasil diambil tapi tidak bisa ditampilkan");
+                updateInstructionText("Foto berhasil diambil tapi tidak bisa ditampilkan");
             }
         } catch (Exception e) {
             Log.e(TAG, "Error displaying image: " + e.getMessage());
         }
     }
-    
-    private void enableButton(String... buttonIds) {
+      private void enableButton(String... buttonIds) {
         View button = findViewSafely(buttonIds);
         if (button != null) {
             button.setEnabled(true);
+            button.setAlpha(1.0f);
         }
     }
     
@@ -335,9 +329,45 @@ public class TrashMLFragment extends Fragment {
         View button = findViewSafely(buttonIds);
         if (button != null) {
             button.setEnabled(false);
+            button.setAlpha(0.5f);
         }
     }
-      private void classifyTrash() {
+    
+    private void enableStartDetectionButton() {
+        enableButton("btnStartDetection", "btn_start_detection", "button_start_detection");
+    }
+    
+    private void disableStartDetectionButton() {
+        disableButton("btnStartDetection", "btn_start_detection", "button_start_detection");
+    }
+    
+    private void retakePhoto() {
+        // Reset untuk foto baru
+        resetForNewCapture();
+        checkPermissionsAndTakePhoto();
+    }
+    
+    private void showProgressOverlay() {
+        try {
+            View progressOverlay = findViewSafely("progress_overlay");
+            if (progressOverlay != null) {
+                progressOverlay.setVisibility(View.VISIBLE);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error showing progress overlay: " + e.getMessage());
+        }
+    }
+    
+    private void hideProgressOverlay() {
+        try {
+            View progressOverlay = findViewSafely("progress_overlay");
+            if (progressOverlay != null) {
+                progressOverlay.setVisibility(View.GONE);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error hiding progress overlay: " + e.getMessage());
+        }
+    }      private void classifyTrash() {
         if (capturedImage == null) {
             updateInstructionText("❌ Ambil foto terlebih dahulu");
             return;
@@ -347,25 +377,27 @@ public class TrashMLFragment extends Fragment {
             updateInstructionText("❌ Deteksi AI tidak tersedia");
             return;
         }
-        
-        // Show loading state
-        showProgressBar(true);
-        disableButton("btnClassify", "button_classify", "btn_classify");
+          // Show loading state with progress overlay
+        showProgressOverlay();
+        disableStartDetectionButton();
         updateInstructionText("🤖 Sedang menganalisis gambar dengan AI...");
+        
+        // Hide any previous results or warnings
+        hideClassificationResult();
+        hideConfidenceWarning();
           // Classify using Gemini AI
-        geminiHelper.classifyTrash(capturedImage, new GeminiHelper.ClassificationCallback() {
-            @Override
+        geminiHelper.classifyTrash(capturedImage, new GeminiHelper.ClassificationCallback() {            @Override
             public void onSuccess(String trashType, float confidence, String description) {
                 requireActivity().runOnUiThread(() -> {
-                    showProgressBar(false);
-                    enableButton("btnClassify", "button_classify", "btn_classify");
-                      // Check confidence threshold and non-trash detection
+                    hideProgressOverlay();
+                    enableStartDetectionButton();
+                    
+                    // Check confidence threshold and non-trash detection
                     if (confidence < AI_CONFIDENCE_THRESHOLD || isNonTrashItem(trashType)) {
                         
                         // Show confidence warning
                         showConfidenceWarning(confidence, trashType);
                         hideClassificationResult();
-                        disableButton("btnSave", "button_save", "btn_save");
                         
                         Log.d(TAG, "Low confidence or non-trash detected: " + trashType + " (" + confidence + ")");
                         return;
@@ -374,40 +406,37 @@ public class TrashMLFragment extends Fragment {
                     // Hide confidence warning if previously shown
                     hideConfidenceWarning();
                     
-                    // Display successful results in Indonesian
+                    // Display successful results with waste category
+                    String wasteCategory = determineWasteCategory(trashType);
                     String resultText = String.format(Locale.getDefault(),
-                            "🎯 Hasil Deteksi AI:\n\n" +
                             "📋 Jenis: %s\n" +
+                            "🗂️ Kategori: %s\n" +
                             "📊 Tingkat Keyakinan: %.1f%%\n" +
                             "📝 Deskripsi: %s\n\n" +
                             "Siap untuk disimpan! 🌱",
-                            trashType, confidence * 100, description);
+                            trashType, wasteCategory, confidence * 100, description);
                     
-                    updateResultText(resultText);
-                    enableButton("btnSave", "button_save", "btn_save");
+                    showClassificationResult(resultText);
                     
                     Log.d(TAG, "Gemini classification successful: " + trashType + " (" + confidence + ")");
                 });
-            }
-            
-            @Override
+            }              @Override
             public void onError(String error) {
                 requireActivity().runOnUiThread(() -> {
-                    showProgressBar(false);
-                    enableButton("btnClassify", "button_classify", "btn_classify");
+                    hideProgressOverlay();
+                    enableStartDetectionButton();
                     
                     String errorText = "❌ Deteksi gagal: " + error + "\n\nCoba lagi atau periksa koneksi internet kamu.";
-                    updateResultText(errorText);
+                    updateInstructionText(errorText);
                     
                     Log.e(TAG, "Gemini classification failed: " + error);
                 });
             }
         });
     }
-    
-    private void updateResultText(String resultText) {
+      private void updateResultText(String resultText) {
         try {
-            View resultView = findViewSafely("tvClassificationResult", "tvResult", "textResult", "tvDescription");
+            View resultView = findViewSafely("tvClassificationResult", "tv_classification_result");
             if (resultView instanceof android.widget.TextView) {
                 ((android.widget.TextView) resultView).setText(resultText);
                 resultView.setVisibility(View.VISIBLE);
@@ -416,6 +445,30 @@ public class TrashMLFragment extends Fragment {
             }
         } catch (Exception e) {
             Log.e(TAG, "Error updating result text: " + e.getMessage());
+            updateInstructionText(resultText);
+        }
+    }
+    
+    private void showClassificationResult(String resultText) {
+        try {
+            // Show result card
+            View resultCard = findViewSafely("cardClassificationResult", "card_classification_result");
+            if (resultCard != null) {
+                resultCard.setVisibility(View.VISIBLE);
+            }
+            
+            // Update result text
+            updateResultText(resultText);
+            
+            // Setup save button
+            View saveBtn = findViewSafely("btnSave", "btn_save");
+            if (saveBtn != null) {
+                saveBtn.setOnClickListener(v -> saveTrashItem());
+                saveBtn.setEnabled(true);
+            }
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error showing classification result: " + e.getMessage());
             updateInstructionText(resultText);
         }
     }
@@ -429,13 +482,13 @@ public class TrashMLFragment extends Fragment {
             Log.e(TAG, "Error controlling progress bar: " + e.getMessage());
         }
     }
-    
-    private void showConfidenceWarning(float confidence, String trashType) {
+      private void showConfidenceWarning(float confidence, String trashType) {
         try {
             View warningCard = findViewSafely("cardConfidenceWarning", "card_confidence_warning");
             if (warningCard != null) {
                 warningCard.setVisibility(View.VISIBLE);
-                  // Update warning text
+                
+                // Update warning text
                 View warningText = findViewSafely("tvConfidenceWarning", "tv_confidence_warning");
                 if (warningText instanceof android.widget.TextView) {
                     String message = generateConfidenceWarningMessage(confidence, trashType);
@@ -448,7 +501,7 @@ public class TrashMLFragment extends Fragment {
                     retakeBtn.setOnClickListener(v -> {
                         hideConfidenceWarning();
                         resetForNewCapture();
-                        updateInstructionText("📸 Siap untuk mengambil foto baru. Pastikan objek sampah terlihat jelas!");
+                        updateInstructionText("Siap untuk mengambil foto baru. Pastikan objek sampah terlihat jelas!");
                     });
                 }
             }
@@ -468,12 +521,11 @@ public class TrashMLFragment extends Fragment {
             Log.e(TAG, "Error hiding confidence warning: " + e.getMessage());
         }
     }
-    
-    private void hideClassificationResult() {
+      private void hideClassificationResult() {
         try {
-            View resultView = findViewSafely("tvClassificationResult", "tvResult", "textResult", "tvDescription");
-            if (resultView != null) {
-                resultView.setVisibility(View.GONE);
+            View resultCard = findViewSafely("cardClassificationResult", "card_classification_result");
+            if (resultCard != null) {
+                resultCard.setVisibility(View.GONE);
             }
         } catch (Exception e) {
             Log.e(TAG, "Error hiding classification result: " + e.getMessage());
@@ -490,19 +542,22 @@ public class TrashMLFragment extends Fragment {
         String trashType = "Tidak Dikenal";
         float confidence = 0.0f;
         String description = "";
-        
-        // Parse results - support both Indonesian and English formats
+          // Parse results - support new format with category
         if (resultText.contains("Jenis: ") || resultText.contains("Type: ")) {
             try {
                 String[] lines = resultText.split("\n");
                 for (String line : lines) {
                     line = line.trim();
-                    if (line.startsWith("📋 Jenis: ") || line.startsWith("📋 Type: ") || line.startsWith("Type: ")) {
+                    if (line.startsWith("📋 Jenis: ") || line.startsWith("📋 Type: ")) {
                         trashType = line.substring(line.indexOf(": ") + 2).trim();
-                    } else if (line.startsWith("📊 Tingkat Keyakinan: ") || line.startsWith("📊 Confidence: ") || line.startsWith("Confidence: ")) {
+                    } else if (line.startsWith("🗂️ Kategori: ") || line.startsWith("🗂️ Category: ")) {
+                        // Category is already included in the result, we can extract it if needed
+                        String category = line.substring(line.indexOf(": ") + 2).trim();
+                        description = description + " [Kategori: " + category + "]";
+                    } else if (line.startsWith("📊 Tingkat Keyakinan: ") || line.startsWith("📊 Confidence: ")) {
                         String confStr = line.substring(line.indexOf(": ") + 2).replace("%", "").trim();
                         confidence = Float.parseFloat(confStr) / 100.0f;
-                    } else if (line.startsWith("📝 Deskripsi: ") || line.startsWith("📝 Description: ") || line.startsWith("Description: ")) {
+                    } else if (line.startsWith("📝 Deskripsi: ") || line.startsWith("📝 Description: ")) {
                         description = line.substring(line.indexOf(": ") + 2).trim();
                     }
                 }
@@ -514,10 +569,9 @@ public class TrashMLFragment extends Fragment {
         // Get current location and save
         getCurrentLocationAndSave(trashType, confidence, description);
     }
-    
-    private String getResultText() {
+      private String getResultText() {
         try {
-            View resultView = findViewSafely("tvClassificationResult", "tvResult", "textResult", "tvDescription");
+            View resultView = findViewSafely("tvClassificationResult", "tv_classification_result");
             if (resultView instanceof android.widget.TextView) {
                 return ((android.widget.TextView) resultView).getText().toString();
             }
@@ -589,49 +643,102 @@ public class TrashMLFragment extends Fragment {
                 } else {
                     Log.e(TAG, "SAVE: Verification FAILED - Trash not found in database after insert!");
                 }
-                
-                // Check total trash count for this record
+                  // Check total trash count for this record
                 int totalTrashCount = db.trashDao().getTrashCountByRecordIdSync(recordId);
                 Log.d(TAG, "SAVE: Total trash count for record " + recordId + ": " + totalTrashCount);
-                  requireActivity().runOnUiThread(() -> {
-                    updateInstructionText("✅ Data sampah berhasil disimpan!\n\nBerkontribusi untuk lingkungan yang lebih bersih! 🌱");
+                
+                requireActivity().runOnUiThread(() -> {
+                    updateInstructionText("✅ Data sampah berhasil disimpan!\n\nTerima kasih telah berkontribusi untuk lingkungan yang lebih bersih! 🌱");
                     resetForNewCapture();
                     
                     // Navigate back after delay
                     binding.getRoot().postDelayed(this::navigateBack, 2000);
                 });
                 
-            } catch (Exception e) {
-                Log.e(TAG, "SAVE: Error saving trash item", e);
+            } catch (Exception e) {                Log.e(TAG, "SAVE: Error saving trash item", e);
                 Log.e(TAG, "SAVE: Error details - Message: " + e.getMessage());
                 Log.e(TAG, "SAVE: Error details - Cause: " + e.getCause());
-                e.printStackTrace();                requireActivity().runOnUiThread(() -> {
+                e.printStackTrace();
+                
+                requireActivity().runOnUiThread(() -> {
                     updateInstructionText("❌ Gagal menyimpan data sampah. Silakan coba lagi.");
                 });
             }
             Log.d(TAG, "=== TRASH SAVE DEBUG END ===");
         });
     }
-    
-    private void resetForNewCapture() {
+      private void resetForNewCapture() {
         try {
             capturedImage = null;
             currentPhotoPath = null;
             photoFile = null;
             
-            disableButton("btnClassify", "button_classify", "btn_classify");
-            disableButton("btnSave", "button_save", "btn_save");
+            // Hide all result cards
+            hideClassificationResult();
+            hideConfidenceWarning();
             
-            // Clear image display
-            View imageView = findViewSafely("ivImage", "imageView", "ivTrashImage", "ivPhoto");
-            if (imageView instanceof android.widget.ImageView) {
-                ((android.widget.ImageView) imageView).setImageResource(R.drawable.ic_placeholder);
+            // Hide captured image card
+            View imageCard = findViewSafely("cardCapturedImage", "card_captured_image");
+            if (imageCard != null) {
+                imageCard.setVisibility(View.GONE);
             }
             
             Log.d(TAG, "UI reset for new capture");
         } catch (Exception e) {
             Log.e(TAG, "Error resetting for new capture: " + e.getMessage());
         }
+    }
+    
+    /**
+     * Determine waste category based on trash type
+     * @param trashType The detected trash type
+     * @return Category: Organik, Anorganik, or B3
+     */
+    private String determineWasteCategory(String trashType) {
+        if (trashType == null) return "Tidak Dikenal";
+        
+        String lowerType = trashType.toLowerCase();
+        
+        // B3 (Bahan Berbahaya dan Beracun)
+        String[] b3Keywords = {
+            "battery", "baterai", "toxic", "beracun", "chemical", "kimia",
+            "pesticide", "pestisida", "paint", "cat", "medical", "medis",
+            "syringe", "jarum", "electronic", "elektronik", "fluorescent", "mercury"
+        };
+        
+        for (String keyword : b3Keywords) {
+            if (lowerType.contains(keyword)) {
+                return "B3 (Berbahaya & Beracun)";
+            }
+        }
+        
+        // Organik
+        String[] organicKeywords = {
+            "food", "makanan", "fruit", "buah", "vegetable", "sayur", "leaf", "daun",
+            "paper", "kertas", "wood", "kayu", "organic", "organik", "compost", "kompos",
+            "banana", "pisang", "apple", "apel", "rice", "nasi", "bread", "roti"
+        };
+        
+        for (String keyword : organicKeywords) {
+            if (lowerType.contains(keyword)) {
+                return "Organik";
+            }
+        }
+        
+        // Anorganik (default for most other waste)
+        String[] inorganicKeywords = {
+            "plastic", "plastik", "bottle", "botol", "can", "kaleng", "metal", "logam",
+            "glass", "kaca", "rubber", "karet", "fabric", "kain", "styrofoam"
+        };
+        
+        for (String keyword : inorganicKeywords) {
+            if (lowerType.contains(keyword)) {
+                return "Anorganik";
+            }
+        }
+        
+        // Default fallback
+        return "Anorganik";
     }
     
     private void navigateBack() {
