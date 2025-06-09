@@ -112,12 +112,10 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
     private int currentRecordId = -1;
     private Marker currentLocationMarker;
     private LocationCallback trackingCallback;    private ConnectivityManager connectivityManager;
-    private ConnectivityManager.NetworkCallback networkCallback;
-    private BroadcastReceiver networkReceiver;
+    private ConnectivityManager.NetworkCallback networkCallback;    private BroadcastReceiver networkReceiver;
     private IntentFilter filter;
     private boolean isNetworkAvailable = false;
     private boolean isPloggingEnabled = false;
-    private Snackbar networkSnackbar;
     private AlertDialog networkDialog;
 
     // GPS/Location services monitoring variables
@@ -188,15 +186,14 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
-
-        initializeNoInternetViews();
+        super.onViewCreated(view, savedInstanceState);        initializeNoInternetViews();
+        initializeNotificationBanner();
 
         SupportMapFragment mapFragment = (SupportMapFragment) getChildFragmentManager()
                 .findFragmentById(R.id.map);
         if (mapFragment != null) {
             mapFragment.getMapAsync(this);
-        }        restoreTrackingSession();        updateUIForTrackingState(isTracking);
+        }restoreTrackingSession();        updateUIForTrackingState(isTracking);
         updateUIForNetworkState(isNetworkAvailable);          // Set up button click listeners for new UI structure
         binding.btnStartStop.setOnClickListener(v -> toggleTracking());
         binding.btnCollectTrash.setOnClickListener(v -> navigateToTrashCollection());
@@ -273,20 +270,18 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         }
 
         // Update chronometer is handled separately, no need to update duration value here
-        // as it's automatically updated by the Chronometer widget
-
-        // Update trash button text
+        // as it's automatically updated by the Chronometer widget        // Update trash button text
         if (binding.btnCollectTrash != null) {
             if (isTracking) {
                 String buttonText;
                 if (currentTrashCount > 0) {
-                    buttonText = String.format("Trash (+%d)", currentPoints);
+                    buttonText = String.format("Sampah (+%d)", currentPoints);
                 } else {
-                    buttonText = "Trash";
+                    buttonText = "Sampah";
                 }
                 binding.btnCollectTrash.setText(buttonText);
             } else {
-                binding.btnCollectTrash.setText("Trash");
+                binding.btnCollectTrash.setText("Sampah");
             }
         }
     }    private void toggleTracking() {
@@ -301,10 +296,9 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
             showGpsDisabledDialog();
             return;
         }
-        
-        // If both conditions are met, proceed with normal tracking
+          // If both conditions are met, proceed with normal tracking
         if (!isPloggingEnabled) {
-            showNetworkStatusMessage("⚠️ Please check your internet and location settings", true);
+            showNetworkStatusMessage("⚠️ Harap periksa pengaturan internet dan lokasi Anda", true);
             return;
         }
 
@@ -326,7 +320,7 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                         "⚠️ Note: You can finish the session to save your progress, or continue tracking.")
                 .setPositiveButton("Stop", (dialog, which) -> {
                     internalPauseTracking();
-                    showNetworkStatusMessage("🛑 Plogging stopped. Tap 'Start Plogging' to resume or 'Finish' to complete.", false);
+                    showNetworkStatusMessage("🛑 Plogging dihentikan. Ketuk 'Mulai Plogging' untuk melanjutkan atau 'Selesai' untuk menyelesaikan.", false);
                 })                .setNegativeButton("Cancel", null)
                 .setNeutralButton("Finish Session", (dialog, which) -> {
                     finishPlogging();
@@ -346,10 +340,9 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
             showGpsDisabledDialog();
             return;
         }
-        
-        // If both conditions are met but plogging is still disabled, show general message
+          // If both conditions are met but plogging is still disabled, show general message
         if (!isPloggingEnabled) {
-            showNetworkStatusMessage("⚠️ Please check your internet and location settings", true);
+            showNetworkStatusMessage("⚠️ Harap periksa pengaturan internet dan lokasi Anda", true);
             return;
         }
         
@@ -468,15 +461,15 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         serviceIntent.setAction(LocationService.ACTION_STOP_TRACKING);
         requireActivity().startService(serviceIntent);
 
-        showNetworkStatusMessage("🛑 Plogging session ended.", false);
+        showNetworkStatusMessage("🛑 Sesi plogging berakhir.", false);
     }    private void resumeTracking() {
         if (currentRecordId == -1) {
-            showNetworkStatusMessage("❌ No active session found", true);
+            showNetworkStatusMessage("❌ Tidak ada sesi aktif ditemukan", true);
             return;
         }
         
         if (!isPloggingEnabled) {
-            showNetworkStatusMessage("⚠️ Internet connection required to resume tracking", true);
+            showNetworkStatusMessage("⚠️ Koneksi internet diperlukan untuk melanjutkan pelacakan", true);
             return;
         }
         
@@ -791,7 +784,7 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                 Log.d("PloggingFragment", "NAV: currentPoints = " + currentPoints);
                 Log.d("PloggingFragment", "NAV: isTracking = " + isTracking);
                 
-                showNetworkStatusMessage("📸 Opening trash collection...", false);
+                showNetworkStatusMessage("📸 Membuka koleksi sampah...", false);
 
                 NavController navController = Navigation.findNavController(requireView());
                 Bundle args = new Bundle();
@@ -1226,20 +1219,21 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                                     System.currentTimeMillis(),
                                     finalDistance
                             );
-                            
-                            // Save to database in background thread with comprehensive error handling
-                            executor.execute(() -> {
-                                try {
-                                    Log.d(TAG, "🔄 Starting database save operation...");
-                                    
-                                    // First verify the record exists
-                                    RecordEntity record = db.recordDao().getRecordByIdSync(currentRecordId);
-                                    if (record == null) {
-                                        Log.e(TAG, "❌ CRITICAL ERROR: Record ID " + currentRecordId + " does not exist in database!");
-                                        Log.e(TAG, "   This will cause foreign key constraint violation");
-                                        Log.e(TAG, "   Location point cannot be saved");
-                                        return;
-                                    }
+                              // Save to database in background thread with comprehensive error handling
+                            // Check if executor is available before executing
+                            if (executor != null && !executor.isShutdown() && !executor.isTerminated()) {
+                                executor.execute(() -> {
+                                    try {
+                                        Log.d(TAG, "🔄 Starting database save operation...");
+                                        
+                                        // First verify the record exists
+                                        RecordEntity record = db.recordDao().getRecordByIdSync(currentRecordId);
+                                        if (record == null) {
+                                            Log.e(TAG, "❌ CRITICAL ERROR: Record ID " + currentRecordId + " does not exist in database!");
+                                            Log.e(TAG, "   This will cause foreign key constraint violation");
+                                            Log.e(TAG, "   Location point cannot be saved");
+                                            return;
+                                        }
                                     
                                     // Get current count for verification
                                     int countBefore = db.locationPointDao().getLocationPointCountByRecordId(currentRecordId);
@@ -1289,9 +1283,11 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                                         }
                                     } catch (Exception debugE) {
                                         Log.e(TAG, "   Could not verify record existence: " + debugE.getMessage());
-                                    }
-                                }
-                            });
+                                    }                                }
+                                });
+                            } else {
+                                Log.w(TAG, "⚠️  Cannot save location point: executor not available or shutdown");
+                            }
                         } else {
                             Log.w(TAG, "⚠️  Cannot save location point: no active record (currentRecordId = " + currentRecordId + ")");
                         }
@@ -1433,16 +1429,8 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
 
             updateUIForTrackingState(isTracking);
         }
-    }
-
-    private void showNetworkStatusMessage(String message, boolean isError) {
-        if (getView() != null) {
-            Snackbar.make(getView(), message, Snackbar.LENGTH_LONG)
-                    .setBackgroundTint(getResources().getColor(
-                            isError ? android.R.color.holo_red_light : android.R.color.holo_green_light))
-                    .setTextColor(getResources().getColor(android.R.color.white))
-                    .show();
-        }
+    }    private void showNetworkStatusMessage(String message, boolean isError) {
+        showNotificationBanner(message, isError);
     }
 
     private void showOfflineModeDialog() {
@@ -1649,20 +1637,8 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
             gpsDialog = null;
         }
     }
-    
-    private void showGpsStatusMessage(String message, boolean isError) {
-        if (binding != null) {
-            Snackbar snackbar = Snackbar.make(binding.getRoot(), message, Snackbar.LENGTH_LONG);
-            
-            if (isError) {
-                snackbar.setBackgroundTint(ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark));
-            } else {
-                snackbar.setBackgroundTint(ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark));
-            }
-            
-            snackbar.setTextColor(Color.WHITE);
-            snackbar.show();
-        }
+      private void showGpsStatusMessage(String message, boolean isError) {
+        showNotificationBanner(message, isError);
     }
     
     private void showNetworkOptionsDialog() {
@@ -2076,10 +2052,10 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         hideNetworkWarning();
         
         if (wasTrackingBeforeNetworkLoss && hasActiveSession() && isGpsEnabled) {
-            showNetworkStatusMessage("🌐 Internet connection restored! You can resume tracking.", false);
+            showNetworkStatusMessage("🌐 Koneksi internet dipulihkan! Anda dapat melanjutkan pelacakan.", false);
         } else {
             updateUIForNetworkState(true);
-            showNetworkStatusMessage("🌐 Internet Connected!", false);
+            showNetworkStatusMessage("🌐 Internet Terhubung!", false);
         }
     }
     
@@ -2090,7 +2066,7 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         
         if (isTracking) {
             internalPauseTracking();
-            showNetworkStatusMessage("🌐 Internet connection lost! Tracking paused.", true);
+            showNetworkStatusMessage("🌐 Koneksi internet terputus! Pelacakan dijeda.", true);
         }
         
         // Disable plogging features when network is lost
@@ -2098,17 +2074,14 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         updateUIForNetworkState(false);
         
         showOfflineModeDialog();
-    }
-      private void hideNetworkWarning() {
-        if (networkSnackbar != null) {
-            networkSnackbar.dismiss();
-            networkSnackbar = null;
-        }
-        
+    }      private void hideNetworkWarning() {
         if (networkDialog != null && networkDialog.isShowing()) {
             networkDialog.dismiss();
             networkDialog = null;
         }
+        
+        // Hide notification banner
+        hideNotificationBanner();
         
         // Hide network warning indicator
         if (binding != null && binding.networkStatusIndicator != null) {
@@ -2121,9 +2094,9 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         if (isGpsEnabled) {
             isPloggingEnabled = true;
             enablePloggingFeatures();
-            showNetworkStatusMessage("📱 Offline mode enabled - basic features available", false);
+            showNetworkStatusMessage("📱 Mode offline diaktifkan - fitur dasar tersedia", false);
         } else {
-            showNetworkStatusMessage("📍 Location services still required for offline mode", true);
+            showNetworkStatusMessage("📍 Layanan lokasi masih diperlukan untuk mode offline", true);
         }
     }
     
@@ -2161,7 +2134,7 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
             warningRunnable = () -> {
                 if (!isNetworkAvailable && !hasShownWarning) {
                     hasShownWarning = true;
-                    showNetworkStatusMessage("⚠️ Session will auto-finish in 1 minute due to no internet", true);
+                    showNetworkStatusMessage("⚠️ Sesi akan otomatis selesai dalam 1 menit karena tidak ada internet", true);
                 }
             };
             autoFinishHandler.postDelayed(warningRunnable, warningTime);
@@ -2220,12 +2193,57 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                     "Bareng-bareng kita bisa bikin lingkungan lebih baik! 🌍")
                 .setPositiveButton("Got it!", (dialog, which) -> dialog.dismiss())
                 .setIcon(R.drawable.ic_help)
-                .show();
+                .show();    }
+
+    // Notification Banner Methods
+    private void initializeNotificationBanner() {
+        if (binding == null) return;
+
+        // Setup close button click listener
+        if (binding.notificationClose != null) {
+            binding.notificationClose.setOnClickListener(v -> hideNotificationBanner());
+        }
+    }
+
+    private void showNotificationBanner(String message, boolean isError) {
+        if (binding == null || binding.notificationBanner == null) return;
+
+        requireActivity().runOnUiThread(() -> {
+            // Set message
+            binding.notificationMessage.setText(message);
+            
+            // Set colors and icon based on type
+            if (isError) {
+                binding.notificationBanner.setCardBackgroundColor(getResources().getColor(android.R.color.holo_red_dark));
+                binding.notificationIcon.setImageResource(R.drawable.ic_close);
+            } else {
+                binding.notificationBanner.setCardBackgroundColor(getResources().getColor(R.color.environmental_green));
+                binding.notificationIcon.setImageResource(R.drawable.ic_check);
+            }
+            
+            // Show the banner
+            binding.notificationBanner.setVisibility(View.VISIBLE);
+            
+            // Auto-hide after delay for non-error messages
+            if (!isError) {
+                binding.notificationBanner.postDelayed(() -> {
+                    hideNotificationBanner();
+                }, 5000); // 5 seconds
+            }
+        });
+    }
+
+    private void hideNotificationBanner() {
+        if (binding == null || binding.notificationBanner == null) return;
+        
+        requireActivity().runOnUiThread(() -> {
+            binding.notificationBanner.setVisibility(View.GONE);
+        });
     }
 
     private void autoFinishDueToNetworkLoss() {
         if (hasActiveSession()) {
-            showNetworkStatusMessage("⏰ Session auto-finished due to prolonged internet loss", true);
+            showNetworkStatusMessage("⏰ Sesi otomatis selesai karena kehilangan internet yang lama", true);
             finishPloggingConfirmed();
         }
         cancelAutoFinishTimer();

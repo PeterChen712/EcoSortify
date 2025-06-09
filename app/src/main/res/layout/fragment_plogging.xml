@@ -50,9 +50,7 @@
                 android:contentDescription="Help"
                 android:src="@drawable/ic_help"
                 app:tint="@color/white"
-                android:padding="12dp" />
-
-        </LinearLayout>
+                android:padding="12dp" />        </LinearLayout>
 
         <fragment
             android:id="@+id/map"
@@ -146,13 +144,11 @@
                             android:layout_height="match_parent"
                             android:gravity="center"
                             android:orientation="vertical"
-                            android:padding="12dp">
-
-                            <ImageView
+                            android:padding="12dp">                            <ImageView
                                 android:layout_width="28dp"
                                 android:layout_height="28dp"
                                 android:layout_marginBottom="8dp"
-                                android:src="@drawable/ic_timer"
+                                android:src="@drawable/ic_hourglass"
                                 app:tint="#FF9800" />
 
                             <Chronometer
@@ -256,16 +252,14 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:visibility="gone">
-
-                    <!-- Collect Trash Button -->
+                    android:visibility="gone">                    <!-- Collect Trash Button -->
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_collect_trash"
                         android:layout_width="0dp"
                         android:layout_height="60dp"
                         android:layout_weight="1"
-                        android:layout_marginEnd="12dp"
-                        android:text="📸 Trash"
+                        android:layout_marginEnd="8dp"
+                        android:text="📸 Sampah"
                         android:textSize="14sp"
                         android:textStyle="bold"
                         android:textColor="@android:color/white"
@@ -282,14 +276,15 @@
                         android:layout_width="0dp"
                         android:layout_height="60dp"
                         android:layout_weight="1"
-                        android:text="Finish"
+                        android:layout_marginStart="8dp"
+                        android:text="Selesai"
                         android:textSize="14sp"
                         android:textStyle="bold"
                         android:textColor="@android:color/white"
                         app:cornerRadius="16dp"
                         app:backgroundTint="#F44336"
                         app:rippleColor="@android:color/white"
-                        app:icon="@drawable/ic_stop"
+                        app:icon="@drawable/ic_check"
                         app:iconGravity="textStart"
                         app:iconTint="@android:color/white" />
 
@@ -297,7 +292,69 @@
 
             </LinearLayout>
 
-        </com.google.android.material.card.MaterialCardView>    </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+    </LinearLayout>
+
+    <!-- Notification Banner Overlay (positioned above map) -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/notification_banner"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        app:cardCornerRadius="8dp"
+        app:cardElevation="12dp"
+        android:backgroundTint="@color/environmental_green"
+        android:visibility="gone"
+        android:animateLayoutChanges="true"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintWidth_max="400dp"
+        android:layout_marginTop="72dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="12dp"
+            android:gravity="center_vertical">
+
+            <!-- Icon -->
+            <ImageView
+                android:id="@+id/notification_icon"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_marginEnd="10dp"
+                android:src="@drawable/ic_check"
+                app:tint="@android:color/white" />
+
+            <!-- Message -->
+            <TextView
+                android:id="@+id/notification_message"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Notifikasi"
+                android:textColor="@android:color/white"
+                android:textSize="12sp"
+                android:textStyle="normal"
+                android:gravity="center_vertical" />
+
+            <!-- Close Button -->
+            <ImageButton
+                android:id="@+id/notification_close"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_close"
+                app:tint="@android:color/white"
+                android:contentDescription="Tutup notifikasi"
+                android:padding="4dp" />
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
 
     <!-- Enhanced No Internet Overlay -->
     <FrameLayout
