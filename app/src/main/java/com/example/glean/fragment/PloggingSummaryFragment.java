@@ -576,16 +576,24 @@ public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallb
         // Don't auto-populate content - let user write their own caption
         etContent.setText("");
         etContent.setHint("Tulis caption untuk share ke komunitas...");
-          // Load route map image (same as displayed in summary)
+        
+        // Variable to store the map bitmap for saving
+        final Bitmap[] mapBitmapForSharing = {null};
+        
+        // Load route map image (same as displayed in summary)
         if (mMap != null) {
             try {
                 // Create a screenshot-style bitmap of the current map view
                 mMap.snapshot(bitmap -> {
                     if (bitmap != null) {
                         ivRouteMap.setImageBitmap(bitmap);
+                        // Store the bitmap for later saving when Share is pressed
+                        mapBitmapForSharing[0] = bitmap;
+                        Log.d(TAG, "✅ Map snapshot captured successfully for sharing dialog");
                     } else {
                         // Fallback: use a placeholder or hide the image
                         ivRouteMap.setImageResource(R.drawable.ic_map);
+                        Log.w(TAG, "⚠️ Map snapshot failed, using placeholder");
                     }
                 });
             } catch (Exception e) {
@@ -595,6 +603,7 @@ public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallb
         } else {
             // No map available, use placeholder
             ivRouteMap.setImageResource(R.drawable.ic_map);
+            Log.w(TAG, "⚠️ No map available for sharing");
         }
         
         AlertDialog dialog = builder.setView(dialogView)
@@ -617,8 +626,15 @@ public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallb
                         post.setLocation("Lokasi Plogging");
                     }
                     
-                    // Share without photo selection (simplified)
-                    sharePostToLocal(post, false);
+                    // Save map image and share with photo
+                    if (mapBitmapForSharing[0] != null) {
+                        Log.d(TAG, "🗺️ Saving map image for community post...");
+                        saveMapImageAndShare(post, mapBitmapForSharing[0]);
+                    } else {
+                        Log.w(TAG, "⚠️ No map image to save, sharing without photo");
+                        // Share without photo selection (simplified)
+                        sharePostToLocal(post, false);
+                    }
                 })
                 .setNegativeButton("Batal", null)
                 .create();
@@ -662,6 +678,69 @@ public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallb
         // For local database, we store the local photo path directly
         post.setImageUrl(photoPath);
         sharePostWithoutPhoto(post);
+    }
+
+    /**
+     * Save the captured map bitmap to a file and share the post with the map image
+     */
+    private void saveMapImageAndShare(PostEntity post, Bitmap mapBitmap) {
+        if (mapBitmap == null) {
+            Log.w(TAG, "⚠️ Map bitmap is null, sharing without photo");
+            sharePostToLocal(post, false);
+            return;
+        }
+
+        Log.d(TAG, "💾 Saving map bitmap to file for community post...");
+        
+        // Execute file saving in background thread
+        executor.execute(() -> {
+            try {
+                // Create directory for map images if it doesn't exist
+                File mapImagesDir = new File(requireContext().getFilesDir(), "map_images");
+                if (!mapImagesDir.exists()) {
+                    boolean created = mapImagesDir.mkdirs();
+                    Log.d(TAG, "📁 Map images directory created: " + created);
+                }
+                
+                // Create unique filename with timestamp
+                String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+                String fileName = "map_route_" + timeStamp + ".jpg";
+                File mapImageFile = new File(mapImagesDir, fileName);
+                
+                // Save bitmap to file
+                try (FileOutputStream outputStream = new FileOutputStream(mapImageFile)) {
+                    boolean compressed = mapBitmap.compress(Bitmap.CompressFormat.JPEG, 85, outputStream);
+                    outputStream.flush();
+                    
+                    if (compressed) {
+                        String savedImagePath = mapImageFile.getAbsolutePath();
+                        Log.d(TAG, "✅ Map image saved successfully: " + savedImagePath);
+                        
+                        // Update post with the saved image path on UI thread
+                        requireActivity().runOnUiThread(() -> {
+                            post.setImageUrl(savedImagePath);
+                            sharePostWithoutPhoto(post);
+                        });
+                    } else {
+                        Log.e(TAG, "❌ Failed to compress map bitmap");
+                        requireActivity().runOnUiThread(() -> {
+                            sharePostToLocal(post, false);
+                        });
+                    }
+                } catch (Exception fileException) {
+                    Log.e(TAG, "❌ Error saving map image to file", fileException);
+                    requireActivity().runOnUiThread(() -> {
+                        sharePostToLocal(post, false);
+                    });
+                }
+                
+            } catch (Exception e) {
+                Log.e(TAG, "❌ Error in saveMapImageAndShare", e);
+                requireActivity().runOnUiThread(() -> {
+                    sharePostToLocal(post, false);
+                });
+            }
+        });
     }    private void sharePostWithoutPhoto(PostEntity post) {
         executor.execute(() -> {
             try {

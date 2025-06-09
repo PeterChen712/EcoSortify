@@ -21,8 +21,10 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.example.glean.R;
 import com.example.glean.adapter.CommunityPostAdapter;
 import com.example.glean.databinding.FragmentCommunityFeedBinding;
+import com.example.glean.db.AppDatabase;
 import com.example.glean.model.CommunityPostModel;
 import com.example.glean.model.PostEntity;
+import com.example.glean.model.UserEntity;
 import com.example.glean.repository.CommunityRepository;
 
 import java.util.ArrayList;
@@ -32,18 +34,18 @@ import java.util.concurrent.Executors;
 
 public class CommunityFeedFragment extends Fragment implements 
         CommunityPostAdapter.OnPostInteractionListener,
-        SwipeRefreshLayout.OnRefreshListener {
-
-    private FragmentCommunityFeedBinding binding;
+        SwipeRefreshLayout.OnRefreshListener {    private FragmentCommunityFeedBinding binding;
     private CommunityPostAdapter adapter;
     private List<CommunityPostModel> postList;
     private CommunityRepository communityRepository;
+    private AppDatabase database;
     private ExecutorService executor;
     private int currentUserId;    @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         postList = new ArrayList<>();
         communityRepository = new CommunityRepository(requireContext());
+        database = AppDatabase.getInstance(requireContext());
         executor = Executors.newFixedThreadPool(4);
         
         // Get current user ID from SharedPreferences
@@ -134,14 +136,10 @@ public class CommunityFeedFragment extends Fragment implements
                 }
             }
         });
-    }
-
-    private CommunityPostModel convertToModel(PostEntity entity) {
+    }    private CommunityPostModel convertToModel(PostEntity entity) {
         CommunityPostModel model = new CommunityPostModel();
         model.setId(String.valueOf(entity.getId()));
         model.setUserId(String.valueOf(entity.getUserId()));
-        model.setUserName(entity.getUsername());
-        model.setUserProfileUrl(entity.getUserAvatar());
         model.setContent(entity.getContent());
         model.setImageUrl(entity.getImageUrl());
         model.setLocation(entity.getLocation());
@@ -150,6 +148,64 @@ public class CommunityFeedFragment extends Fragment implements
         model.setCommentCount(entity.getCommentCount());
         model.setCategory("plogging"); // Default category
         model.setPublic(true);
+          // Store reference to the model before async call to ensure we have the correct reference
+        CommunityPostModel finalModel = model;
+        
+        // Fetch real-time user data instead of using cached data from PostEntity
+        executor.execute(() -> {
+            try {
+                UserEntity user = database.userDao().getUserByIdSync(entity.getUserId());
+                if (user != null) {
+                    // Use real user data with getName() method for proper display name
+                    String displayName = user.getName(); // This uses the smart getName() method from UserEntity
+                    String profileImagePath = user.getProfileImagePath();
+                    
+                    // Update model with real user data on main thread
+                    if (getActivity() != null) {
+                        getActivity().runOnUiThread(() -> {
+                            finalModel.setUserName(displayName);
+                            finalModel.setUserProfileUrl(profileImagePath);
+                            // Find position using the stored reference
+                            int position = postList.indexOf(finalModel);
+                            if (position != -1 && adapter != null) {
+                                adapter.notifyItemChanged(position);
+                            }
+                        });
+                    }
+                } else {
+                    // Fallback to cached data if user not found
+                    if (getActivity() != null) {
+                        getActivity().runOnUiThread(() -> {
+                            finalModel.setUserName(entity.getUsername() != null ? entity.getUsername() : "Unknown User");
+                            finalModel.setUserProfileUrl(entity.getUserAvatar());
+                            // Find position using the stored reference
+                            int position = postList.indexOf(finalModel);
+                            if (position != -1 && adapter != null) {
+                                adapter.notifyItemChanged(position);
+                            }
+                        });
+                    }
+                }
+            } catch (Exception e) {
+                // Fallback to cached data on error
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(() -> {
+                        finalModel.setUserName(entity.getUsername() != null ? entity.getUsername() : "Unknown User");
+                        finalModel.setUserProfileUrl(entity.getUserAvatar());
+                        // Find position using the stored reference
+                        int position = postList.indexOf(finalModel);
+                        if (position != -1 && adapter != null) {
+                            adapter.notifyItemChanged(position);
+                        }
+                    });
+                }
+            }
+        });
+        
+        // Set initial values from cached data (will be updated by async call above)
+        model.setUserName(entity.getUsername() != null ? entity.getUsername() : "Loading...");
+        model.setUserProfileUrl(entity.getUserAvatar());
+        
         return model;
     }
 

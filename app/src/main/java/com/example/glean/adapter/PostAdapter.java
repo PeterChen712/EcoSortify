@@ -1,5 +1,6 @@
 package com.example.glean.adapter;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,6 +10,9 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.bitmap.RoundedCorners;
+import com.bumptech.glide.request.RequestOptions;
 import com.example.glean.R;
 import com.example.glean.model.PostEntity;
 
@@ -69,8 +73,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             ivComment = itemView.findViewById(R.id.ivComment);
             ivShare = itemView.findViewById(R.id.ivShare);
         }
-        
-        public void bind(PostEntity post) {
+          public void bind(PostEntity post) {
             tvUsername.setText(post.getUsername());
             tvContent.setText(post.getContent());
             tvLikeCount.setText(String.valueOf(post.getLikeCount()));
@@ -78,7 +81,24 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             
             // Format timestamp
             SimpleDateFormat sdf = new SimpleDateFormat("HH:mm • dd MMM", Locale.getDefault());
-            tvTimestamp.setText(sdf.format(new Date(post.getTimestamp())));
+            tvTimestamp.setText(sdf.format(new Date(post.getTimestamp())));            // Load post image using Glide
+            if (post.getImageUrl() != null && !post.getImageUrl().isEmpty()) {
+                Log.d("PostAdapter", "Loading image for post: " + post.getImageUrl());
+                ivPostImage.setVisibility(View.VISIBLE);
+                
+                RequestOptions requestOptions = new RequestOptions()
+                        .placeholder(R.drawable.ic_empty_posts)
+                        .error(R.drawable.ic_empty_posts)
+                        .transform(new RoundedCorners(16));
+                
+                Glide.with(itemView.getContext())
+                        .load(post.getImageUrl())
+                        .apply(requestOptions)
+                        .into(ivPostImage);
+            } else {
+                Log.d("PostAdapter", "No image URL for post, hiding image view");
+                ivPostImage.setVisibility(View.GONE);
+            }
             
             // Set like state
             ivLike.setImageResource(post.isLiked() ? 

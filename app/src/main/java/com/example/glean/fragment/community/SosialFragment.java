@@ -19,30 +19,36 @@ import com.example.glean.R;
 import com.example.glean.activity.PostDetailActivity;
 import com.example.glean.adapter.PostAdapter;
 import com.example.glean.databinding.FragmentSosialBinding;
+import com.example.glean.db.AppDatabase;
 import com.example.glean.model.PostEntity;
+import com.example.glean.model.UserEntity;
 import com.example.glean.repository.CommunityRepository;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class SosialFragment extends Fragment implements PostAdapter.OnPostClickListener {
-    
-    private FragmentSosialBinding binding;
+      private FragmentSosialBinding binding;
     private PostAdapter postAdapter;
     private List<PostEntity> posts = new ArrayList<>();
     private CommunityRepository repository;
+    private AppDatabase database;
+    private ExecutorService executor;
     
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         binding = FragmentSosialBinding.inflate(inflater, container, false);
         return binding.getRoot();
-    }
-      @Override
+    }      @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         repository = new CommunityRepository(requireContext());
+        database = AppDatabase.getInstance(requireContext());
+        executor = Executors.newSingleThreadExecutor();
         setupRecyclerView();
         setupSwipeRefresh();
         setupFab();
@@ -77,6 +83,9 @@ public class SosialFragment extends Fragment implements PostAdapter.OnPostClickL
                 if (postEntities != null && !postEntities.isEmpty()) {
                     posts.addAll(postEntities);
                     Log.d("SosialFragment", "Using database posts");
+                    
+                    // Fetch real-time user data for each post
+                    fetchUserDataForPosts(posts);
                 } else {
                     Log.d("SosialFragment", "No posts found in database, seeder should have run automatically");
                 }
@@ -167,12 +176,76 @@ public class SosialFragment extends Fragment implements PostAdapter.OnPostClickL
                 }
             }
             postAdapter.notifyDataSetChanged();
+        }    }
+    
+    private void fetchUserDataForPosts(List<PostEntity> postEntities) {
+        for (PostEntity post : postEntities) {
+            // Store reference to the post before async call to ensure correct reference
+            PostEntity finalPost = post;
+            
+            // Set initial loading state with better fallback values
+            finalPost.setUsername(finalPost.getUsername() != null && !finalPost.getUsername().isEmpty() ? 
+                finalPost.getUsername() : "Loading...");
+            
+            // Fetch real-time user data instead of using cached data from PostEntity
+            executor.execute(() -> {
+                try {
+                    UserEntity user = database.userDao().getUserByIdSync(finalPost.getUserId());
+                    if (user != null) {
+                        String displayName = user.getName(); // Use getName() which provides best available name
+                        String profileImagePath = user.getProfileImagePath();
+                        
+                        if (getActivity() != null) {
+                            getActivity().runOnUiThread(() -> {
+                                finalPost.setUsername(displayName);
+                                finalPost.setUserAvatar(profileImagePath);
+                                // Find the correct position and notify adapter
+                                int position = posts.indexOf(finalPost);
+                                if (position != -1 && postAdapter != null) {
+                                    postAdapter.notifyItemChanged(position);
+                                    Log.d("SosialFragment", "Updated user data for post at position " + position + 
+                                        " with username: " + displayName);
+                                }
+                            });
+                        }
+                    } else {
+                        // Fallback when user not found
+                        if (getActivity() != null) {
+                            getActivity().runOnUiThread(() -> {
+                                finalPost.setUsername("Unknown User");
+                                finalPost.setUserAvatar(null);
+                                int position = posts.indexOf(finalPost);
+                                if (position != -1 && postAdapter != null) {
+                                    postAdapter.notifyItemChanged(position);
+                                    Log.w("SosialFragment", "User not found for userId: " + finalPost.getUserId());
+                                }
+                            });
+                        }
+                    }
+                } catch (Exception e) {
+                    Log.e("SosialFragment", "Error fetching user data for userId: " + finalPost.getUserId(), e);
+                    // Error fallback
+                    if (getActivity() != null) {
+                        getActivity().runOnUiThread(() -> {
+                            finalPost.setUsername("Error Loading User");
+                            finalPost.setUserAvatar(null);
+                            int position = posts.indexOf(finalPost);
+                            if (position != -1 && postAdapter != null) {
+                                postAdapter.notifyItemChanged(position);
+                            }
+                        });
+                    }
+                }
+            });
         }
     }
     
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        if (executor != null && !executor.isShutdown()) {
+            executor.shutdown();
+        }
         binding = null;
     }
 }
