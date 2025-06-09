@@ -112,6 +112,9 @@ public class SosialFragment extends Fragment implements PostAdapter.OnPostClickL
         intent.putExtra("comment_count", post.getCommentCount());
         intent.putExtra("timestamp", post.getTimestamp());
         intent.putExtra("is_liked", post.isLiked());
+        // Add extras for avatar and image
+        intent.putExtra("user_avatar", post.getUserAvatar());
+        intent.putExtra("image_url", post.getImageUrl());
         startActivityForResult(intent, 1001);
     }
     
@@ -140,7 +143,10 @@ public class SosialFragment extends Fragment implements PostAdapter.OnPostClickL
         intent.putExtra("comment_count", post.getCommentCount());
         intent.putExtra("timestamp", post.getTimestamp());
         intent.putExtra("is_liked", post.isLiked());
-        intent.putExtra("focus_comment", true); // Focus on comment input
+        intent.putExtra("focus_comment", true);  // Focus on comment input
+        // Add extras for avatar and image
+        intent.putExtra("user_avatar", post.getUserAvatar());
+        intent.putExtra("image_url", post.getImageUrl());
         startActivityForResult(intent, 1001);
     }
     

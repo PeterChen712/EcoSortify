@@ -2,12 +2,14 @@ package com.example.glean.activity;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.Observer;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import com.bumptech.glide.Glide;
 import com.example.glean.R;
 import com.example.glean.adapter.CommentAdapter;
 import com.example.glean.databinding.ActivityPostDetailBinding;
@@ -15,6 +17,7 @@ import com.example.glean.model.CommentEntity;
 import com.example.glean.model.PostEntity;
 import com.example.glean.repository.CommunityRepository;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -46,6 +49,9 @@ public class PostDetailActivity extends AppCompatActivity {
         long timestamp = getIntent().getLongExtra("timestamp", System.currentTimeMillis());
         boolean isLiked = getIntent().getBooleanExtra("is_liked", false);
         boolean focusComment = getIntent().getBooleanExtra("focus_comment", false);
+        // Set avatar and post image from intent extras
+        String userAvatar = getIntent().getStringExtra("user_avatar");
+        String imageUrl = getIntent().getStringExtra("image_url");
         
         // Create post object
         post = new PostEntity();
@@ -57,6 +63,8 @@ public class PostDetailActivity extends AppCompatActivity {
         post.setCommentCount(commentCount);
         post.setTimestamp(timestamp);
         post.setLiked(isLiked);
+        post.setUserAvatar(userAvatar);
+        post.setImageUrl(imageUrl);
         
         setupToolbar();
         setupPostData();
@@ -93,6 +101,32 @@ public class PostDetailActivity extends AppCompatActivity {
         
         // Set like state
         updateLikeButton();
+        // Load profile image
+        if (post.getUserAvatar() != null && !post.getUserAvatar().isEmpty()) {
+            File avatarFile = new File(post.getUserAvatar());
+            if (avatarFile.exists()) {
+                Glide.with(this)
+                        .load(avatarFile)
+                        .placeholder(R.drawable.profile_placeholder)
+                        .error(R.drawable.profile_placeholder)
+                        .circleCrop()
+                        .into(binding.ivUserProfile);
+            } else {
+                binding.ivUserProfile.setImageResource(R.drawable.profile_placeholder);
+            }
+        } else {
+            binding.ivUserProfile.setImageResource(R.drawable.profile_placeholder);
+        }
+        // Load post image
+        if (post.getImageUrl() != null && !post.getImageUrl().isEmpty()) {
+            binding.ivPostImage.setVisibility(View.VISIBLE);
+            Glide.with(this)
+                    .load(post.getImageUrl())
+                    .placeholder(android.R.drawable.ic_menu_gallery)
+                    .into(binding.ivPostImage);
+        } else {
+            binding.ivPostImage.setVisibility(View.GONE);
+        }
     }
     
     private void setupRecyclerView() {
