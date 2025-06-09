@@ -144,31 +144,8 @@ public class HomeFragment extends Fragment {
             // Handle error silently
         }
     }    private void updateWeeklyChallengeUI() {
-        try {
-            // Removed Challenge Global section - hide all challenge-related UI
-            if (binding.tvChallengeTitle != null) {
-                binding.tvChallengeTitle.setVisibility(View.GONE);
-            }
-            
-            if (binding.tvChallengeTarget != null) {
-                binding.tvChallengeTarget.setVisibility(View.GONE);
-            }
-            
-            if (binding.progressChallenge != null) {
-                binding.progressChallenge.setVisibility(View.GONE);
-            }
-            
-            if (binding.tvChallengeProgress != null) {
-                binding.tvChallengeProgress.setVisibility(View.GONE);
-            }
-            
-            if (binding.tvChallengeRemaining != null) {
-                binding.tvChallengeRemaining.setVisibility(View.GONE);
-            }
-            
-        } catch (Exception e) {
-            // Handle error silently
-        }
+        // Challenge Global section has been completely removed from layout
+        // No UI updates needed as the section no longer exists
     }
 
     private void setupQuickActionButtons() {
@@ -382,14 +359,9 @@ public class HomeFragment extends Fragment {
         } catch (Exception e) {
             // Handle error silently
         }
-    }
-      private void updateChallengeProgress(int totalTrash) {
-        // Removed Challenge Global section - no UI updates needed
-        try {
-            // All challenge UI elements are now hidden
-        } catch (Exception e) {
-            // Handle error silently
-        }
+    }      private void updateChallengeProgress(int totalTrash) {
+        // Challenge Global section has been completely removed from layout
+        // No UI updates needed as the section no longer exists
     }
     
     private String getBadge(int points) {

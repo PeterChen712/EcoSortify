@@ -6,8 +6,6 @@ import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.Lifecycle;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 
-import com.example.glean.fragment.community.DonasiFragment;
-import com.example.glean.fragment.community.EventFragment;
 import com.example.glean.fragment.community.NewsFragment;
 import com.example.glean.fragment.community.RankingFragment;
 import com.example.glean.fragment.community.SosialFragment;
@@ -16,9 +14,7 @@ public class CommunityPagerAdapter extends FragmentStateAdapter {
 
     public CommunityPagerAdapter(@NonNull FragmentManager fragmentManager, @NonNull Lifecycle lifecycle) {
         super(fragmentManager, lifecycle);
-    }
-
-    @NonNull
+    }    @NonNull
     @Override
     public Fragment createFragment(int position) {
         switch (position) {
@@ -28,10 +24,6 @@ public class CommunityPagerAdapter extends FragmentStateAdapter {
                 return new RankingFragment();
             case 2:
                 return new NewsFragment();
-            case 3:
-                return new EventFragment();
-            case 4:
-                return new DonasiFragment();
             default:
                 return new SosialFragment();
         }
@@ -39,10 +31,8 @@ public class CommunityPagerAdapter extends FragmentStateAdapter {
 
     @Override
     public int getItemCount() {
-        return 5;
-    }
-
-    public String getPageTitle(int position) {
+        return 3;
+    }    public String getPageTitle(int position) {
         switch (position) {
             case 0:
                 return "Sosial";
@@ -50,10 +40,6 @@ public class CommunityPagerAdapter extends FragmentStateAdapter {
                 return "Ranking";
             case 2:
                 return "News";
-            case 3:
-                return "Event";
-            case 4:
-                return "Donasi";
             default:
                 return "Sosial";
         }

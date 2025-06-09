@@ -32,16 +32,14 @@
             android:textStyle="bold"
             android:gravity="center_vertical" />
 
-    </LinearLayout>
-
-    <!-- Tab Layout -->
+    </LinearLayout>    <!-- Tab Layout -->
     <com.google.android.material.tabs.TabLayout
         android:id="@+id/tabLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/white"
-        app:tabMode="scrollable"
-        app:tabGravity="start"
+        app:tabMode="fixed"
+        app:tabGravity="fill"
         app:tabSelectedTextColor="@color/primary_color"
         app:tabTextColor="@color/text_secondary"
         app:tabIndicatorColor="@color/primary_color"
