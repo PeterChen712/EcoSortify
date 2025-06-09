@@ -143,32 +143,27 @@ public class HomeFragment extends Fragment {
         } catch (Exception e) {
             // Handle error silently
         }
-    }
-
-    private void updateWeeklyChallengeUI() {
+    }    private void updateWeeklyChallengeUI() {
         try {
+            // Removed Challenge Global section - hide all challenge-related UI
             if (binding.tvChallengeTitle != null) {
-                String challengeTitle = "CHALLENGE GLOBAL";
-                binding.tvChallengeTitle.setText(challengeTitle);
-                binding.tvChallengeTitle.setVisibility(View.VISIBLE);
+                binding.tvChallengeTitle.setVisibility(View.GONE);
             }
             
             if (binding.tvChallengeTarget != null) {
-                binding.tvChallengeTarget.setVisibility(View.VISIBLE);
+                binding.tvChallengeTarget.setVisibility(View.GONE);
             }
             
             if (binding.progressChallenge != null) {
-                binding.progressChallenge.setVisibility(View.VISIBLE);
+                binding.progressChallenge.setVisibility(View.GONE);
             }
             
             if (binding.tvChallengeProgress != null) {
-                binding.tvChallengeProgress.setVisibility(View.VISIBLE);
+                binding.tvChallengeProgress.setVisibility(View.GONE);
             }
             
             if (binding.tvChallengeRemaining != null) {
-                String remainingText = "Target: Semua waktu";
-                binding.tvChallengeRemaining.setText(remainingText);
-                binding.tvChallengeRemaining.setVisibility(View.VISIBLE);
+                binding.tvChallengeRemaining.setVisibility(View.GONE);
             }
             
         } catch (Exception e) {
@@ -388,26 +383,10 @@ public class HomeFragment extends Fragment {
             // Handle error silently
         }
     }
-    
-    private void updateChallengeProgress(int totalTrash) {
+      private void updateChallengeProgress(int totalTrash) {
+        // Removed Challenge Global section - no UI updates needed
         try {
-            int challengeTarget = 50;
-            
-            if (binding.progressChallenge != null) {
-                binding.progressChallenge.setMax(challengeTarget);
-                binding.progressChallenge.setProgress(Math.min(totalTrash, challengeTarget));
-            }
-            
-            if (binding.tvChallengeProgress != null) {
-                int percentage = challengeTarget > 0 ? (totalTrash * 100) / challengeTarget : 0;
-                String progressText = String.format("Progress: %d/%d (%d%%)", totalTrash, challengeTarget, Math.min(percentage, 100));
-                binding.tvChallengeProgress.setText(progressText);
-            }
-            
-            if (binding.tvChallengeTarget != null) {
-                String targetText = "Target: Kumpulkan " + challengeTarget + " sampah";
-                binding.tvChallengeTarget.setText(targetText);
-            }
+            // All challenge UI elements are now hidden
         } catch (Exception e) {
             // Handle error silently
         }

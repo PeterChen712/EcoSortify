@@ -43,7 +43,7 @@ public class SosialFragment extends Fragment implements PostAdapter.OnPostClickL
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         binding = FragmentSosialBinding.inflate(inflater, container, false);
         return binding.getRoot();
-    }      @Override
+    }    @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         repository = new CommunityRepository(requireContext());
@@ -51,7 +51,7 @@ public class SosialFragment extends Fragment implements PostAdapter.OnPostClickL
         executor = Executors.newSingleThreadExecutor();
         setupRecyclerView();
         setupSwipeRefresh();
-        setupFab();
+        // Removed FAB setup - users can only view/read posts
         loadPosts();
     }
     
@@ -60,18 +60,14 @@ public class SosialFragment extends Fragment implements PostAdapter.OnPostClickL
         binding.recyclerViewPosts.setLayoutManager(new LinearLayoutManager(requireContext()));
         binding.recyclerViewPosts.setAdapter(postAdapter);
     }
-    
-    private void setupSwipeRefresh() {
+      private void setupSwipeRefresh() {
         binding.swipeRefreshLayout.setOnRefreshListener(this::loadPosts);
         binding.swipeRefreshLayout.setColorSchemeResources(R.color.primary_color);
     }
     
-    private void setupFab() {
-        binding.fabCreatePost.setOnClickListener(v -> {
-            // Navigate to create post screen
-            // This would typically open CreatePostFragment or Activity
-        });
-    }    private void loadPosts() {
+    // Removed setupFab method - users can only view/read posts
+    
+    private void loadPosts() {
         binding.swipeRefreshLayout.setRefreshing(true);
         Log.d("SosialFragment", "Loading posts from database...");
         

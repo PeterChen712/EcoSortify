@@ -4,9 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/background_color">
-
-    <!-- Filter Header -->
+    android:background="@color/background_color">    <!-- Filter Header -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -16,19 +14,12 @@
         android:background="@color/white">
 
         <TextView
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Peringkat Komunitas"
+            android:text="Peringkat Global"
             android:textSize="18sp"
             android:textStyle="bold"
             android:textColor="@color/text_primary" />
-
-        <Spinner
-            android:id="@+id/spinnerFilter"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp" />
 
     </LinearLayout>
 

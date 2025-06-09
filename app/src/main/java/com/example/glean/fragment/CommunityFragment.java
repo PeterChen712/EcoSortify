@@ -17,8 +17,6 @@ import com.example.glean.databinding.FragmentCommunityBinding;
 import com.example.glean.fragment.community.SosialFragment;
 import com.example.glean.fragment.community.RankingFragment;
 import com.example.glean.fragment.community.NewsFragment;
-import com.example.glean.fragment.community.EventFragment;
-import com.example.glean.fragment.community.DonasiFragment;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 
@@ -46,8 +44,7 @@ public class CommunityFragment extends Fragment {
     private void setupTabs() {
         pagerAdapter = new CommunityPagerAdapter(requireActivity());
         binding.viewPager.setAdapter(pagerAdapter);
-        
-        new TabLayoutMediator(binding.tabLayout, binding.viewPager,
+          new TabLayoutMediator(binding.tabLayout, binding.viewPager,
                 (tab, position) -> {
                     switch (position) {
                         case 0:
@@ -61,14 +58,6 @@ public class CommunityFragment extends Fragment {
                         case 2:
                             tab.setText("News");
                             tab.setIcon(R.drawable.ic_news);
-                            break;
-                        case 3:
-                            tab.setText("Event");
-                            tab.setIcon(R.drawable.ic_event);
-                            break;
-                        case 4:
-                            tab.setText("Donasi");
-                            tab.setIcon(R.drawable.ic_donation);
                             break;
                     }
                 }).attach();
@@ -85,8 +74,7 @@ public class CommunityFragment extends Fragment {
         public CommunityPagerAdapter(@NonNull FragmentActivity fragmentActivity) {
             super(fragmentActivity);
         }
-        
-        @NonNull
+          @NonNull
         @Override
         public Fragment createFragment(int position) {
             switch (position) {
@@ -96,10 +84,6 @@ public class CommunityFragment extends Fragment {
                     return new RankingFragment();
                 case 2:
                     return new NewsFragment();
-                case 3:
-                    return new EventFragment();
-                case 4:
-                    return new DonasiFragment();
                 default:
                     return new SosialFragment();
             }
@@ -107,7 +91,7 @@ public class CommunityFragment extends Fragment {
         
         @Override
         public int getItemCount() {
-            return 5;
+            return 3; // Only Social, Ranking, and News tabs
         }
     }
 }

@@ -80,34 +80,9 @@ public class RankingFragment extends Fragment {
         
         Log.d(TAG, "Current User ID: " + currentUserId);
     }
-    
-    private void setupSpinner() {
-        String[] filterOptions = {"Minggu Ini", "Bulan Ini", "Semua Waktu"};
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), 
-            android.R.layout.simple_spinner_item, filterOptions);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        binding.spinnerFilter.setAdapter(adapter);
-        
-        binding.spinnerFilter.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
-                switch (position) {
-                    case 0:
-                        currentFilter = "weekly";
-                        break;
-                    case 1:
-                        currentFilter = "monthly";
-                        break;
-                    case 2:
-                        currentFilter = "all_time";
-                        break;
-                }
-                loadRankings();
-            }
-            
-            @Override
-            public void onNothingSelected(android.widget.AdapterView<?> parent) {}
-        });
+      private void setupSpinner() {
+        // Removed time filter spinner - showing only global ranking
+        currentFilter = "all_time";
     }
     
     private void setupRecyclerView() {

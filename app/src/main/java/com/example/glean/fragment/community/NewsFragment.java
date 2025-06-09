@@ -1,5 +1,7 @@
 package com.example.glean.fragment.community;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -99,10 +101,10 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
         
         // Sample environmental news - replace with actual API call
         NewsItem news1 = new NewsItem();
-        news1.setId(1);
-        news1.setTitle("Indonesia Targetkan Zero Waste pada 2030");
+        news1.setId(1);        news1.setTitle("Indonesia Targetkan Zero Waste pada 2030");
         news1.setPreview("Pemerintah Indonesia berkomitmen mencapai target zero waste melalui berbagai program pengelolaan sampah yang berkelanjutan.");
         news1.setImageUrl("https://example.com/news1.jpg");
+        news1.setUrl("https://www.detik.com/edu/detikpedia/d-5234567/indonesia-targetkan-zero-waste-pada-2030");
         news1.setCategory("environment");
         news1.setDate("2025-06-07T10:00:00Z");
         news1.setSource("Kementerian Lingkungan Hidup");
@@ -113,6 +115,7 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
         news2.setTitle("Tips Plogging untuk Pemula");
         news2.setPreview("Panduan lengkap memulai aktivitas plogging dengan aman dan efektif untuk membersihkan lingkungan.");
         news2.setImageUrl("https://example.com/news2.jpg");
+        news2.setUrl("https://www.kompas.com/lifestyle/read/2025/06/06/tips-plogging-untuk-pemula");
         news2.setCategory("tips");
         news2.setDate("2025-06-06T15:30:00Z");
         news2.setSource("Komunitas Plogging Indonesia");
@@ -123,6 +126,7 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
         news3.setTitle("Dampak Sampah Plastik terhadap Ekosistem Laut");
         news3.setPreview("Penelitian terbaru menunjukkan dampak serius sampah plastik terhadap kehidupan laut dan rantai makanan.");
         news3.setImageUrl("https://example.com/news3.jpg");
+        news3.setUrl("https://www.cnnindonesia.com/teknologi/20250605091500-199-dampak-sampah-plastik-laut");
         news3.setCategory("education");
         news3.setDate("2025-06-05T09:15:00Z");
         news3.setSource("Lembaga Penelitian Lingkungan");
@@ -133,6 +137,7 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
         news4.setTitle("Gerakan Plogging Menyebar ke 50 Kota di Indonesia");
         news4.setPreview("Aktivitas plogging kini telah menyebar ke 50 kota besar di Indonesia dengan partisipasi ribuan relawan.");
         news4.setImageUrl("https://example.com/news4.jpg");
+        news4.setUrl("https://www.tempo.co/read/1234567/gerakan-plogging-menyebar-50-kota-indonesia");
         news4.setCategory("plogging");
         news4.setDate("2025-06-04T14:20:00Z");
         news4.setSource("Plogging Indonesia");
@@ -143,6 +148,7 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
         news5.setTitle("Cara Memilah Sampah yang Benar");
         news5.setPreview("Edukasi tentang cara memilah sampah organik dan anorganik untuk mendukung program daur ulang.");
         news5.setImageUrl("https://example.com/news5.jpg");
+        news5.setUrl("https://jakarta.go.id/artikel/cara-memilah-sampah-yang-benar");
         news5.setCategory("education");
         news5.setDate("2025-06-03T11:45:00Z");
         news5.setSource("Dinas Kebersihan DKI");
@@ -164,11 +170,29 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
             binding.emptyStateLayout.setVisibility(View.GONE);
             binding.recyclerViewNews.setVisibility(View.VISIBLE);
         }
-    }
-      @Override
+    }    @Override
     public void onNewsItemClick(NewsItem news) {
-        // Navigate to news detail
-        Toast.makeText(requireContext(), "Membuka: " + news.getTitle(), Toast.LENGTH_SHORT).show();
+        // Open news article directly in browser (Chrome)
+        try {
+            String url = news.getUrl();
+            if (url == null || url.isEmpty()) {
+                Toast.makeText(requireContext(), "URL tidak tersedia", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+            intent.setPackage("com.android.chrome"); // Try Chrome first
+            
+            if (intent.resolveActivity(requireContext().getPackageManager()) != null) {
+                startActivity(intent);
+            } else {
+                // Fallback to default browser if Chrome not available
+                intent.setPackage(null);
+                startActivity(intent);
+            }
+        } catch (Exception e) {
+            Toast.makeText(requireContext(), "Tidak dapat membuka artikel", Toast.LENGTH_SHORT).show();
+        }
     }
     
     @Override
