@@ -229,7 +229,7 @@
                         android:id="@+id/btn_start_stop"
                         android:layout_width="match_parent"
                         android:layout_height="60dp"
-                        android:text="🚀 Start Plogging"
+                        android:text="Start Plogging"
                         android:textSize="16sp"
                         android:textStyle="bold"
                         android:textColor="@android:color/white"

@@ -137,70 +137,70 @@
 
                 </LinearLayout>
 
-            </com.google.android.material.card.MaterialCardView>            <!-- Secondary Stats Grid -->
-            <androidx.gridlayout.widget.GridLayout
-                android:id="@+id/grid_secondary_stats"
+            </com.google.android.material.card.MaterialCardView>            <!-- Stats Card with Vertical Layout -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_secondary_stats"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                app:columnCount="2"
+                app:cardBackgroundColor="@android:color/white"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/card_runs"
-                app:rowCount="2">
+                app:layout_constraintTop_toBottomOf="@+id/card_runs">
 
-                <!-- Distance Card -->
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="0dp"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginEnd="8dp"
-                    android:layout_marginBottom="16dp"
-                    app:cardBackgroundColor="@android:color/white"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="4dp"
-                    app:layout_columnWeight="1"
-                    app:layout_rowWeight="1">
+                    android:orientation="vertical"
+                    android:padding="20dp">
 
+                    <!-- Distance Stat -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:gravity="center_vertical"
                         android:orientation="horizontal"
-                        android:padding="16dp">
+                        android:paddingVertical="12dp">
 
                         <androidx.cardview.widget.CardView
-                            android:layout_width="40dp"
-                            android:layout_height="40dp"
-                            android:layout_marginEnd="12dp"
-                            app:cardBackgroundColor="@color/primary_blue"
-                            app:cardCornerRadius="10dp"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:layout_marginEnd="16dp"
+                            app:cardBackgroundColor="#E3F2FD"
+                            app:cardCornerRadius="12dp"
                             app:cardElevation="0dp">
 
                             <ImageView
-                                android:layout_width="20dp"
-                                android:layout_height="20dp"
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
                                 android:layout_gravity="center"
                                 android:contentDescription="Distance Icon"
                                 android:src="@drawable/ic_distance"
-                                app:tint="@android:color/white" />
+                                app:tint="@color/primary_blue" />
 
                         </androidx.cardview.widget.CardView>
 
                         <LinearLayout
-                            android:layout_width="match_parent"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
+                            android:layout_weight="1"
                             android:orientation="vertical">
 
                             <TextView
                                 android:id="@+id/tv_total_distance"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="50.2"
-                                android:textColor="@color/primary_blue"
-                                android:textSize="20sp"
-                                android:textStyle="bold" />                            <TextView
+                                android:text="0,0"
+                                android:textColor="@color/text_primary"
+                                android:textSize="24sp"
+                                android:textStyle="bold" />
+
+                            <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
                                 android:text="Kilometer"
                                 android:textColor="@color/text_secondary"
                                 android:textSize="14sp" />
@@ -209,121 +209,51 @@
 
                     </LinearLayout>
 
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- Points Card -->
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:layout_marginBottom="16dp"
-                    app:cardBackgroundColor="@android:color/white"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="4dp"
-                    app:layout_columnWeight="1"
-                    app:layout_rowWeight="1">
-
+                    <!-- Average Time Stat -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:gravity="center_vertical"
                         android:orientation="horizontal"
-                        android:padding="16dp">
+                        android:paddingVertical="12dp">
 
                         <androidx.cardview.widget.CardView
-                            android:layout_width="40dp"
-                            android:layout_height="40dp"
-                            android:layout_marginEnd="12dp"
-                            app:cardBackgroundColor="@color/primary_orange"
-                            app:cardCornerRadius="10dp"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:layout_marginEnd="16dp"
+                            app:cardBackgroundColor="#F3E5F5"
+                            app:cardCornerRadius="12dp"
                             app:cardElevation="0dp">
 
                             <ImageView
-                                android:layout_width="20dp"
-                                android:layout_height="20dp"
-                                android:layout_gravity="center"
-                                android:contentDescription="Points Icon"
-                                android:src="@drawable/ic_star"
-                                app:tint="@android:color/white" />
-
-                        </androidx.cardview.widget.CardView>
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical">
-
-                            <TextView
-                                android:id="@+id/tv_total_points"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="1,500"
-                                android:textColor="@color/primary_orange"
-                                android:textSize="20sp"
-                                android:textStyle="bold" />                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Poin yang Kamu Kumpulkan"
-                                android:textColor="@color/text_secondary"
-                                android:textSize="14sp" />
-
-                        </LinearLayout>
-
-                    </LinearLayout>
-
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- Time Card -->
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="8dp"
-                    app:cardBackgroundColor="@android:color/white"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="4dp"
-                    app:layout_columnWeight="1"
-                    app:layout_rowWeight="1">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:padding="16dp">
-
-                        <androidx.cardview.widget.CardView
-                            android:layout_width="40dp"
-                            android:layout_height="40dp"
-                            android:layout_marginEnd="12dp"
-                            app:cardBackgroundColor="@color/primary_purple"
-                            app:cardCornerRadius="10dp"
-                            app:cardElevation="0dp">
-
-                            <ImageView
-                                android:layout_width="20dp"
-                                android:layout_height="20dp"
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
                                 android:layout_gravity="center"
                                 android:contentDescription="Time Icon"
                                 android:src="@drawable/ic_timer"
-                                app:tint="@android:color/white" />
+                                app:tint="@color/primary_purple" />
 
                         </androidx.cardview.widget.CardView>
 
                         <LinearLayout
-                            android:layout_width="match_parent"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
+                            android:layout_weight="1"
                             android:orientation="vertical">
 
                             <TextView
                                 android:id="@+id/tv_average_time"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="45"
-                                android:textColor="@color/primary_purple"
-                                android:textSize="20sp"
-                                android:textStyle="bold" />                            <TextView
+                                android:text="0"
+                                android:textColor="@color/text_primary"
+                                android:textSize="24sp"
+                                android:textStyle="bold" />
+
+                            <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
                                 android:text="Rata-rata Menit"
                                 android:textColor="@color/text_secondary"
                                 android:textSize="14sp" />
@@ -332,59 +262,104 @@
 
                     </LinearLayout>
 
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- Achievements Card -->
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    app:cardBackgroundColor="@android:color/white"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="4dp"
-                    app:layout_columnWeight="1"
-                    app:layout_rowWeight="1">
-
+                    <!-- Points Stat -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:gravity="center_vertical"
                         android:orientation="horizontal"
-                        android:padding="16dp">
+                        android:paddingVertical="12dp">
 
                         <androidx.cardview.widget.CardView
-                            android:layout_width="40dp"
-                            android:layout_height="40dp"
-                            android:layout_marginEnd="12dp"
-                            app:cardBackgroundColor="@color/primary_green"
-                            app:cardCornerRadius="10dp"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:layout_marginEnd="16dp"
+                            app:cardBackgroundColor="#FFF3E0"
+                            app:cardCornerRadius="12dp"
                             app:cardElevation="0dp">
 
                             <ImageView
-                                android:layout_width="20dp"
-                                android:layout_height="20dp"
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
                                 android:layout_gravity="center"
-                                android:contentDescription="Achievements Icon"
-                                android:src="@drawable/ic_trophy"
-                                app:tint="@android:color/white" />
+                                android:contentDescription="Points Icon"
+                                android:src="@drawable/ic_star"
+                                app:tint="@color/primary_orange" />
 
                         </androidx.cardview.widget.CardView>
 
                         <LinearLayout
-                            android:layout_width="match_parent"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:id="@+id/tv_total_points"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0"
+                                android:textColor="@color/text_primary"
+                                android:textSize="24sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="Poin yang Kamu Kumpulkan"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="14sp" />
+
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                    <!-- Badges Stat -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingVertical="12dp">
+
+                        <androidx.cardview.widget.CardView
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:layout_marginEnd="16dp"
+                            app:cardBackgroundColor="#E8F5E8"
+                            app:cardCornerRadius="12dp"
+                            app:cardElevation="0dp">
+
+                            <ImageView
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:layout_gravity="center"
+                                android:contentDescription="Badges Icon"
+                                android:src="@drawable/ic_trophy"
+                                app:tint="@color/primary_green" />
+
+                        </androidx.cardview.widget.CardView>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
                             android:orientation="vertical">
 
                             <TextView
                                 android:id="@+id/tv_achievements"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="8"
-                                android:textColor="@color/primary_green"
-                                android:textSize="20sp"
-                                android:textStyle="bold" />                            <TextView
+                                android:text="0"
+                                android:textColor="@color/text_primary"
+                                android:textSize="24sp"
+                                android:textStyle="bold" />
+
+                            <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
                                 android:text="Badges"
                                 android:textColor="@color/text_secondary"
                                 android:textSize="14sp" />
@@ -393,9 +368,9 @@
 
                     </LinearLayout>
 
-                </com.google.android.material.card.MaterialCardView>
+                </LinearLayout>
 
-            </androidx.gridlayout.widget.GridLayout>
+            </com.google.android.material.card.MaterialCardView>
 
             <!-- Progress Analytics Section -->
             <LinearLayout
@@ -406,10 +381,10 @@
                 android:orientation="vertical"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/grid_secondary_stats">                <TextView
+                app:layout_constraintTop_toBottomOf="@+id/card_secondary_stats">                <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Progress Analytics"
+                    android:text="Analisis Perkembangan"
                     android:textColor="@color/text_primary"
                     android:textSize="20sp"
                     android:textStyle="bold" />
@@ -453,14 +428,12 @@
                                 android:layout_marginEnd="12dp"
                                 app:cardBackgroundColor="@color/primary_blue"
                                 app:cardCornerRadius="10dp"
-                                app:cardElevation="0dp">
-
-                                <ImageView
+                                app:cardElevation="0dp">                                <ImageView
                                     android:layout_width="20dp"
                                     android:layout_height="20dp"
                                     android:layout_gravity="center"
-                                    android:contentDescription="Distance Chart Icon"
-                                    android:src="@drawable/ic_distance"
+                                    android:contentDescription="Weekly Distance Icon"
+                                    android:src="@drawable/ic_route"
                                     app:tint="@android:color/white" />
 
                             </androidx.cardview.widget.CardView>
@@ -483,46 +456,113 @@
                                     android:textColor="@color/text_secondary"
                                     android:textSize="12sp" />
 
+                            </LinearLayout>                        </LinearLayout>
+
+                    </LinearLayout>                    <!-- Weekly Distance Chart -->
+                    <com.github.mikephil.charting.charts.LineChart
+                        android:id="@+id/line_chart_weekly_distance"
+                        android:layout_width="match_parent"
+                        android:layout_height="280dp"
+                        android:layout_marginTop="16dp" />
+                    
+                    <!-- Chart Empty State -->
+                    <TextView
+                        android:id="@+id/tv_chart_empty_state"
+                        android:layout_width="match_parent"
+                        android:layout_height="280dp"
+                        android:layout_marginTop="16dp"
+                        android:gravity="center"
+                        android:text="Belum ada data jarak minggu ini.\nMulai plogging untuk melihat perkembangan!"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="14sp"
+                        android:visibility="gone" />
+
+                    <!-- Trash Analytics Section -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="24dp"
+                        android:orientation="vertical">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <androidx.cardview.widget.CardView
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
+                                android:layout_marginEnd="12dp"
+                                app:cardBackgroundColor="@color/primary_green"
+                                app:cardCornerRadius="10dp"
+                                app:cardElevation="0dp">
+
+                                <ImageView
+                                    android:layout_width="20dp"
+                                    android:layout_height="20dp"
+                                    android:layout_gravity="center"
+                                    android:contentDescription="Trash Analytics Icon"
+                                    android:src="@drawable/ic_trash"
+                                    app:tint="@android:color/white" />
+
+                            </androidx.cardview.widget.CardView>
+
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Jenis Sampah Terkumpul"
+                                    android:textColor="@color/text_primary"
+                                    android:textSize="16sp"
+                                    android:textStyle="bold" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Kategori sampah yang sudah dikumpulkan"
+                                    android:textColor="@color/text_secondary"
+                                    android:textSize="12sp" />
+
                             </LinearLayout>
 
                         </LinearLayout>
 
+                        <!-- Trash Statistics Content -->
                         <LinearLayout
-                            android:layout_width="wrap_content"
+                            android:id="@+id/ll_trash_stats_content"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:gravity="end"
+                            android:layout_marginTop="16dp"
                             android:orientation="vertical">
 
+                            <!-- Placeholder for empty state -->
                             <TextView
-                                android:id="@+id/tv_chart_distance_value"
-                                android:layout_width="wrap_content"
+                                android:id="@+id/tv_trash_empty_state"
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:text="30.1 km"
-                                android:textColor="@color/text_primary"
-                                android:textSize="16sp"
-                                android:textStyle="bold" />
+                                android:gravity="center"
+                                android:padding="20dp"
+                                android:text="Belum ada data sampah yang dikumpulkan.\nMulai melakukan clean-up untuk melihat statistik!"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="14sp"
+                                android:visibility="visible" />
 
-                            <TextView
-                                android:id="@+id/tv_chart_distance_change"
-                                android:layout_width="wrap_content"
+                            <!-- Trash Type Items Container -->
+                            <LinearLayout
+                                android:id="@+id/ll_trash_items"
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:background="@drawable/bg_trend_positive"
-                                android:paddingHorizontal="8dp"
-                                android:paddingVertical="2dp"
-                                android:text="+12%"
-                                android:textColor="@color/primary_green"
-                                android:textSize="12sp"
-                                android:textStyle="bold" />
+                                android:orientation="vertical"
+                                android:visibility="gone" />
 
                         </LinearLayout>
 
                     </LinearLayout>
-
-                    <com.github.mikephil.charting.charts.BarChart
-                        android:id="@+id/bar_chart_distance"
-                        android:layout_width="match_parent"
-                        android:layout_height="280dp"
-                        android:layout_marginTop="16dp" />
 
                 </LinearLayout>
 

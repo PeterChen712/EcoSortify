@@ -864,7 +864,7 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                 } else if (!isGpsEnabled) {
                     buttonText = "Location Required";
                 } else {
-                    buttonText = "🚀 Start Plogging";
+                    buttonText = "Start Plogging";
                 }
                 binding.btnStartStop.setText(buttonText);
                 binding.btnStartStop.setEnabled(isPloggingEnabled);
