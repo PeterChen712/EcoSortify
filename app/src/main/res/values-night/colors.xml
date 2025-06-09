@@ -1,11 +1,113 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Dark theme colors -->
+    <!-- Primary brand colors for dark theme -->
+    <color name="primary">#66BB6A</color>
+    <color name="primary_dark">#4CAF50</color>
+    <color name="primary_darker">#388E3C</color>
+    <color name="accent">#81C784</color>
+    <color name="accent_dark">#66BB6A</color>
+    <color name="accent_darker">#4CAF50</color>
+    
+    <!-- Background colors for dark theme -->
+    <color name="background_dark">#121212</color>
+    <color name="background_light">#1E1E1E</color>
+    <color name="surface_dark">#1E1E1E</color>
+    <color name="surface">#2D2D2D</color>
+    <color name="surface_color">#2D2D2D</color>
+    
+    <!-- Text colors for dark theme -->
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_primary_dark">#FFFFFF</color>
+    <color name="text_secondary">#AAAAAA</color>
+    <color name="text_tertiary">#888888</color>
+    
+    <!-- Card and component colors -->
+    <color name="white">#1E1E1E</color>
+    <color name="black">#FFFFFF</color>
+    <color name="gray">#757575</color>
+    <color name="light_gray">#2D2D2D</color>
+    
+    <!-- Environmental colors adjusted for dark theme -->
+    <color name="environmental_green">#66BB6A</color>
+    <color name="primary_green">#66BB6A</color>
+    <color name="primary_dark_green">#4CAF50</color>
+    <color name="primary_light">#4CAF50</color>
+    <color name="primary_orange">#FFB74D</color>
+    <color name="primary_blue">#64B5F6</color>
+    <color name="primary_purple">#BA68C8</color>
+    
+    <!-- Green variants for dark theme -->
     <color name="green_500">#66BB6A</color>
     <color name="green_600">#5CB860</color>
     <color name="green_700">#4CAF50</color>
     
+    <!-- Common colors -->
+    <color name="background">#121212</color>
+    <color name="secondary">#03DAC6</color>
+    <color name="colorPrimary">#66BB6A</color>
+    <color name="primary_color">#66BB6A</color>
+    <color name="accent_color">#81C784</color>
+    
+    <!-- News specific colors for dark theme -->
+    <color name="sustainability_blue">#64B5F6</color>
+    <color name="renewable_orange">#FFB74D</color>
+    <color name="card_background_read">#2D2D2D</color>
+    <color name="card_background_unread">#1E1E1E</color>
+    <color name="card_background_light">#2D2D2D</color>
+
+    <!-- Badge colors for dark theme -->
+    <color name="badge_gold">#FFD54F</color>
+    <color name="badge_silver">#CFD8DC</color>
+    <color name="badge_bronze">#FFAB91</color>
+    <color name="badge_locked">#616161</color>
+    <color name="badge_default">#66BB6A</color>
+    <color name="badge_streak">#FF7043</color>
+    <color name="badge_achievement">#BA68C8</color>
+    <color name="badge_earned_border">#66BB6A</color>
+    <color name="badge_locked_border">#616161</color>
+
+    <!-- Profile specific colors for dark theme -->
+    <color name="stats_background">#2E4D2E</color>
+    <color name="progress_background">#424242</color>
+    <color name="progress_fill">#66BB6A</color>
+    <color name="profile_frame_gold">#FFD54F</color>
+    <color name="profile_frame_silver">#CFD8DC</color>
+    <color name="profile_frame_bronze">#FFAB91</color>
+    <color name="dialog_background">#2D2D2D</color>
+    <color name="overlay_background">#80000000</color>
+
     <!-- Surface colors for dark theme -->
     <color name="surface_variant">#2D3748</color>
     <color name="outline_variant">#4A5568</color>
+
+    <!-- Status colors for dark theme -->
+    <color name="success_green">#66BB6A</color>
+    <color name="warning_yellow">#FFB74D</color>
+    <color name="error_red">#EF5350</color>
+    <color name="warning_light">#3E2723</color>
+    <color name="warning_dark">#FFB74D</color>
+    <color name="warning_color">#FFB74D</color>
+    <color name="error_color">#EF5350</color>
+    <color name="red_heart">#F48FB1</color>
+    
+    <!-- Additional colors for dark theme -->
+    <color name="light_green">#2E4D2E</color>
+    <color name="background_color">#121212</color>
+    <color name="success_color">#66BB6A</color>
+    <color name="background_secondary">#2D2D2D</color>
+    
+    <!-- Enhanced UI component colors for dark theme -->
+    <color name="divider_color">#424242</color>
+    <color name="ripple_color">#33FFFFFF</color>
+    <color name="selection_highlight">#4D66BB6A</color>
+    <color name="fab_background">#66BB6A</color>
+    <color name="chip_background">#2D2D2D</color>
+    <color name="chip_text">#FFFFFF</color>
+    <color name="placeholder_text">#888888</color>
+    
+    <!-- Status and feedback colors for dark theme -->
+    <color name="loading_background">#1E1E1E</color>
+    <color name="empty_state_text">#888888</color>
+    <color name="shimmer_base">#2D2D2D</color>
+    <color name="shimmer_highlight">#424242</color>
 </resources>
