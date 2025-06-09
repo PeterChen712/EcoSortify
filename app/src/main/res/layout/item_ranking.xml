@@ -1,41 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cardRanking"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="8dp"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="4dp">
+    android:layout_margin="6dp"
+    app:cardCornerRadius="8dp"
+    app:cardElevation="2dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="16dp"
+        android:padding="12dp"
         android:gravity="center_vertical">
 
         <!-- Rank Number -->
         <TextView
             android:id="@+id/tvRank"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
             android:gravity="center"
             android:text="1"
             android:textStyle="bold"
-            android:textSize="18sp"
+            android:textSize="16sp"
             android:textColor="@color/white"
             android:background="@drawable/circle_primary"
-            android:layout_marginEnd="16dp" />
+            android:layout_marginEnd="12dp" />
 
         <!-- User Profile -->
         <de.hdodenhof.circleimageview.CircleImageView
             android:id="@+id/ivUserProfile"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:src="@drawable/ic_user_placeholder"
-            app:civ_border_width="2dp"
+            app:civ_border_width="1dp"
             app:civ_border_color="@color/primary_color"
-            android:layout_marginEnd="16dp" />
+            android:layout_marginEnd="12dp" />
 
         <!-- User Info -->
         <LinearLayout
@@ -50,81 +51,20 @@
                 android:layout_height="wrap_content"
                 android:text="Username"
                 android:textStyle="bold"
-                android:textSize="16sp"
+                android:textSize="15sp"
                 android:textColor="@color/text_primary" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
+            <TextView
+                android:id="@+id/tvPoints"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginTop="4dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Poin: "
-                    android:textSize="12sp"
-                    android:textColor="@color/text_secondary" />
-
-                <TextView
-                    android:id="@+id/tvPoints"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="1,250"
-                    android:textStyle="bold"
-                    android:textSize="12sp"
-                    android:textColor="@color/primary_color" />
-
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginTop="2dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Sampah: "
-                    android:textSize="10sp"
-                    android:textColor="@color/text_secondary" />
-
-                <TextView
-                    android:id="@+id/tvTrashCollected"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="45.2 kg"
-                    android:textSize="10sp"
-                    android:textColor="@color/text_secondary"
-                    android:layout_marginEnd="16dp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Jarak: "
-                    android:textSize="10sp"
-                    android:textColor="@color/text_secondary" />
-
-                <TextView
-                    android:id="@+id/tvDistance"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="125.8 km"
-                    android:textSize="10sp"
-                    android:textColor="@color/text_secondary" />
-
-            </LinearLayout>
+                android:text="1,250 poin"
+                android:textStyle="normal"
+                android:textSize="13sp"
+                android:textColor="@color/primary_color"
+                android:layout_marginTop="2dp" />
 
         </LinearLayout>
-
-        <!-- Badge/Trophy Icon -->
-        <ImageView
-            android:id="@+id/ivBadge"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:src="@drawable/ic_trophy"
-            android:visibility="gone" />
 
     </LinearLayout>
 

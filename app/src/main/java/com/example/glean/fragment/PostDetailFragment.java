@@ -26,6 +26,7 @@ import com.example.glean.model.PostEntity;
 import com.example.glean.model.UserEntity;
 import com.example.glean.repository.CommunityRepository;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -119,14 +120,24 @@ public class PostDetailFragment extends Fragment {
     }    private void displayPostDetails(PostEntity post) {
         // User info
         binding.tvUserName.setText(post.getUsername());
-        
-        // Profile image
+          // Profile image
         if (post.getUserAvatar() != null && !post.getUserAvatar().isEmpty()) {
-            Glide.with(this)
-                    .load(post.getUserAvatar())
-                    .placeholder(R.drawable.profile_placeholder)
-                    .circleCrop()
-                    .into(binding.ivUserProfile);
+            // Load from file path
+            File imageFile = new File(post.getUserAvatar());
+            if (imageFile.exists()) {
+                Glide.with(this)
+                        .load(imageFile)
+                        .placeholder(R.drawable.profile_placeholder)
+                        .error(R.drawable.profile_placeholder)
+                        .circleCrop()
+                        .into(binding.ivUserProfile);
+            } else {
+                // File doesn't exist, load default
+                binding.ivUserProfile.setImageResource(R.drawable.profile_placeholder);
+            }
+        } else {
+            // No profile image set, load default
+            binding.ivUserProfile.setImageResource(R.drawable.profile_placeholder);
         }
 
         // Post content

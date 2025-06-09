@@ -12,6 +12,7 @@ import com.example.glean.R;
 import com.example.glean.databinding.ItemCommunityPostBinding;
 import com.example.glean.model.CommunityPostModel;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -63,15 +64,23 @@ public class CommunityPostAdapter extends RecyclerView.Adapter<CommunityPostAdap
         public void bind(CommunityPostModel post, int position) {
             // User info
             binding.tvUserName.setText(post.getUserName());
-            
-            // Profile image
+              // Profile image
             if (post.getUserProfileUrl() != null && !post.getUserProfileUrl().isEmpty()) {
-                Glide.with(binding.ivUserProfile.getContext())
-                        .load(post.getUserProfileUrl())
-                        .placeholder(R.drawable.profile_placeholder)
-                        .circleCrop()
-                        .into(binding.ivUserProfile);
+                // Load from file path
+                File imageFile = new File(post.getUserProfileUrl());
+                if (imageFile.exists()) {
+                    Glide.with(binding.ivUserProfile.getContext())
+                            .load(imageFile)
+                            .placeholder(R.drawable.profile_placeholder)
+                            .error(R.drawable.profile_placeholder)
+                            .circleCrop()
+                            .into(binding.ivUserProfile);
+                } else {
+                    // File doesn't exist, load default
+                    binding.ivUserProfile.setImageResource(R.drawable.profile_placeholder);
+                }
             } else {
+                // No profile image set, load default
                 binding.ivUserProfile.setImageResource(R.drawable.profile_placeholder);
             }
 
