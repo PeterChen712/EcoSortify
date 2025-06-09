@@ -553,9 +553,10 @@ public class TrashMLFragment extends Fragment {
                     } else if (line.startsWith("🗂️ Kategori: ") || line.startsWith("🗂️ Category: ")) {
                         // Category is already included in the result, we can extract it if needed
                         String category = line.substring(line.indexOf(": ") + 2).trim();
-                        description = description + " [Kategori: " + category + "]";
-                    } else if (line.startsWith("📊 Tingkat Keyakinan: ") || line.startsWith("📊 Confidence: ")) {
+                        description = description + " [Kategori: " + category + "]";                    } else if (line.startsWith("📊 Tingkat Keyakinan: ") || line.startsWith("📊 Confidence: ")) {
                         String confStr = line.substring(line.indexOf(": ") + 2).replace("%", "").trim();
+                        // Handle different locale decimal separators (comma vs dot)
+                        confStr = confStr.replace(",", ".");
                         confidence = Float.parseFloat(confStr) / 100.0f;
                     } else if (line.startsWith("📝 Deskripsi: ") || line.startsWith("📝 Description: ")) {
                         description = line.substring(line.indexOf(": ") + 2).trim();
