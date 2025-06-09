@@ -19,6 +19,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -570,27 +571,59 @@ public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallb
                 .inflate(R.layout.dialog_share_community, null);
         
         EditText etContent = dialogView.findViewById(R.id.etContent);
-        CheckBox cbIncludeLocation = dialogView.findViewById(R.id.cbIncludeLocation);
-        CheckBox cbIncludePhoto = dialogView.findViewById(R.id.cbIncludePhoto);
-        TextView tvPreview = dialogView.findViewById(R.id.tvPreview);
+        ImageView ivRouteMap = dialogView.findViewById(R.id.ivRouteMap);
         
-        etContent.setText(post.getContent());
-        tvPreview.setText("Preview: " + post.getContent());
-          builder.setView(dialogView)
-                .setTitle("Share to Community")
-                .setPositiveButton("Share", (dialog, which) -> {
-                    post.setContent(etContent.getText().toString().trim());
+        // Don't auto-populate content - let user write their own caption
+        etContent.setText("");
+        etContent.setHint("Tulis caption untuk share ke komunitas...");
+          // Load route map image (same as displayed in summary)
+        if (mMap != null) {
+            try {
+                // Create a screenshot-style bitmap of the current map view
+                mMap.snapshot(bitmap -> {
+                    if (bitmap != null) {
+                        ivRouteMap.setImageBitmap(bitmap);
+                    } else {
+                        // Fallback: use a placeholder or hide the image
+                        ivRouteMap.setImageResource(R.drawable.ic_map);
+                    }
+                });
+            } catch (Exception e) {
+                Log.e(TAG, "Error loading route map for sharing", e);
+                ivRouteMap.setImageResource(R.drawable.ic_map);
+            }
+        } else {
+            // No map available, use placeholder
+            ivRouteMap.setImageResource(R.drawable.ic_map);
+        }
+        
+        AlertDialog dialog = builder.setView(dialogView)
+                .setTitle("📤 Share ke Komunitas")
+                .setPositiveButton("Share", (dialogInterface, which) -> {
+                    String userCaption = etContent.getText().toString().trim();
                     
-                    if (cbIncludeLocation.isChecked() && lastKnownLocation != null) {
-                        post.setLatitude(lastKnownLocation.getLatitude());
-                        post.setLongitude(lastKnownLocation.getLongitude());
-                        post.setLocation("Plogging location");
+                    // Use user's custom caption or fallback to generated content
+                    if (!userCaption.isEmpty()) {
+                        post.setContent(userCaption);
+                    } else {
+                        // Keep the original generated content if user didn't write anything
+                        // post.setContent() already set from previous call
                     }
                     
-                    sharePostToLocal(post, cbIncludePhoto.isChecked());
+                    // Always include location for plogging posts
+                    if (lastKnownLocation != null) {
+                        post.setLatitude(lastKnownLocation.getLatitude());
+                        post.setLongitude(lastKnownLocation.getLongitude());
+                        post.setLocation("Lokasi Plogging");
+                    }
+                    
+                    // Share without photo selection (simplified)
+                    sharePostToLocal(post, false);
                 })
-                .setNegativeButton("Cancel", null)
-                .show();
+                .setNegativeButton("Batal", null)
+                .create();
+        
+        dialog.show();
     }
 
     private void sharePostToLocal(PostEntity post, boolean includePhoto) {

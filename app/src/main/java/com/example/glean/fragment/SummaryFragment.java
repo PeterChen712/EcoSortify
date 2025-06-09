@@ -9,6 +9,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -273,35 +274,37 @@ public class SummaryFragment extends Fragment {
                 showSharingDialog(post);
             });
         });
-    }
-
-    private void showSharingDialog(PostEntity post) {
+    }    private void showSharingDialog(PostEntity post) {
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
         View dialogView = LayoutInflater.from(requireContext())
                 .inflate(R.layout.dialog_share_community, null);
         
         EditText etContent = dialogView.findViewById(R.id.etContent);
-        CheckBox cbIncludeLocation = dialogView.findViewById(R.id.cbIncludeLocation);
-        CheckBox cbIncludePhoto = dialogView.findViewById(R.id.cbIncludePhoto);
-        TextView tvPreview = dialogView.findViewById(R.id.tvPreview);
+        ImageView ivRouteMap = dialogView.findViewById(R.id.ivRouteMap);
         
-        etContent.setText(post.getContent());
-        tvPreview.setText("Preview: " + post.getContent());
+        // Don't auto-populate content - let user write their own caption
+        etContent.setText("");
+        etContent.setHint("Tulis caption untuk share ke komunitas...");
+        
+        // Use placeholder image for route map (since this is SummaryFragment, not PloggingSummaryFragment)
+        ivRouteMap.setImageResource(R.drawable.ic_map);
         
         builder.setView(dialogView)
-                .setTitle("Share to Community")
+                .setTitle("📤 Share ke Komunitas")
                 .setPositiveButton("Share", (dialog, which) -> {
                     post.setContent(etContent.getText().toString().trim());
                     
-                    if (cbIncludeLocation.isChecked() && lastKnownLocation != null) {
+                    // Always include location (simplified approach)
+                    if (lastKnownLocation != null) {
                         post.setLatitude(lastKnownLocation.getLatitude());
                         post.setLongitude(lastKnownLocation.getLongitude());
-                        post.setLocation("Plogging location");
+                        post.setLocation("Location");
                     }
                     
-                    sharePostToLocal(post, cbIncludePhoto.isChecked());
+                    // Share without photo selection (simplified)
+                    sharePostToLocal(post, false);
                 })
-                .setNegativeButton("Cancel", null)
+                .setNegativeButton("Batal", null)
                 .show();
     }
 

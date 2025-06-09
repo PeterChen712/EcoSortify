@@ -6,12 +6,34 @@
     android:orientation="vertical"
     android:padding="24dp">
 
-    <!-- Content Input -->
+    <!-- Route Map Image -->
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="4dp"
+        android:layout_marginBottom="16dp">
+
+        <ImageView
+            android:id="@+id/ivRouteMap"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:background="@color/background_light"
+            android:contentDescription="Route map preview" />
+
+    </androidx.cardview.widget.CardView>
+
+    <!-- Caption Input with Character Counter -->
     <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tilCaption"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        android:hint="Share your achievement"
+        android:hint="Tulis caption untuk share ke komunitas..."
+        app:counterEnabled="true"
+        app:counterMaxLength="150"
+        app:helperText="Maks 150 karakter"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
         <com.google.android.material.textfield.TextInputEditText
@@ -20,87 +42,11 @@
             android:layout_height="wrap_content"
             android:gravity="top"
             android:inputType="textMultiLine|textCapSentences"
-            android:lines="4"
-            android:maxLines="6"
-            android:minLines="3" />
+            android:lines="3"
+            android:maxLines="4"
+            android:minLines="2"
+            android:maxLength="150" />
 
     </com.google.android.material.textfield.TextInputLayout>
-
-    <!-- Options -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Share Options"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:textColor="@color/text_primary"
-        android:layout_marginBottom="12dp" />
-
-    <!-- Include Location Checkbox -->
-    <CheckBox
-        android:id="@+id/cbIncludeLocation"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Include location"
-        android:textSize="14sp"
-        android:paddingVertical="8dp"
-        android:drawablePadding="8dp" />
-
-    <!-- Include Photo Checkbox -->
-    <CheckBox
-        android:id="@+id/cbIncludePhoto"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Include photo from plogging session"
-        android:textSize="14sp"
-        android:paddingVertical="8dp"
-        android:drawablePadding="8dp"
-        android:layout_marginBottom="16dp" />
-
-    <!-- Preview Section -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Preview"
-        android:textSize="14sp"
-        android:textStyle="bold"
-        android:textColor="@color/text_primary"
-        android:layout_marginBottom="8dp" />
-
-    <androidx.cardview.widget.CardView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:cardCornerRadius="8dp"
-        app:cardElevation="2dp"
-        android:layout_marginBottom="8dp">
-
-        <ScrollView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:maxHeight="120dp">
-
-            <TextView
-                android:id="@+id/tvPreview"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="12dp"
-                android:textSize="12sp"
-                android:textColor="@color/text_secondary"
-                android:background="@color/background_light"
-                android:text="Preview will appear here..." />
-
-        </ScrollView>
-
-    </androidx.cardview.widget.CardView>
-
-    <!-- Info Text -->
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Your post will be shared with the GleanGo community to inspire others!"
-        android:textSize="12sp"
-        android:textColor="@color/text_secondary"
-        android:gravity="center"
-        android:layout_marginTop="8dp" />
 
 </LinearLayout>
