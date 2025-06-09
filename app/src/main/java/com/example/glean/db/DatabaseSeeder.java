@@ -85,10 +85,7 @@ public class DatabaseSeeder {
         post1.setContent("Hari ini berhasil mengumpulkan 5kg sampah plastik di pantai Losari! 🌊♻️ Setiap botol plastik yang kita ambil adalah satu langkah menuju laut yang lebih bersih. Mari bersama-sama jaga pantai kita! #PloggingChallenge #BersihPantai");
         post1.setImageUrl("https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop");        post1.setLikeCount(0);
         post1.setCommentCount(0);
-        post1.setTimestamp(System.currentTimeMillis() - (3 * 60 * 60 * 1000L)); // 3 hours ago
-        post1.setLocation("Pantai Losari, Makassar");
-        post1.setTrashWeight(5.0f);
-        post1.setDistance(2.5f);
+        post1.setTimestamp(System.currentTimeMillis() - (3 * 60 * 60 * 1000L)); // 3 hours ago        post1.setLocation("Pantai Losari, Makassar");
         
         long postId1 = database.postDao().insertPost(post1);
         Log.d(TAG, "✅ Inserted post 1 from EcoWarrior with ID: " + postId1);
@@ -101,10 +98,7 @@ public class DatabaseSeeder {
         post2.setContent("Pagi yang produktif di sekitar kampus UNHAS! 🎓🌿 Sebagai mahasiswa, kita punya tanggung jawab untuk menjaga lingkungan kampus tetap bersih. Hari ini terkumpul 2.8kg sampah plastik dan kertas. #CampusClean #UNHAS");
         post2.setImageUrl("https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=400&h=300&fit=crop");        post2.setLikeCount(0);
         post2.setCommentCount(0);
-        post2.setTimestamp(System.currentTimeMillis() - (18 * 60 * 60 * 1000L)); // 18 hours ago
-        post2.setLocation("Universitas Hasanuddin, Makassar");
-        post2.setTrashWeight(2.8f);
-        post2.setDistance(1.2f);
+        post2.setTimestamp(System.currentTimeMillis() - (18 * 60 * 60 * 1000L)); // 18 hours ago        post2.setLocation("Universitas Hasanuddin, Makassar");
         
         long postId2 = database.postDao().insertPost(post2);
         Log.d(TAG, "✅ Inserted post 2 from EcoWarrior with ID: " + postId2);
