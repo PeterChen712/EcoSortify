@@ -540,28 +540,16 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
 
                         updateUserPoints(finalPoints);                        requireActivity().runOnUiThread(() -> {
                             stopTracking();
-                            completedRecordId = record.getId(); // Store for photo capture
-
+                            
+                            // Show completion toast and navigate directly to summary
                             String completionMessage = String.format(Locale.getDefault(),
-                                    "🎉 Plogging Complete!\n" +
-                                            "📍 Distance: %.2f km\n" +
-                                            "🗑️ Trash: %d items\n" +
-                                            "⭐ Points: %d",
+                                    "🎉 Plogging selesai! Jarak: %.2f km, Sampah: %d item, Poin: %d",
                                     totalDistance / 1000f, finalTrashCount, finalPoints);
-
-                            new MaterialAlertDialogBuilder(requireContext())
-                                    .setTitle("Plogging Selesai")
-                                    .setMessage(completionMessage + "\n\nAmbil foto dokumentasi plogging Anda?")
-                                    .setPositiveButton("Ambil Foto", (dialog, which) -> {
-                                        requestCameraPermissionAndCapture();
-                                    })
-                                    .setNegativeButton("Lihat Hasil", (dialog, which) -> {
-                                        navigateToSummary(record.getId());
-                                    })
-                                    .setNeutralButton("Simpan ke Galeri", (dialog, which) -> {
-                                        savePloggingResultToGallery(completionMessage);
-                                    })
-                                    .show();
+                            
+                            Toast.makeText(requireContext(), completionMessage, Toast.LENGTH_LONG).show();
+                            
+                            // Navigate directly to summary without showing photo dialog
+                            navigateToSummary(record.getId());
                         });
                     }
                 } catch (Exception e) {

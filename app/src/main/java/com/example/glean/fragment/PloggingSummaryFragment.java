@@ -411,20 +411,9 @@ public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallb
         
         // Set points
         binding.tvPoints.setText(String.valueOf(record.getPoints()));
-        
-        // Set trash collected
+          // Set trash collected
         int trashCount = record.getPoints() / 10; // Assuming 10 points per trash item
         binding.tvTrashCollected.setText(String.valueOf(trashCount));
-        
-        // Calculate average pace
-        if (record.getDistance() > 0 && record.getDuration() > 0) {
-            float paceMinPerKm = (record.getDuration() / 60000f) / (record.getDistance() / 1000f);
-            int paceMin = (int) paceMinPerKm;
-            int paceSec = (int) ((paceMinPerKm - paceMin) * 60);
-            binding.tvPace.setText(String.format(Locale.getDefault(), "%d:%02d min/km", paceMin, paceSec));
-        } else {
-            binding.tvPace.setText("N/A");
-        }
         
         // Load documentation photo
         loadPloggingDocumentationPhoto(record.getId());

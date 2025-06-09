@@ -202,7 +202,7 @@ public class HomeFragment extends Fragment {
                     }
                 });
             }            if (binding.btnQuickAction3 != null) {
-                binding.btnQuickAction3.setText("Komunitas");
+                binding.btnQuickAction3.setText("Lihat Komunitas");
                 binding.btnQuickAction3.setVisibility(View.VISIBLE);
                 binding.btnQuickAction3.setOnClickListener(v -> {
                     if (getActivity() instanceof MainActivity) {
@@ -212,7 +212,7 @@ public class HomeFragment extends Fragment {
             }
 
             if (binding.btnQuickAction4 != null) {
-                binding.btnQuickAction4.setText("Peta");
+                binding.btnQuickAction4.setText("Peta Sampah");
                 binding.btnQuickAction4.setVisibility(View.VISIBLE);
                 binding.btnQuickAction4.setOnClickListener(v -> {
                     try {
@@ -243,7 +243,7 @@ public class HomeFragment extends Fragment {
                         
                         // Update the welcome message in the simple header with actual user name
                         if (binding.tvWelcomeUser != null) {
-                            binding.tvWelcomeUser.setText("Welcome back, " + displayName + "!");
+                            binding.tvWelcomeUser.setText("Selamat Datang, " + displayName + "!");
                         }
                         
                         loadUserStats(userId);
@@ -251,7 +251,7 @@ public class HomeFragment extends Fragment {
                 });            } else {
                 // Set default welcome message when no user is logged in
                 if (binding.tvWelcomeUser != null) {
-                    binding.tvWelcomeUser.setText("Welcome back!");
+                    binding.tvWelcomeUser.setText("Selamat Datang!");
                 }
             }
         } catch (Exception e) {

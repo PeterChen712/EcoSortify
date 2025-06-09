@@ -348,12 +348,11 @@
 
                     </LinearLayout>
 
-                    <!-- Stats Grid -->
-                    <GridLayout
+                    <!-- Stats Grid -->                    <GridLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:columnCount="2"
-                        android:rowCount="3">
+                        android:rowCount="2">
 
                         <!-- Distance -->
                         <LinearLayout
@@ -487,43 +486,7 @@
                                 android:textSize="20sp"
                                 android:textStyle="bold"
                                 android:textColor="@color/primary"
-                                tools:text="120" />
-
-                        </LinearLayout>
-
-                        <!-- Pace -->
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_columnWeight="2"
-                            android:orientation="vertical"
-                            android:gravity="center"
-                            android:padding="12dp">
-
-                            <ImageView
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
-                                android:src="@drawable/ic_speed"
-                                app:tint="#9C27B0"
-                                android:layout_marginBottom="8dp" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Average Pace"
-                                android:textSize="12sp"
-                                android:textColor="@color/text_secondary" />
-
-                            <TextView
-                                android:id="@+id/tvPace"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:textSize="20sp"
-                                android:textStyle="bold"
-                                android:textColor="@color/text_primary"
-                                tools:text="8:30 min/km" />
-
-                        </LinearLayout>
+                                tools:text="120" />                        </LinearLayout>
 
                     </GridLayout>
 
