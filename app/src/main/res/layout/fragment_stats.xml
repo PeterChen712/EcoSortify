@@ -29,7 +29,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Statistics Dashboard"
+            android:text="Statistik"
             android:textColor="@color/white"
             android:textSize="20sp"
             android:textStyle="bold"
@@ -151,13 +151,11 @@
                             android:text="25"
                             android:textColor="@color/text_primary"
                             android:textSize="32sp"
-                            android:textStyle="bold" />
-
-                        <TextView
+                            android:textStyle="bold" />                        <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
-                            android:text="Total Runs"
+                            android:text="Total Lari Kamu"
                             android:textColor="@color/text_secondary"
                             android:textSize="14sp" />
 
@@ -174,12 +172,10 @@
                                 android:layout_height="6dp"
                                 android:layout_marginBottom="8dp"
                                 android:progress="75"
-                                android:progressDrawable="@drawable/progress_green" />
-
-                            <TextView
+                                android:progressDrawable="@drawable/progress_green" />                            <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="75% of monthly goal"
+                                android:text="75% dari target bulanan"
                                 android:textColor="@color/text_tertiary"
                                 android:textSize="12sp" />
 
@@ -263,13 +259,11 @@
                             android:text="15"
                             android:textColor="@color/text_primary"
                             android:textSize="32sp"
-                            android:textStyle="bold" />
-
-                        <TextView
+                            android:textStyle="bold" />                        <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
-                            android:text="Plogging Sessions"
+                            android:text="Sesi Plogging Kamu"
                             android:textColor="@color/text_secondary"
                             android:textSize="14sp" />
 
@@ -286,12 +280,10 @@
                                 android:layout_height="6dp"
                                 android:layout_marginBottom="8dp"
                                 android:progress="60"
-                                android:progressDrawable="@drawable/progress_orange" />
-
-                            <TextView
+                                android:progressDrawable="@drawable/progress_orange" />                            <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="60% of monthly goal"
+                                android:text="60% dari target bulanan"
                                 android:textColor="@color/text_tertiary"
                                 android:textSize="12sp" />
 
@@ -364,12 +356,10 @@
                                 android:text="50.2"
                                 android:textColor="@color/primary_blue"
                                 android:textSize="20sp"
-                                android:textStyle="bold" />
-
-                            <TextView
+                                android:textStyle="bold" />                            <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Kilometers"
+                                android:text="Kilometer"
                                 android:textColor="@color/text_secondary"
                                 android:textSize="14sp" />
 
@@ -428,12 +418,10 @@
                                 android:text="1,500"
                                 android:textColor="@color/primary_orange"
                                 android:textSize="20sp"
-                                android:textStyle="bold" />
-
-                            <TextView
+                                android:textStyle="bold" />                            <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Points Earned"
+                                android:text="Poin yang Kamu Kumpulkan"
                                 android:textColor="@color/text_secondary"
                                 android:textSize="14sp" />
 
@@ -491,12 +479,10 @@
                                 android:text="45"
                                 android:textColor="@color/primary_purple"
                                 android:textSize="20sp"
-                                android:textStyle="bold" />
-
-                            <TextView
+                                android:textStyle="bold" />                            <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Avg Minutes"
+                                android:text="Rata-rata Menit"
                                 android:textColor="@color/text_secondary"
                                 android:textSize="14sp" />
 
@@ -554,12 +540,10 @@
                                 android:text="8"
                                 android:textColor="@color/primary_green"
                                 android:textSize="20sp"
-                                android:textStyle="bold" />
-
-                            <TextView
+                                android:textStyle="bold" />                            <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Achievements"
+                                android:text="Badges"
                                 android:textColor="@color/text_secondary"
                                 android:textSize="14sp" />
 
@@ -580,52 +564,13 @@
                 android:orientation="vertical"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/grid_secondary_stats">
-
-                <TextView
+                app:layout_constraintTop_toBottomOf="@+id/grid_secondary_stats">                <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Progress Analytics"
                     android:textColor="@color/text_primary"
                     android:textSize="20sp"
                     android:textStyle="bold" />
-
-                <com.google.android.material.chip.ChipGroup
-                    android:id="@+id/chip_group_time_filter"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    app:singleSelection="true">
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chip_7days"
-                        style="@style/Widget.MaterialComponents.Chip.Choice"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:checked="true"
-                        android:text="7 Days"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp" />
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chip_30days"
-                        style="@style/Widget.MaterialComponents.Chip.Choice"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="30 Days"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp" />
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chip_3months"
-                        style="@style/Widget.MaterialComponents.Chip.Choice"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="3 Months"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp" />
-
-                </com.google.android.material.chip.ChipGroup>
 
             </LinearLayout>
 
@@ -681,12 +626,10 @@
                             <LinearLayout
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:orientation="vertical">
-
-                                <TextView
+                                android:orientation="vertical">                                <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="Weekly Distance"
+                                    android:text="Jarak Mingguan"
                                     android:textColor="@color/text_primary"
                                     android:textSize="16sp"
                                     android:textStyle="bold" />
@@ -694,7 +637,7 @@
                                 <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="Distance covered in the last 7 days"
+                                    android:text="Jarak yang ditempuh dalam 7 hari terakhir"
                                     android:textColor="@color/text_secondary"
                                     android:textSize="12sp" />
 
@@ -768,12 +711,10 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="20dp">
-
-                        <TextView
+                        android:padding="20dp">                        <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="View Detailed History"
+                            android:text="Lihat Riwayat Lengkap"
                             android:textColor="@color/text_primary"
                             android:textSize="18sp"
                             android:textStyle="bold" />
@@ -782,7 +723,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="8dp"
-                            android:text="Explore your complete plogging journey with detailed session data and track your environmental impact over time"
+                            android:text="Jelajahi perjalanan plogging kamu secara lengkap dengan data sesi detail dan dampak lingkungan dari waktu ke waktu"
                             android:textColor="@color/text_secondary"
                             android:textSize="14sp"
                             android:lineSpacingExtra="2dp" />
@@ -794,7 +735,7 @@
                             android:layout_marginTop="16dp"
                             android:backgroundTint="@color/primary_green"
                             android:paddingVertical="12dp"
-                            android:text="View History"
+                            android:text="Lihat Riwayat"
                             android:textColor="@android:color/white"
                             android:textSize="16sp"
                             app:cornerRadius="12dp"
@@ -802,61 +743,7 @@
                             app:iconGravity="textStart"
                             app:iconTint="@android:color/white" />
 
-                    </LinearLayout>
-
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- Challenges Action Card -->
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    app:cardBackgroundColor="@android:color/white"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="4dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="20dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Join Challenges"
-                            android:textColor="@color/text_primary"
-                            android:textSize="18sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:text="Participate in community challenges and earn rewards while making a positive environmental impact"
-                            android:textColor="@color/text_secondary"
-                            android:textSize="14sp"
-                            android:lineSpacingExtra="2dp" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btn_view_challenges"
-                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="16dp"
-                            android:paddingVertical="12dp"
-                            android:text="View Challenges"
-                            android:textColor="@color/primary_green"
-                            android:textSize="16sp"
-                            app:cornerRadius="12dp"
-                            app:icon="@drawable/ic_trophy"
-                            app:iconGravity="textStart"
-                            app:iconTint="@color/primary_green"
-                            app:strokeColor="@color/primary_green"
-                            app:strokeWidth="2dp" />
-
-                    </LinearLayout>
-
-                </com.google.android.material.card.MaterialCardView>
+                    </LinearLayout>                </com.google.android.material.card.MaterialCardView>
 
             </LinearLayout>
 

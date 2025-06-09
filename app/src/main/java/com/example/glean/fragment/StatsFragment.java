@@ -51,15 +51,11 @@ import java.util.concurrent.Executors;
 
 public class StatsFragment extends Fragment {
 
-    private FragmentStatsBinding binding;
-    private AppDatabase db;
+    private FragmentStatsBinding binding;    private AppDatabase db;
     private ExecutorService executor;
     private int userId = -1;
     private UserEntity user;    private List<RecordEntity> recordList = new ArrayList<>();
     private boolean dataLoaded = false;
-    
-    // Time filter variables
-    private int currentTimeFilter = 7; // Default to 7 days
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -83,72 +79,12 @@ public class StatsFragment extends Fragment {
         
         // Set click listeners
         binding.btnViewHistory.setOnClickListener(v -> navigateToHistory());
-        binding.btnViewChallenges.setOnClickListener(v -> navigateToChallenges());
-        
-        // Setup time filter chips
-        setupTimeFilterChips();
         
         // Initialize charts
         setupCharts();
           // Load data
         loadData();
-    }      private void setupTimeFilterChips() {
-        // Set default selection to 7 days
-        binding.chip7days.setChecked(true);
-        currentTimeFilter = 7;
-        
-        // Set click listeners for chips
-        binding.chip7days.setOnClickListener(v -> {
-            if (!binding.chip7days.isChecked()) {
-                binding.chip7days.setChecked(true);
-            }
-            currentTimeFilter = 7;
-            if (dataLoaded) {
-                updateCharts();
-            }
-        });
-        
-        binding.chip30days.setOnClickListener(v -> {
-            if (!binding.chip30days.isChecked()) {
-                binding.chip30days.setChecked(true);
-            }
-            currentTimeFilter = 30;
-            if (dataLoaded) {
-                updateCharts();
-            }
-        });
-        
-        binding.chip3months.setOnClickListener(v -> {
-            if (!binding.chip3months.isChecked()) {
-                binding.chip3months.setChecked(true);
-            }
-            currentTimeFilter = 90; // 3 months = 90 days
-            if (dataLoaded) {
-                updateCharts();
-            }
-        });
-    }
-    
-    private List<RecordEntity> getFilteredRecords() {
-        if (recordList == null || recordList.isEmpty()) {
-            return new ArrayList<>();
-        }
-        
-        // Calculate the date threshold
-        Calendar calendar = Calendar.getInstance();
-        calendar.add(Calendar.DAY_OF_YEAR, -currentTimeFilter);
-        long thresholdTime = calendar.getTimeInMillis();
-        
-        // Filter records based on the time threshold
-        List<RecordEntity> filteredRecords = new ArrayList<>();
-        for (RecordEntity record : recordList) {
-            if (record.getCreatedAt() >= thresholdTime) {
-                filteredRecords.add(record);
-            }
-        }
-        
-        return filteredRecords;
-    }      private void setupCharts() {
+    }    private void setupCharts() {
         // Set up bar chart
         binding.barChartDistance.setDrawGridBackground(false);
         binding.barChartDistance.setDrawBarShadow(false);
@@ -204,8 +140,7 @@ public class StatsFragment extends Fragment {
         // Hide distance chart card
         binding.cardDistanceChart.setVisibility(View.GONE);
     }
-    
-    private void updateUserStats() {
+      private void updateUserStats() {
         // Calculate statistics from recordList
         int totalRuns = recordList.size();
         int totalPlogs = recordList.size(); // In a plogging app, runs = plogs
@@ -218,11 +153,14 @@ public class StatsFragment extends Fragment {
         for (RecordEntity record : recordList) {
             totalDistance += record.getDistance();
             totalDuration += record.getDuration();
-        }        // Update UI
-        binding.tvTotalRuns.setText(String.valueOf(totalRuns));
-        binding.tvTotalPlogs.setText(String.valueOf(totalPlogs));
-        binding.tvTotalPoints.setText(String.valueOf(totalPoints));
-        binding.tvTotalDistance.setText(String.format(Locale.getDefault(), "%.1f", totalDistance / 1000));
+        }        // Update UI with user-friendly placeholders
+        binding.tvTotalRuns.setText(totalRuns > 0 ? String.valueOf(totalRuns) : "0");
+        binding.tvTotalPlogs.setText(totalPlogs > 0 ? String.valueOf(totalPlogs) : "0");
+        binding.tvTotalPoints.setText(totalPoints > 0 ? String.valueOf(totalPoints) : "0");
+        binding.tvTotalDistance.setText(totalDistance > 0 ? 
+            String.format(Locale.getDefault(), "%.1f", totalDistance / 1000) : "0.0");
+          // Calculate and display achievements/badges count
+        binding.tvAchievements.setText(totalPoints > 0 ? String.valueOf(Math.max(1, totalPoints / 100)) : "0");
           // Calculate average run time
         if (!recordList.isEmpty()) {
             long avgDuration = totalDuration / recordList.size();
@@ -230,7 +168,7 @@ public class StatsFragment extends Fragment {
         } else {
             binding.tvAverageTime.setText("0");
         }
-    }      private void updateCharts() {
+    }private void updateCharts() {
         if (recordList.isEmpty()) {
             showNoDataState();
             return;
@@ -238,19 +176,16 @@ public class StatsFragment extends Fragment {
         
         showDataViews();
         updateDistanceBarChart();
-    }
-      private void updateDistanceBarChart() {
+    }      private void updateDistanceBarChart() {
         List<BarEntry> entries = new ArrayList<>();
         List<String> labels = new ArrayList<>();
         
-        // Get filtered records based on current time filter
-        List<RecordEntity> filteredRecords = getFilteredRecords();
-        
-        if (filteredRecords.isEmpty()) {
+        // Use all records instead of filtered ones
+        if (recordList.isEmpty()) {
             // Show empty state or clear chart
             if (binding.barChartDistance != null) {
                 binding.barChartDistance.clear();
-                binding.barChartDistance.setNoDataText("No data available for selected period");
+                binding.barChartDistance.setNoDataText("Belum ada data tersedia");
                 binding.barChartDistance.invalidate();
             }
             return;
@@ -260,7 +195,7 @@ public class StatsFragment extends Fragment {
         Map<String, Float> dailyDistances = new HashMap<>();
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
         
-        for (RecordEntity record : filteredRecords) {
+        for (RecordEntity record : recordList) {
             String dateKey = dateFormat.format(new Date(record.getCreatedAt()));
             float distanceKm = record.getDistance() / 1000f;
             dailyDistances.put(dateKey, dailyDistances.getOrDefault(dateKey, 0f) + distanceKm);
@@ -270,8 +205,8 @@ public class StatsFragment extends Fragment {
         List<String> sortedDates = new ArrayList<>(dailyDistances.keySet());
         Collections.sort(sortedDates);
         
-        // Limit to show reasonable number of bars based on filter
-        int maxBars = currentTimeFilter <= 7 ? 7 : (currentTimeFilter <= 30 ? 15 : 20);
+        // Show last 14 days of data
+        int maxBars = 14;
         int startIndex = Math.max(0, sortedDates.size() - maxBars);
         
         for (int i = startIndex; i < sortedDates.size(); i++) {
@@ -293,13 +228,13 @@ public class StatsFragment extends Fragment {
             // Show empty state
             if (binding.barChartDistance != null) {
                 binding.barChartDistance.clear();
-                binding.barChartDistance.setNoDataText("No data available for selected period");
+                binding.barChartDistance.setNoDataText("Belum ada data tersedia");
                 binding.barChartDistance.invalidate();
             }
             return;
         }
         
-        BarDataSet dataSet = new BarDataSet(entries, "Distance (km)");
+        BarDataSet dataSet = new BarDataSet(entries, "Jarak (km)");
         dataSet.setColor(ContextCompat.getColor(requireContext(), R.color.environmental_green));
         dataSet.setValueTextColor(ContextCompat.getColor(requireContext(), R.color.text_primary));
         dataSet.setValueTextSize(12f);
@@ -332,14 +267,9 @@ public class StatsFragment extends Fragment {
             return String.format(Locale.getDefault(), "%d min", minutes);
         }
     }
-    
-    private void navigateToHistory() {
+      private void navigateToHistory() {
         NavController navController = Navigation.findNavController(requireView());
         navController.navigate(R.id.action_statsFragment_to_historyFragment);
-    }
-      private void navigateToChallenges() {
-        NavController navController = Navigation.findNavController(requireView());
-        navController.navigate(R.id.action_statsFragment_to_challengeFragment);
     }
       private void navigateToMainFragment() {
         NavController navController = Navigation.findNavController(requireView());
