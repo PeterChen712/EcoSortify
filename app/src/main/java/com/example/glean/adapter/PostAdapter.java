@@ -16,6 +16,7 @@ import com.bumptech.glide.request.RequestOptions;
 import com.example.glean.R;
 import com.example.glean.model.PostEntity;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -72,8 +73,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             ivLike = itemView.findViewById(R.id.ivLike);
             ivComment = itemView.findViewById(R.id.ivComment);
             ivShare = itemView.findViewById(R.id.ivShare);
-        }
-          public void bind(PostEntity post) {
+        }          public void bind(PostEntity post) {
             tvUsername.setText(post.getUsername());
             tvContent.setText(post.getContent());
             tvLikeCount.setText(String.valueOf(post.getLikeCount()));
@@ -81,7 +81,27 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             
             // Format timestamp
             SimpleDateFormat sdf = new SimpleDateFormat("HH:mm • dd MMM", Locale.getDefault());
-            tvTimestamp.setText(sdf.format(new Date(post.getTimestamp())));            // Load post image using Glide
+            tvTimestamp.setText(sdf.format(new Date(post.getTimestamp())));
+            
+            // Load profile image using Glide with proper file handling
+            if (post.getUserAvatar() != null && !post.getUserAvatar().isEmpty()) {
+                // Load from file path
+                File imageFile = new File(post.getUserAvatar());
+                if (imageFile.exists()) {
+                    Glide.with(ivUserAvatar.getContext())
+                            .load(imageFile)
+                            .placeholder(R.drawable.profile_placeholder)
+                            .error(R.drawable.profile_placeholder)
+                            .circleCrop()
+                            .into(ivUserAvatar);
+                } else {
+                    // File doesn't exist, load default
+                    ivUserAvatar.setImageResource(R.drawable.profile_placeholder);
+                }
+            } else {
+                // No profile image set, load default
+                ivUserAvatar.setImageResource(R.drawable.profile_placeholder);
+            }// Load post image using Glide
             if (post.getImageUrl() != null && !post.getImageUrl().isEmpty()) {
                 Log.d("PostAdapter", "Loading image for post: " + post.getImageUrl());
                 ivPostImage.setVisibility(View.VISIBLE);

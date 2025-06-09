@@ -43,20 +43,17 @@ public class RankingAdapter extends RecyclerView.Adapter<RankingAdapter.RankingV
     public int getItemCount() {
         return rankings.size();
     }    class RankingViewHolder extends RecyclerView.ViewHolder {
-        private TextView tvPosition, tvUsername, tvPoints;
+        private TextView tvUsername, tvPoints;
         private ImageView ivAvatar;
         private CardView cardRanking;
         
         public RankingViewHolder(@NonNull View itemView) {
             super(itemView);
-            tvPosition = itemView.findViewById(R.id.tvRank);
             tvUsername = itemView.findViewById(R.id.tvUserName);
             tvPoints = itemView.findViewById(R.id.tvPoints);
             ivAvatar = itemView.findViewById(R.id.ivUserProfile);
             cardRanking = itemView.findViewById(R.id.cardRanking);
-        }
-          public void bind(RankingEntity ranking) {
-            tvPosition.setText("#" + ranking.getPosition());
+        }          public void bind(RankingEntity ranking) {
             tvUsername.setText(ranking.getUsername());
             tvPoints.setText(ranking.getPoints() + " poin");
             
