@@ -21,7 +21,6 @@
   - [Configuration](#configuration)
 - [Usage Guide](#-usage-guide)
 - [Tech Stack](#-tech-stack)
-- [License](#-license)
 
 ## 🎯 About The Project
 
@@ -79,6 +78,14 @@ GleanGo menyediakan platform terintegrasi yang memadukan:
 - **Hotspot Detection**: Identifikasi area dengan sampah terbanyak
 
 ## 📱 Screenshots
+
+### Registration Screen
+Tampilan untuk mendaftarkan akun baru.
+![Menu Daftar](README/A1.jpg)
+
+### Login Screen
+Tampilan untuk login ke akun yang sudah terdaftar.
+![Menu Login](README/A2.jpg)
 
 ### Dashboard & Home Screen
 Tampilan utama aplikasi dengan statistik cepat dan akses mudah ke fitur utama.
@@ -152,43 +159,6 @@ Sistem marketplace untuk menukar poin dengan reward.
 - **Minimum SDK**: API 26 (Android 8.0)
 - **Target SDK**: API 34 (Android 14)
 - **Build System**: Gradle with Version Catalog
-
-### Key Dependencies
-```gradle
-// Navigation & UI
-implementation 'androidx.navigation:navigation-fragment:2.7.6'
-implementation 'androidx.navigation:navigation-ui:2.7.6'
-implementation 'com.google.android.material:material:1.11.0'
-
-// Database & Storage
-implementation 'androidx.room:room-runtime:2.6.1'
-implementation 'androidx.room:room-rxjava3:2.6.1'
-
-// Maps & Location
-implementation 'com.google.android.gms:play-services-maps:18.2.0'
-implementation 'com.google.android.gms:play-services-location:21.0.1'
-
-// AI & ML
-implementation 'com.google.ai.client.generativeai:generativeai:0.1.2'
-
-// Charts & Visualization
-implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
-
-// Image Processing
-implementation 'com.github.bumptech.glide:glide:4.16.0'
-implementation 'com.yalantis:ucrop:2.2.8'
-```
-
-### Database Design
-Menggunakan Room Database dengan 8 entitas utama:
-- **UserEntity**: Data pengguna dan profil
-- **RecordEntity**: Record aktivitas plogging
-- **TrashEntity**: Data sampah yang ditemukan
-- **LocationPointEntity**: Titik-titik GPS tracking
-- **PostEntity**: Post komunitas
-- **CommentEntity**: Komentar pada post
-- **NotificationEntity**: Sistem notifikasi
-- **ChallengeEntity**: Challenge dan achievement
 
 ### Security Features
 - **Permission Management**: Dynamic permission handling
@@ -304,41 +274,6 @@ Aplikasi memerlukan permissions berikut:
 - **Environmental Impact**: Lihat kontribusi terhadap lingkungan
 - **Goal Setting**: Set dan track personal goals
 - **Achievement Unlocks**: Unlock badge berdasarkan milestone
-
-## 🏗️ Architecture
-
-### Project Structure
-```
-app/
-├── src/main/java/com/example/glean/
-│   ├── activity/          # Activity classes
-│   │   ├── MainActivity.java
-│   │   ├── AuthActivity.java
-│   │   └── SplashActivity.java
-│   ├── fragment/          # Fragment classes
-│   │   ├── HomeFragment.java
-│   │   ├── PloggingFragment.java
-│   │   ├── StatsFragment.java
-│   │   └── ProfileFragment.java
-│   ├── model/             # Data models & entities
-│   │   ├── UserEntity.java
-│   │   ├── RecordEntity.java
-│   │   └── TrashEntity.java
-│   ├── db/                # Database components
-│   │   ├── AppDatabase.java
-│   │   ├── UserDao.java
-│   │   └── RecordDao.java
-│   ├── adapter/           # RecyclerView adapters
-│   ├── helper/            # Utility classes
-│   ├── service/           # Background services
-│   └── repository/        # Data repositories
-├── src/main/res/
-│   ├── layout/           # XML layouts
-│   ├── drawable/         # Images & vectors
-│   ├── values/           # Strings, colors, styles
-│   └── navigation/       # Navigation graphs
-└── build.gradle         # App-level dependencies
-```
 
 
 ## 🛠️ Tech Stack

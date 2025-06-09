@@ -24,7 +24,7 @@
         android:text="Challenges"
         android:textSize="24sp"
         android:textStyle="bold"
-        android:textColor="@android:color/black"
+        android:textColor="@color/text_primary"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -52,7 +52,7 @@
                 android:text="Active Challenges"
                 android:textSize="18sp"
                 android:textStyle="bold"
-                android:textColor="@android:color/black" />
+                android:textColor="@color/text_primary" />
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rv_active_challenges"
@@ -71,7 +71,7 @@
                 android:text="Upcoming Challenges"
                 android:textSize="18sp"
                 android:textStyle="bold"
-                android:textColor="@android:color/black" />
+                android:textColor="@color/text_primary" />
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rv_upcoming_challenges"

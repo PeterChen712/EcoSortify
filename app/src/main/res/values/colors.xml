@@ -12,11 +12,21 @@
     <color name="black">#000000</color>
     <color name="gray">#757575</color>
     <color name="light_gray">#EEEEEE</color>
-    
-    <!-- Text colors -->
+      <!-- Text colors -->
     <color name="text_primary">#212121</color>
     <color name="text_secondary">#757575</color>
     <color name="text_tertiary">#9E9E9E</color>
+      <!-- Card text colors for light theme - ensuring readability on light card backgrounds -->
+    <color name="card_text_primary">#212121</color>
+    <color name="card_text_secondary">#757575</color>
+    <color name="card_text_tertiary">#9E9E9E</color>
+    <color name="card_title_text">#212121</color>
+    <color name="card_description_text">#757575</color>
+    
+    <!-- Card background colors for light theme -->
+    <color name="card_background">#FFFFFF</color>
+    <color name="card_background_primary">#FFFFFF</color>
+    <color name="card_background_secondary">#F8F9FA</color>
     
     <!-- Warning colors -->
     <color name="warning_light">#FFECB3</color>

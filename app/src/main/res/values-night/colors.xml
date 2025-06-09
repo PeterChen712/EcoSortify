@@ -14,12 +14,22 @@
     <color name="surface_dark">#1E1E1E</color>
     <color name="surface">#2D2D2D</color>
     <color name="surface_color">#2D2D2D</color>
-    
-    <!-- Text colors for dark theme -->
+      <!-- Text colors for dark theme -->
     <color name="text_primary">#FFFFFF</color>
     <color name="text_primary_dark">#FFFFFF</color>
     <color name="text_secondary">#AAAAAA</color>
     <color name="text_tertiary">#888888</color>
+      <!-- Card text colors for dark theme - ensuring readability on dark card backgrounds -->
+    <color name="card_text_primary">#FFFFFF</color>
+    <color name="card_text_secondary">#CCCCCC</color>
+    <color name="card_text_tertiary">#AAAAAA</color>
+    <color name="card_title_text">#FFFFFF</color>
+    <color name="card_description_text">#CCCCCC</color>
+    
+    <!-- Card background colors for dark theme -->
+    <color name="card_background">#2D2D2D</color>
+    <color name="card_background_primary">#2D2D2D</color>
+    <color name="card_background_secondary">#1E1E1E</color>
     
     <!-- Card and component colors -->
     <color name="white">#1E1E1E</color>

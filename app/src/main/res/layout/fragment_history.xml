@@ -25,7 +25,7 @@
         android:text="Activity History"
         android:textSize="24sp"
         android:textStyle="bold"
-        android:textColor="@android:color/black"
+        android:textColor="@color/text_primary"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -55,7 +55,7 @@
         android:layout_height="wrap_content"
         android:text="No plogging activities yet.\nStart your first plogging session!"
         android:textSize="16sp"
-        android:textColor="@android:color/darker_gray"
+        android:textColor="@color/text_secondary"
         android:gravity="center"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"

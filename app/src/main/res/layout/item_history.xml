@@ -12,15 +12,13 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="16dp">
-
-        <TextView
+        android:padding="16dp">        <TextView
             android:id="@+id/tv_date"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textSize="16sp"
             android:textStyle="bold"
-            android:textColor="@android:color/black"
+            android:textColor="@color/card_title_text"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             tools:text="2023-05-20" />
@@ -30,7 +28,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textSize="14sp"
-            android:textColor="@android:color/darker_gray"
+            android:textColor="@color/card_text_secondary"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             tools:text="14:30" />
@@ -42,7 +40,7 @@
             android:layout_marginTop="4dp"
             android:layout_marginEnd="8dp"
             android:textSize="14sp"
-            android:textColor="@android:color/darker_gray"
+            android:textColor="@color/card_description_text"
             android:maxLines="1"
             android:ellipsize="end"
             app:layout_constraintEnd_toStartOf="@+id/tv_time"
@@ -75,15 +73,13 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:gravity="center"
-                android:orientation="vertical">
-
-                <TextView
+                android:orientation="vertical">                <TextView
                     android:id="@+id/tv_distance"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textSize="16sp"
                     android:textStyle="bold"
-                    android:textColor="@android:color/black"
+                    android:textColor="@color/card_text_primary"
                     tools:text="3.5 km" />
 
                 <TextView
@@ -91,7 +87,7 @@
                     android:layout_height="wrap_content"
                     android:text="Distance"
                     android:textSize="12sp"
-                    android:textColor="@android:color/darker_gray" />
+                    android:textColor="@color/card_text_tertiary" />
 
             </LinearLayout>
 
@@ -100,15 +96,13 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:gravity="center"
-                android:orientation="vertical">
-
-                <TextView
+                android:orientation="vertical">                <TextView
                     android:id="@+id/tv_duration"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textSize="16sp"
                     android:textStyle="bold"
-                    android:textColor="@android:color/black"
+                    android:textColor="@color/card_text_primary"
                     tools:text="25 min" />
 
                 <TextView
@@ -116,7 +110,7 @@
                     android:layout_height="wrap_content"
                     android:text="Duration"
                     android:textSize="12sp"
-                    android:textColor="@android:color/darker_gray" />
+                    android:textColor="@color/card_text_tertiary" />
 
             </LinearLayout>
 
@@ -134,14 +128,12 @@
                     android:textSize="16sp"
                     android:textStyle="bold"
                     android:textColor="#4CAF50"
-                    tools:text="120" />
-
-                <TextView
+                    tools:text="120" />                <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Points"
                     android:textSize="12sp"
-                    android:textColor="@android:color/darker_gray" />
+                    android:textColor="@color/card_text_tertiary" />
 
             </LinearLayout>
 

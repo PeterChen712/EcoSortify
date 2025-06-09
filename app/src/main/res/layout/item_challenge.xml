@@ -12,15 +12,13 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="16dp">
-
-        <TextView
+        android:padding="16dp">        <TextView
             android:id="@+id/tv_title"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:textSize="18sp"
             android:textStyle="bold"
-            android:textColor="@android:color/black"
+            android:textColor="@color/card_title_text"
             app:layout_constraintEnd_toStartOf="@+id/tv_points"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
@@ -35,14 +33,12 @@
             android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            tools:text="500 pts" />
-
-        <TextView
+            tools:text="500 pts" />        <TextView
             android:id="@+id/tv_description"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:textColor="@android:color/darker_gray"
+            android:textColor="@color/card_description_text"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/tv_title"

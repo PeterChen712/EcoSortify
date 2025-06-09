@@ -23,14 +23,12 @@
             android:scaleType="centerCrop"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            tools:src="@android:drawable/ic_menu_gallery" />
-
-        <TextView
+            tools:src="@android:drawable/ic_menu_gallery" />        <TextView
             android:id="@+id/tv_trash_type"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
-            android:textColor="@android:color/black"
+            android:textColor="@color/card_title_text"
             android:textSize="18sp"
             android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
@@ -50,15 +48,13 @@
             app:layout_constraintStart_toEndOf="@+id/iv_trash_image"
             app:layout_constraintTop_toBottomOf="@+id/tv_trash_type"
             tools:text="Classified"
-            tools:textColor="@android:color/holo_green_dark" />
-
-        <TextView
+            tools:textColor="@android:color/holo_green_dark" />        <TextView
             android:id="@+id/tv_description"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_marginTop="4dp"
-            android:textColor="@android:color/darker_gray"
+            android:textColor="@color/card_description_text"
             android:textSize="14sp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@+id/iv_trash_image"
@@ -77,14 +73,12 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@+id/iv_trash_image"
             app:layout_constraintTop_toBottomOf="@+id/tv_description"
-            tools:text="ML: Plastic (95.2%)" />
-
-        <TextView
+            tools:text="ML: Plastic (95.2%)" />        <TextView
             android:id="@+id/tv_timestamp"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:textColor="@android:color/darker_gray"
+            android:textColor="@color/card_text_tertiary"
             android:textSize="12sp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -96,7 +90,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
-            android:textColor="@android:color/darker_gray"
+            android:textColor="@color/card_text_tertiary"
             android:textSize="10sp"
             android:drawableStart="@drawable/ic_location"
             android:drawablePadding="4dp"
