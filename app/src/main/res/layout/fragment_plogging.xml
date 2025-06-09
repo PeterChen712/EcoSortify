@@ -259,7 +259,7 @@
                         android:layout_height="60dp"
                         android:layout_weight="1"
                         android:layout_marginEnd="8dp"
-                        android:text="📸 Sampah"
+                        android:text="Sampah"
                         android:textSize="14sp"
                         android:textStyle="bold"
                         android:textColor="@android:color/white"
