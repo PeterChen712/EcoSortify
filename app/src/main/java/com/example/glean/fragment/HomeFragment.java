@@ -14,11 +14,9 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LiveData;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
-import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.example.glean.R;
 import com.example.glean.activity.MainActivity;
-import com.example.glean.adapter.RecordAdapter;
 import com.example.glean.databinding.FragmentHomeBinding;
 import com.example.glean.db.AppDatabase;
 import com.example.glean.model.RecordEntity;
@@ -30,13 +28,10 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClickListener {
+public class HomeFragment extends Fragment {
     private FragmentHomeBinding binding;
     private AppDatabase db;
-    private ExecutorService executor;
-    private List<RecordEntity> recentActivities = new ArrayList<>();
-    private RecordAdapter recentActivitiesAdapter;
-    private int currentTimeFilter = -1;
+    private ExecutorService executor;    private int currentTimeFilter = -1;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -64,14 +59,11 @@ public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClic
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        
-        try {
+          try {
             initializeDashboardContent();
             setupStartPloggingButton();
             setupQuickActionButtons();
-            setupRecentActivities();
             loadUserData();
-            loadRecentActivities();
             updateDashboardStats();
         } catch (Exception e) {
             showErrorMessage("Error loading home screen: " + e.getMessage());
@@ -230,32 +222,6 @@ public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClic
                         if (getActivity() instanceof MainActivity) {
                             ((MainActivity) getActivity()).navigateToTrashMap();
                         }
-                    }
-                });
-            }
-            
-        } catch (Exception e) {
-            // Handle error silently
-        }
-    }
-
-    private void setupRecentActivities() {
-        try {
-            if (binding.rvRecentActivity != null) {
-                binding.rvRecentActivity.setLayoutManager(new LinearLayoutManager(requireContext()));
-                recentActivitiesAdapter = new RecordAdapter(recentActivities, this);
-                binding.rvRecentActivity.setAdapter(recentActivitiesAdapter);
-                binding.rvRecentActivity.setVisibility(View.VISIBLE);
-            }
-
-            if (binding.btnViewAllHistory != null) {
-                binding.btnViewAllHistory.setVisibility(View.VISIBLE);
-                binding.btnViewAllHistory.setOnClickListener(v -> {
-                    try {
-                        NavController navController = Navigation.findNavController(requireView());
-                        navController.navigate(R.id.action_homeFragment_to_historyFragment);
-                    } catch (Exception e) {
-                        Toast.makeText(requireContext(), "Fitur riwayat sedang dimuat...", Toast.LENGTH_SHORT).show();
                     }
                 });
             }
@@ -463,53 +429,14 @@ public class HomeFragment extends Fragment implements RecordAdapter.OnRecordClic
         calendar.set(java.util.Calendar.SECOND, 0);
         calendar.set(java.util.Calendar.MILLISECOND, 0);
         return calendar.getTimeInMillis();
-    }
-
-    private void loadRecentActivities() {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
-        int userId = prefs.getInt("USER_ID", -1);
-        
-        if (userId != -1) {
-            executor.execute(() -> {
-                try {
-                    List<RecordEntity> allRecords = db.recordDao().getRecordsByUserIdSync(userId);
-                    List<RecordEntity> recordsToProcess = getAllRecords(allRecords);
-                    recordsToProcess.sort((r1, r2) -> Long.compare(r2.getCreatedAt(), r1.getCreatedAt()));
-                    List<RecordEntity> recentRecords = new ArrayList<>();
-                    
-                    // Limit to 3 recent activities
-                    int limit = Math.min(recordsToProcess.size(), 3);
-                    for (int i = 0; i < limit; i++) {
-                        recentRecords.add(recordsToProcess.get(i));
-                    }
-                    
-                    requireActivity().runOnUiThread(() -> {
-                        recentActivities.clear();
-                        recentActivities.addAll(recentRecords);
-                        if (recentActivitiesAdapter != null) {
-                            recentActivitiesAdapter.notifyDataSetChanged();
-                        }
-                    });
-                } catch (Exception e) {
-                    // Handle error silently
-                }
-            });
-        }
-    }
-
-    private void showErrorMessage(String message) {
+    }    private void showErrorMessage(String message) {
         Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
-    }    @Override
-    public void onRecordClick(RecordEntity record) {
-        // Handle record click
     }
-    
-    @Override
+      @Override
     public void onResume() {
         super.onResume();
         android.util.Log.d("HomeFragment", "DEBUG: onResume() called - refreshing data");
         updateDashboardStats();
-        loadRecentActivities();
         debugDatabaseState();
     }
       private void debugDatabaseState() {

@@ -662,67 +662,6 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Enhanced Recent Activity Section -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="20dp"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="8dp"
-            app:strokeWidth="0dp"
-            android:backgroundTint="@android:color/white">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="24dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="16dp">
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Aktivitas Terbaru"
-                        android:textSize="18sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/text_primary"
-                        app:drawableStartCompat="@drawable/ic_trending_up"
-                        android:drawablePadding="8dp"
-                        app:drawableTint="@color/environmental_green" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnViewAllHistory"
-                        style="@style/Widget.Material3.Button.TextButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="36dp"
-                        android:text="Lihat Semua"
-                        android:textSize="13sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/environmental_green"
-                        android:minWidth="0dp"
-                        android:padding="8dp"
-                        app:icon="@drawable/ic_chevron_right"
-                        app:iconGravity="end"
-                        app:iconTint="@color/environmental_green" />
-
-                </LinearLayout>
-
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/rvRecentActivity"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:nestedScrollingEnabled="false"
-                    android:clipToPadding="false" />
-
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
         <!-- Enhanced Start Plogging Button -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnStartPlogging"
