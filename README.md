@@ -303,6 +303,7 @@ Aplikasi memerlukan permissions berikut:
 - **Version Control**: Git
 - **Testing**: JUnit, Espresso
 - **Code Analysis**: Android Lint
+  
 
 ---
 
