@@ -9,6 +9,7 @@
 
 **GleanGo** adalah aplikasi Android native yang dirancang untuk mendukung aktivitas plogging (jogging sambil memungut sampah) dengan fitur tracking GPS ultra-presisi, klasifikasi sampah berbasis AI, analitik komprehensif, dan sistem gamifikasi yang menarik. Aplikasi ini sepenuhnya offline-first dengan data tersimpan aman di SQLite lokal.
 
+
 ## 📋 Table of Contents
 
 - [About The Project](#-about-the-project)
