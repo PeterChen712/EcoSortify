@@ -111,11 +111,15 @@ public class RankingFragment extends Fragment {
                 Log.d(TAG, "Found " + topUsers.size() + " users in database for filter: " + currentFilter);
                 
                 List<RankingEntity> tempRankings = new ArrayList<>();
-                
-                for (UserEntity user : topUsers) {
+                  for (UserEntity user : topUsers) {
                     RankingEntity ranking = new RankingEntity();
                     
-                    ranking.setUsername(user.getUsername());
+                    // Use getName() method for better fallback handling, with final safety check
+                    String displayName = user.getName();
+                    if (displayName == null || displayName.trim().isEmpty()) {
+                        displayName = "User Baru"; // Fallback for completely empty names
+                    }
+                    ranking.setUsername(displayName);
                     ranking.setAvatar(user.getProfileImagePath() != null ? user.getProfileImagePath() : "avatar_default");
                     
                     // Calculate time-filtered statistics
@@ -309,11 +313,15 @@ public class RankingFragment extends Fragment {
                     getActivity().runOnUiThread(() -> binding.myRankingCard.setVisibility(View.GONE));
                     return;
                 }
-                
-                // Find current user's position in rankings
+                  // Find current user's position in rankings
                 int position = -1;
+                String currentUserName = currentUser.getName();
+                if (currentUserName == null || currentUserName.trim().isEmpty()) {
+                    currentUserName = "User Baru";
+                }
+                
                 for (int i = 0; i < rankings.size(); i++) {
-                    if (rankings.get(i).getUsername().equals(currentUser.getUsername())) {
+                    if (rankings.get(i).getUsername().equals(currentUserName)) {
                         position = i + 1;
                         break;
                     }
@@ -332,12 +340,17 @@ public class RankingFragment extends Fragment {
                 }
                 
                 // Calculate current user's statistics
-                UserStatistics myStats = calculateUserStatistics(currentUserId);
-                  final int finalPosition = position;
+                UserStatistics myStats = calculateUserStatistics(currentUserId);                final int finalPosition = position;
                 getActivity().runOnUiThread(() -> {
                     binding.myRankingCard.setVisibility(View.VISIBLE);
                     binding.tvMyPosition.setText("#" + finalPosition);
-                    binding.tvMyUsername.setText(currentUser.getUsername());
+                    
+                    // Use getName() with fallback for display
+                    String displayName = currentUser.getName();
+                    if (displayName == null || displayName.trim().isEmpty()) {
+                        displayName = "User Baru";
+                    }
+                    binding.tvMyUsername.setText(displayName);
                     binding.tvMyPoints.setText(currentUser.getPoints() + " poin");
                     binding.tvMyStats.setText(String.format("%.1fkg • %.1fkm • %d badge", 
                         myStats.totalTrashWeight, myStats.totalDistance, myStats.badgeCount));                    // Apply border color based on position

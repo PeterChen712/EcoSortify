@@ -172,14 +172,15 @@ public class UserEntity {
             return getFullName();
         }
     }
-    
-    public String getName() {
-        if (username != null && !username.isEmpty()) {
+      public String getName() {
+        if (username != null && !username.trim().isEmpty()) {
             return username;
-        } else if (firstName != null && !firstName.isEmpty()) {
-            return firstName + (lastName != null && !lastName.isEmpty() ? " " + lastName : "");
+        } else if (firstName != null && !firstName.trim().isEmpty()) {
+            return firstName + (lastName != null && !lastName.trim().isEmpty() ? " " + lastName : "");
+        } else if (email != null && !email.trim().isEmpty()) {
+            return email.split("@")[0];
         } else {
-            return email != null ? email.split("@")[0] : "User";
+            return "User Baru"; // Default fallback for completely empty user data
         }
     }
     

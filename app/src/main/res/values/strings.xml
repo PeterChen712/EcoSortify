@@ -158,7 +158,10 @@
     <string name="plogging_stopped">🛑 Plogging dihentikan. Ketuk \"Mulai Plogging\" untuk melanjutkan atau \"Selesai\" untuk menyelesaikan.</string>
     <string name="finish_session">Selesai Sesi</string>
     
-    <!-- Additional UI strings that were missing -->    <string name="home_statistics_title">Statistik Keseluruhan</string>
+    <!-- Additional UI strings that were missing -->
+    <string name="user_new_placeholder">User Baru</string>
+    <string name="user_name_not_set">Nama belum diatur</string>
+    <string name="home_statistics_title">Statistik Keseluruhan</string>
     <string name="home_start_plogging">Mulai Plogging</string>
     <string name="home_view_stats">Lihat Statistik</string>
     <string name="home_view_community">Lihat Komunitas</string>

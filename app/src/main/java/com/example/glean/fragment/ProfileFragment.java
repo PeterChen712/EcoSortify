@@ -1149,13 +1149,12 @@ public class ProfileFragment extends Fragment {    private static final String T
         executor.execute(() -> {
             try {
                 // Check if any user exists first
-                int userCount = db.userDao().getUserCount();
-                if (userCount == 0) {
+                int userCount = db.userDao().getUserCount();                if (userCount == 0) {
                     // Create default user
                     UserEntity defaultUser = new UserEntity();
-                    defaultUser.setUsername("GleanUser");
-                    defaultUser.setFirstName("Glean");
-                    defaultUser.setLastName("User");
+                    defaultUser.setUsername("User Baru");
+                    defaultUser.setFirstName("User");
+                    defaultUser.setLastName("Baru");
                     defaultUser.setEmail("user@glean.app");
                     defaultUser.setCreatedAt(System.currentTimeMillis());
                     defaultUser.setPoints(0);

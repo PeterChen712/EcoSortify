@@ -57,8 +57,13 @@ public class RankingAdapter extends RecyclerView.Adapter<RankingAdapter.RankingV
             tvRankingPosition = itemView.findViewById(R.id.tvRankingPosition);
             ivUserProfile = itemView.findViewById(R.id.ivUserProfile);
             cardRanking = itemView.findViewById(R.id.cardRanking);
-        }public void bind(RankingEntity ranking) {
-            tvUsername.setText(ranking.getUsername());
+        }        public void bind(RankingEntity ranking) {
+            // Handle username with fallback for empty names
+            String username = ranking.getUsername();
+            if (username == null || username.trim().isEmpty()) {
+                username = "User Baru";
+            }
+            tvUsername.setText(username);
             tvPoints.setText(ranking.getPoints() + " poin");
             
             // Display ranking position

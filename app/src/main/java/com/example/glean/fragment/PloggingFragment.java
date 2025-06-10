@@ -1819,13 +1819,12 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         executor.execute(() -> {
             try {
                 // Check if any user exists first
-                int userCount = db.userDao().getUserCount();
-                if (userCount == 0) {
+                int userCount = db.userDao().getUserCount();                if (userCount == 0) {
                     // Create default user
                     UserEntity defaultUser = new UserEntity();
-                    defaultUser.setUsername("PloggingUser");
-                    defaultUser.setFirstName("Plogging");
-                    defaultUser.setLastName("User");
+                    defaultUser.setUsername("User Baru");
+                    defaultUser.setFirstName("User");
+                    defaultUser.setLastName("Baru");
                     defaultUser.setEmail("user@glean.app");
                     defaultUser.setCreatedAt(System.currentTimeMillis());
                     defaultUser.setPoints(0);
