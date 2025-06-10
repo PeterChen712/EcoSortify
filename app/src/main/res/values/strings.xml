@@ -27,8 +27,9 @@
     <string name="choose_decoration">Pilih hiasan profil:</string>
     <string name="gold_frame">🥇 Frame Emas</string>
     <string name="silver_frame">🥈 Frame Perak</string>
-    <string name="bronze_frame">🥉 Frame Perunggu</string>
-    <string name="settings_title">Pengaturan</string>
+    <string name="bronze_frame">🥉 Frame Perunggu</string>    <string name="settings_title">Pengaturan</string>
+    <string name="notifications">Notifikasi</string>
+    <string name="dark_mode">Mode Gelap</string>
     <string name="name_empty_error">Nama gak boleh kosong</string>
     <string name="profile_updated_success">Profil berhasil diupdate!</string>
     <string name="profile_update_failed">Gagal update profil</string>

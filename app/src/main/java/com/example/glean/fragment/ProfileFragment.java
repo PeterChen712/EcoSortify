@@ -33,7 +33,6 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.example.glean.R;
-import com.example.glean.activity.CustomizeProfileActivity;
 import com.example.glean.activity.SkinSelectionActivity;
 import com.example.glean.adapter.BadgeAdapter;
 import com.example.glean.adapter.ProfileBadgeAdapter;
@@ -41,7 +40,6 @@ import com.example.glean.databinding.FragmentProfileBinding;
 import com.example.glean.databinding.DialogEditProfileBinding;
 import com.example.glean.databinding.DialogSettingsBinding;
 import com.example.glean.db.AppDatabase;
-import com.example.glean.util.DatabaseHelper;
 import com.example.glean.model.Badge;
 import com.example.glean.model.UserEntity;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
@@ -199,17 +197,9 @@ public class ProfileFragment extends Fragment {    private static final String T
             binding.ivProfilePic.setOnClickListener(v -> {
                 Log.d(TAG, "Profile picture clicked");
                 checkPermissionsAndSelectImage();
-            });
-        }        // Customize button - Use CustomizeProfileActivity
-        if (binding.btnCustomize != null) {
-            binding.btnCustomize.setOnClickListener(v -> {
-                Log.d(TAG, "Customize button clicked");
-                openCustomizeProfileActivity();
-            });
-        } else {
-            Log.w(TAG, "Customize button not found in layout");
-        }
-          // Settings icon in header
+            });        }
+        
+        // Settings icon in header
         if (binding.btnSettings != null) {
             binding.btnSettings.setOnClickListener(v -> {
                 Log.d(TAG, "Settings icon clicked");
@@ -218,15 +208,13 @@ public class ProfileFragment extends Fragment {    private static final String T
         }        // Theme toggle (if exists)
         setupThemeToggle();
     }
-    
-    private void addVisualFeedback() {        // Add ripple effect and elevation feedback
-        View[] clickableViews = {
-            binding.btnEditProfile,
-            binding.btnSettings,
-            binding.btnLogout,
-            binding.btnCustomize,
-            binding.ivProfilePic
-        };
+      private void addVisualFeedback() {        // Add ripple effect and elevation feedback
+    View[] clickableViews = {
+        binding.btnEditProfile,
+        binding.btnSettings,
+        binding.btnLogout,
+        binding.ivProfilePic
+    };
         
         for (View view : clickableViews) {
             if (view != null) {
@@ -468,13 +456,11 @@ public class ProfileFragment extends Fragment {    private static final String T
     }
       private void setupBadges(UserEntity user) {
         List<Badge> badges = generateUserBadges(user);
-        
-        if (binding.rvBadges != null) {
-            // Use the new ProfileBadgeAdapter that matches Customize Profile design
+          if (binding.rvBadges != null) {
+            // Use the new ProfileBadgeAdapter
             ProfileBadgeAdapter adapter = new ProfileBadgeAdapter(requireContext(), badges, badge -> {
-                // Navigate to Customize Profile when badge is clicked
-                Intent intent = new Intent(requireContext(), CustomizeProfileActivity.class);
-                startActivityForResult(intent, 1006);
+                // Navigate to Profile Customization when badge is clicked
+                navigateToProfileDecor();
             });
             binding.rvBadges.setAdapter(adapter);
         }
@@ -658,24 +644,8 @@ public class ProfileFragment extends Fragment {    private static final String T
         super.onActivityResult(requestCode, resultCode, data);
         
         if (resultCode != Activity.RESULT_OK) {
-            return;
-        }
-          try {            // Handle customize profile activity result
-            if (requestCode == 1006 && data != null) {
-                boolean profileChanged = data.getBooleanExtra("profile_changed", false);
-                if (profileChanged) {
-                    updateProfileSkin();
-                    // Refresh badge display to show updated active badge
-                    if (currentUser != null) {
-                        setupBadges(currentUser);
-                    }
-                    Toast.makeText(requireContext(), "Profile updated!", Toast.LENGTH_SHORT).show();
-                    // Refresh user data to update points if they were spent
-                    loadUserData();
-                }
-                return;
-            }
-            
+            return;        }
+          try {            
             // Handle skin selection
             if (requestCode == SKIN_SELECTION_REQUEST && data != null) {
                 String selectedSkin = data.getStringExtra("selected_skin");
@@ -970,29 +940,7 @@ public class ProfileFragment extends Fragment {    private static final String T
             });            dialogBinding.switchDarkMode.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 prefs.edit().putBoolean("DARK_MODE", isChecked).apply();
             });
-            
-            // Customize Profile click handler
-            dialogBinding.layoutCustomizeProfile.setOnClickListener(v -> {
-                dialog.dismiss();
-                openCustomizeProfileActivity();
-            });
-            
-            // Reset database button handler
-            dialogBinding.btnResetDatabase.setOnClickListener(v -> {                new MaterialAlertDialogBuilder(requireContext())
-                    .setTitle(getString(R.string.reset_database_title))
-                    .setMessage(getString(R.string.reset_database_message))                    .setPositiveButton(getString(R.string.reset), (confirmDialog, which) -> {
-                        try {
-                            DatabaseHelper.resetAppData(requireContext());
-                            Toast.makeText(requireContext(), getString(R.string.database_reset_success), Toast.LENGTH_LONG).show();
-                        } catch (Exception e) {
-                            Log.e("ProfileFragment", "Error resetting database", e);
-                            Toast.makeText(requireContext(), String.format(getString(R.string.database_reset_error), e.getMessage()), Toast.LENGTH_LONG).show();
-                        }
-                        confirmDialog.dismiss();
-                    })
-                    .setNegativeButton(getString(R.string.cancel), null)
-                    .show();
-            });
+              // Settings actions handled elsewhere as needed
             
             dialogBinding.btnSave.setOnClickListener(v -> {
                 dialog.dismiss();
@@ -1257,25 +1205,9 @@ public class ProfileFragment extends Fragment {    private static final String T
                 requireActivity().runOnUiThread(() -> {
                     Toast.makeText(requireContext(), "Error creating profile", Toast.LENGTH_SHORT).show();
                     setDefaultUIValues();
-                });            }
-        });
+                });            }        });
     }
       
-    // Open CustomizeProfileActivity
-    private void openCustomizeProfileActivity() {
-        try {
-            Intent intent = new Intent(requireContext(), CustomizeProfileActivity.class);
-            if (currentUser != null) {
-                intent.putExtra("USER_ID", userId);
-                intent.putExtra("USER_POINTS", currentUser.getPoints());
-            }
-            startActivityForResult(intent, 1006); // New request code for customize activity
-        } catch (Exception e) {
-            Log.e(TAG, "Error opening customize profile activity", e);
-            Toast.makeText(requireContext(), "Failed to open customization", Toast.LENGTH_SHORT).show();
-        }
-    }
-    
     // Skin Selection Methods
     private void openSkinSelection() {
         try {
