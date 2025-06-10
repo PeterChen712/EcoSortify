@@ -30,7 +30,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        android:hint="Tulis caption untuk share ke komunitas..."
         app:counterEnabled="true"
         app:counterMaxLength="150"
         app:helperText="Maks 150 karakter"
