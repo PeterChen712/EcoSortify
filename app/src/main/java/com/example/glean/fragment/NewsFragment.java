@@ -349,11 +349,15 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
             snackbar.setTextColor(getResources().getColor(android.R.color.white));
             snackbar.show();
         }
-    }
-
-    @Override
+    }    @Override
     public void onNewsItemClick(NewsItem newsItem) {
         try {
+            // Validate news item
+            if (newsItem == null) {
+                showMessage("Data berita tidak valid", true);
+                return;
+            }
+            
             // Mark as read
             newsItem.setRead(true);
             
@@ -366,20 +370,29 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
             updateUnreadCounter();
             
             // Navigate to news detail or open in browser
-            if (newsItem.getUrl() != null && !newsItem.getUrl().isEmpty()) {
-                // Navigate to detail fragment
+            String url = newsItem.getUrl();
+            if (url != null && !url.isEmpty()) {
+                // Log which news was clicked for debugging
+                android.util.Log.d("NewsClick", "Clicked: " + newsItem.getTitle() + " -> " + url);
+                
+                // Navigate to detail fragment with proper data
                 Bundle args = new Bundle();
                 args.putInt("NEWS_ID", newsItem.getId());
-                args.putString("NEWS_URL", newsItem.getUrl());
+                args.putString("NEWS_URL", url);
                 args.putString("NEWS_TITLE", newsItem.getTitle());
-                  NavController navController = Navigation.findNavController(requireView());
+                args.putString("NEWS_PREVIEW", newsItem.getPreview());
+                args.putString("NEWS_IMAGE_URL", newsItem.getImageUrl());
+                args.putString("NEWS_SOURCE", newsItem.getSource());
+                args.putString("NEWS_DATE", newsItem.getDate());
+                
+                NavController navController = Navigation.findNavController(requireView());
                 navController.navigate(R.id.newsDetailFragment, args);
-            } else {
-                showMessage(getString(R.string.news_content_not_available), true);
+            } else {            showMessage("URL berita tidak tersedia", true);
             }
             
         } catch (Exception e) {
-            showMessage(getString(R.string.news_failed_open_article), true);
+            android.util.Log.e("NewsClick", "Error handling news click", e);
+            showMessage("Gagal membuka berita: " + e.getMessage(), true);
         }
     }
 

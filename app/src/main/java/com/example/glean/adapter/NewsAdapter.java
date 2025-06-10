@@ -215,29 +215,53 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
             } else {
                 binding.tvCategory.setVisibility(View.GONE);
             }
+              // Load image with improved error handling and better placeholder
+            binding.ivNewsThumbnail.setVisibility(View.VISIBLE);
             
-            // Load image with advanced options
-            if (newsItem.getImageUrl() != null && !newsItem.getImageUrl().isEmpty() 
-                && !newsItem.getImageUrl().equals("null")) {
+            RequestOptions options = new RequestOptions()
+                    .placeholder(R.drawable.ic_news_loading)
+                    .error(R.drawable.ic_environmental_news)
+                    .fallback(R.drawable.ic_news_placeholder)
+                    .transform(new CenterCrop(), new RoundedCorners(16))
+                    .timeout(15000); // 15 second timeout
+            
+            String imageUrl = newsItem.getImageUrl();
+            if (imageUrl != null && !imageUrl.isEmpty() && 
+                !imageUrl.equals("null") && !imageUrl.equals("https://example.com") &&
+                !imageUrl.startsWith("https://example.com/")) {
                 
-                binding.ivNewsThumbnail.setVisibility(View.VISIBLE);
-                
-                RequestOptions options = new RequestOptions()
-                        .placeholder(R.drawable.ic_news_loading)
-                        .error(R.drawable.ic_news_placeholder)
-                        .transform(new CenterCrop(), new RoundedCorners(16))
-                        .timeout(10000); // 10 second timeout
-                
+                // Valid image URL - try to load it
                 Glide.with(context)
-                        .load(newsItem.getImageUrl())
+                        .load(imageUrl)
                         .apply(options)
                         .thumbnail(0.1f)
                         .into(binding.ivNewsThumbnail);
-            } else {
-                // Show beautiful default placeholder
-                binding.ivNewsThumbnail.setVisibility(View.VISIBLE);
+                          } else {
+                // No valid image URL - show appropriate placeholder based on category
+                int placeholderResource;
+                if (category != null) {
+                    switch (category.toLowerCase()) {
+                        case "plogging":
+                            placeholderResource = R.drawable.ic_plogging;
+                            break;
+                        case "environment":
+                            placeholderResource = R.drawable.ic_environmental_news;
+                            break;
+                        case "education":
+                            placeholderResource = R.drawable.ic_education;
+                            break;
+                        case "tips":
+                            placeholderResource = R.drawable.ic_tips;
+                            break;
+                        default:
+                            placeholderResource = R.drawable.ic_news_placeholder;
+                    }
+                } else {
+                    placeholderResource = R.drawable.ic_news_placeholder;
+                }
+                
                 Glide.with(context)
-                        .load(R.drawable.ic_environmental_news)
+                        .load(placeholderResource)
                         .apply(new RequestOptions().transform(new RoundedCorners(16)))
                         .into(binding.ivNewsThumbnail);
             }

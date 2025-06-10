@@ -31,13 +31,16 @@ import java.util.concurrent.Executors;
 
 public class NewsDetailFragment extends Fragment {
     
-    private FragmentNewsDetailBinding binding;
-    private AppDatabase db;
+    private FragmentNewsDetailBinding binding;    private AppDatabase db;
     private ExecutorService executor;
     private NewsItem currentNews;
     private int newsId = -1;
     private String newsUrl;
     private String newsTitle;
+    private String newsPreview;
+    private String newsImageUrl;
+    private String newsSource;
+    private String newsDate;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -45,11 +48,18 @@ public class NewsDetailFragment extends Fragment {
         db = AppDatabase.getInstance(requireContext());
         executor = Executors.newSingleThreadExecutor();
         
-        // Get arguments
+        // Get arguments with enhanced data
         if (getArguments() != null) {
             newsId = getArguments().getInt("NEWS_ID", -1);
             newsUrl = getArguments().getString("NEWS_URL");
             newsTitle = getArguments().getString("NEWS_TITLE");
+            newsPreview = getArguments().getString("NEWS_PREVIEW");
+            newsImageUrl = getArguments().getString("NEWS_IMAGE_URL");
+            newsSource = getArguments().getString("NEWS_SOURCE");
+            newsDate = getArguments().getString("NEWS_DATE");
+            
+            // Log for debugging
+            android.util.Log.d("NewsDetail", "Loading news: " + newsTitle + " from " + newsUrl);
         }
     }
 
@@ -150,19 +160,51 @@ public class NewsDetailFragment extends Fragment {
             }
         });
     }
-    
-    private void loadNewsFromUrl() {
+      private void loadNewsFromUrl() {
         if (newsUrl == null || newsUrl.isEmpty()) {
             showError("No article URL available");
             return;
         }
         
-        // Set title if available
-        if (newsTitle != null) {
-            binding.toolbar.setTitle(newsTitle);
+        // Validate URL format
+        if (!newsUrl.startsWith("http://") && !newsUrl.startsWith("https://")) {
+            showError("Invalid article URL format");
+            return;
         }
         
-        // Load URL in WebView
+        // Set title if available
+        if (newsTitle != null && !newsTitle.isEmpty()) {
+            binding.toolbar.setTitle(newsTitle);
+        } else {
+            binding.toolbar.setTitle("Article Details");
+        }
+        
+        // Show additional news info if available
+        if (newsPreview != null || newsSource != null || newsDate != null) {
+            // You could show a header with news metadata here
+            // For now, just log it
+            android.util.Log.d("NewsDetail", "Preview: " + newsPreview);
+            android.util.Log.d("NewsDetail", "Source: " + newsSource);
+            android.util.Log.d("NewsDetail", "Date: " + newsDate);
+        }
+        
+        // Load URL in WebView with error handling
+        showLoading(true);
+        binding.webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                showLoading(false);
+            }
+            
+            @Override
+            public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
+                super.onReceivedError(view, errorCode, description, failingUrl);
+                showLoading(false);
+                showError("Failed to load article: " + description);
+            }
+        });
+        
         binding.webView.loadUrl(newsUrl);
     }
     
