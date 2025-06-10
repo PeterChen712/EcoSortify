@@ -101,25 +101,11 @@ public class PostDetailActivity extends AppCompatActivity {
         // Format timestamp
         SimpleDateFormat sdf = new SimpleDateFormat("HH:mm • dd MMM yyyy", Locale.getDefault());
         binding.tvTimestamp.setText(sdf.format(new Date(post.getTimestamp())));
-        
-        // Set like state
+          // Set like state
         updateLikeButton();
-        // Load profile image
-        if (post.getUserAvatar() != null && !post.getUserAvatar().isEmpty()) {
-            File avatarFile = new File(post.getUserAvatar());
-            if (avatarFile.exists()) {
-                Glide.with(this)
-                        .load(avatarFile)
-                        .placeholder(R.drawable.profile_placeholder)
-                        .error(R.drawable.profile_placeholder)
-                        .circleCrop()
-                        .into(binding.ivUserProfile);
-            } else {
-                binding.ivUserProfile.setImageResource(R.drawable.profile_placeholder);
-            }
-        } else {
-            binding.ivUserProfile.setImageResource(R.drawable.profile_placeholder);
-        }
+        // Always load the latest profile image from database based on userId
+        // This ensures photo synchronization when user updates their profile picture
+        loadLatestUserProfileImage(post.getUserId());
         // Load post image
         if (post.getImageUrl() != null && !post.getImageUrl().isEmpty()) {
             binding.ivPostImage.setVisibility(View.VISIBLE);
@@ -301,8 +287,56 @@ public class PostDetailActivity extends AppCompatActivity {
             comment2.setContent("Semangat terus! Bumi butuh lebih banyak orang seperti kamu 🌍");
             comment2.setTimestamp(System.currentTimeMillis() - 3600000); // 1 hour ago
             // Set a default avatar path for sample comment
-            comment2.setUserAvatar(null); // Will use default avatar
-            repository.insertComment(comment2, null);
+            comment2.setUserAvatar(null); // Will use default avatar            repository.insertComment(comment2, null);
         }).start();
+    }
+    
+    private void loadLatestUserProfileImage(int userId) {
+        // Load the latest user profile image from database
+        new Thread(() -> {
+            try {
+                AppDatabase database = AppDatabase.getInstance(this);
+                UserEntity user = database.userDao().getUserByIdSync(userId);
+                String latestProfilePath = (user != null) ? user.getProfileImagePath() : null;
+                
+                // Update UI on main thread
+                runOnUiThread(() -> {
+                    if (latestProfilePath != null && !latestProfilePath.isEmpty()) {
+                        File imageFile = new File(latestProfilePath);
+                        if (imageFile.exists()) {
+                            Glide.with(this)
+                                    .load(imageFile)
+                                    .placeholder(R.drawable.profile_placeholder)
+                                    .error(R.drawable.profile_placeholder)
+                                    .circleCrop()
+                                    .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE) // Don't cache to always get fresh image
+                                    .skipMemoryCache(true) // Skip memory cache for fresh image
+                                    .signature(new com.bumptech.glide.signature.ObjectKey(System.currentTimeMillis())) // Force refresh
+                                    .into(binding.ivUserProfile);
+                        } else {
+                            // File doesn't exist, load default
+                            binding.ivUserProfile.setImageResource(R.drawable.profile_placeholder);
+                        }
+                    } else {
+                        // No profile image set, load default
+                        binding.ivUserProfile.setImageResource(R.drawable.profile_placeholder);
+                    }
+                });
+            } catch (Exception e) {
+                // Handle error and load default image
+                runOnUiThread(() -> {
+                    binding.ivUserProfile.setImageResource(R.drawable.profile_placeholder);
+                });
+            }        }).start();
+    }
+    
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        
+        // Clean up adapter resources
+        if (commentAdapter != null) {
+            commentAdapter.cleanup();
+        }
     }
 }

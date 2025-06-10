@@ -120,25 +120,10 @@ public class PostDetailFragment extends Fragment {
     }    private void displayPostDetails(PostEntity post) {
         // User info
         binding.tvUserName.setText(post.getUsername());
-          // Profile image
-        if (post.getUserAvatar() != null && !post.getUserAvatar().isEmpty()) {
-            // Load from file path
-            File imageFile = new File(post.getUserAvatar());
-            if (imageFile.exists()) {
-                Glide.with(this)
-                        .load(imageFile)
-                        .placeholder(R.drawable.profile_placeholder)
-                        .error(R.drawable.profile_placeholder)
-                        .circleCrop()
-                        .into(binding.ivUserProfile);
-            } else {
-                // File doesn't exist, load default
-                binding.ivUserProfile.setImageResource(R.drawable.profile_placeholder);
-            }
-        } else {
-            // No profile image set, load default
-            binding.ivUserProfile.setImageResource(R.drawable.profile_placeholder);
-        }
+          
+        // Always load the latest profile image from database based on userId
+        // This ensures photo synchronization when user updates their profile picture
+        loadLatestUserProfileImage(post.getUserId());
 
         // Post content
         binding.tvContent.setText(post.getContent());
@@ -286,13 +271,60 @@ public class PostDetailFragment extends Fragment {
         shareIntent.putExtra(Intent.EXTRA_SUBJECT, "GleanGo Community Post");
         
         startActivity(Intent.createChooser(shareIntent, "Share post"));
-    }
-
-    private void navigateBack() {        NavController navController = Navigation.findNavController(requireView());
+    }    private void navigateBack() {        NavController navController = Navigation.findNavController(requireView());
         navController.navigateUp();
+    }
+    
+    private void loadLatestUserProfileImage(int userId) {
+        // Load the latest user profile image from database
+        executor.execute(() -> {
+            try {
+                UserEntity user = database.userDao().getUserByIdSync(userId);
+                String latestProfilePath = (user != null) ? user.getProfileImagePath() : null;
+                
+                // Update UI on main thread
+                requireActivity().runOnUiThread(() -> {
+                    if (binding != null) {
+                        if (latestProfilePath != null && !latestProfilePath.isEmpty()) {
+                            File imageFile = new File(latestProfilePath);
+                            if (imageFile.exists()) {
+                                Glide.with(this)
+                                        .load(imageFile)
+                                        .placeholder(R.drawable.profile_placeholder)
+                                        .error(R.drawable.profile_placeholder)
+                                        .circleCrop()
+                                        .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE) // Don't cache to always get fresh image
+                                        .skipMemoryCache(true) // Skip memory cache for fresh image
+                                        .signature(new com.bumptech.glide.signature.ObjectKey(System.currentTimeMillis())) // Force refresh
+                                        .into(binding.ivUserProfile);
+                            } else {
+                                // File doesn't exist, load default
+                                binding.ivUserProfile.setImageResource(R.drawable.profile_placeholder);
+                            }
+                        } else {
+                            // No profile image set, load default
+                            binding.ivUserProfile.setImageResource(R.drawable.profile_placeholder);
+                        }
+                    }
+                });
+            } catch (Exception e) {
+                // Handle error and load default image
+                requireActivity().runOnUiThread(() -> {
+                    if (binding != null) {
+                        binding.ivUserProfile.setImageResource(R.drawable.profile_placeholder);
+                    }
+                });
+            }
+        });
     }    @Override
     public void onDestroyView() {
         super.onDestroyView();
+        
+        // Clean up adapter resources
+        if (commentAdapter != null) {
+            commentAdapter.cleanup();
+        }
+        
         binding = null;
         
         // Shutdown executor service to prevent memory leaks

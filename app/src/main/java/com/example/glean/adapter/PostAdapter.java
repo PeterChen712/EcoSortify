@@ -11,21 +11,28 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners;
 import com.bumptech.glide.request.RequestOptions;
 import com.example.glean.R;
+import com.example.glean.db.AppDatabase;
 import com.example.glean.model.PostEntity;
+import com.example.glean.model.UserEntity;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder> {
     
     private List<PostEntity> posts;
     private OnPostClickListener listener;
+    private AppDatabase database;
+    private ExecutorService executor;
     
     public interface OnPostClickListener {
         void onPostClick(PostEntity post);
@@ -37,6 +44,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
     public PostAdapter(List<PostEntity> posts, OnPostClickListener listener) {
         this.posts = posts;
         this.listener = listener;
+        this.executor = Executors.newSingleThreadExecutor();
     }
     
     @NonNull
@@ -44,6 +52,12 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
     public PostViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_post, parent, false);
+        
+        // Initialize database if not already done
+        if (database == null) {
+            database = AppDatabase.getInstance(parent.getContext());
+        }
+        
         return new PostViewHolder(view);
     }
     
@@ -73,7 +87,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             ivLike = itemView.findViewById(R.id.ivLike);
             ivComment = itemView.findViewById(R.id.ivComment);
             ivShare = itemView.findViewById(R.id.ivShare);
-        }          public void bind(PostEntity post) {
+        }        public void bind(PostEntity post) {
             tvUsername.setText(post.getUsername());
             tvContent.setText(post.getContent());
             tvLikeCount.setText(String.valueOf(post.getLikeCount()));
@@ -83,25 +97,11 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             SimpleDateFormat sdf = new SimpleDateFormat("HH:mm • dd MMM", Locale.getDefault());
             tvTimestamp.setText(sdf.format(new Date(post.getTimestamp())));
             
-            // Load profile image using Glide with proper file handling
-            if (post.getUserAvatar() != null && !post.getUserAvatar().isEmpty()) {
-                // Load from file path
-                File imageFile = new File(post.getUserAvatar());
-                if (imageFile.exists()) {
-                    Glide.with(ivUserAvatar.getContext())
-                            .load(imageFile)
-                            .placeholder(R.drawable.profile_placeholder)
-                            .error(R.drawable.profile_placeholder)
-                            .circleCrop()
-                            .into(ivUserAvatar);
-                } else {
-                    // File doesn't exist, load default
-                    ivUserAvatar.setImageResource(R.drawable.profile_placeholder);
-                }
-            } else {
-                // No profile image set, load default
-                ivUserAvatar.setImageResource(R.drawable.profile_placeholder);
-            }// Load post image using Glide
+            // Always load the latest profile image from database based on userId
+            // This ensures photo synchronization when user updates their profile picture
+            loadLatestUserProfileImage(post.getUserId());
+
+            // Load post image using Glide
             if (post.getImageUrl() != null && !post.getImageUrl().isEmpty()) {
                 Log.d("PostAdapter", "Loading image for post: " + post.getImageUrl());
                 ivPostImage.setVisibility(View.VISIBLE);
@@ -136,10 +136,60 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             ivComment.setOnClickListener(v -> {
                 if (listener != null) listener.onCommentClick(post);
             });
-            
-            ivShare.setOnClickListener(v -> {
+              ivShare.setOnClickListener(v -> {
                 if (listener != null) listener.onShareClick(post);
             });
+        }
+        
+        private void loadLatestUserProfileImage(int userId) {
+            // Load the latest user profile image from database
+            executor.execute(() -> {
+                try {
+                    UserEntity user = database.userDao().getUserByIdSync(userId);
+                    String latestProfilePath = (user != null) ? user.getProfileImagePath() : null;
+                    
+                    // Update UI on main thread
+                    itemView.post(() -> {
+                        if (latestProfilePath != null && !latestProfilePath.isEmpty()) {
+                            File imageFile = new File(latestProfilePath);
+                            if (imageFile.exists()) {
+                                Glide.with(ivUserAvatar.getContext())
+                                        .load(imageFile)
+                                        .placeholder(R.drawable.profile_placeholder)
+                                        .error(R.drawable.profile_placeholder)
+                                        .circleCrop()
+                                        .diskCacheStrategy(DiskCacheStrategy.NONE) // Don't cache to always get fresh image
+                                        .skipMemoryCache(true) // Skip memory cache for fresh image
+                                        .signature(new com.bumptech.glide.signature.ObjectKey(System.currentTimeMillis())) // Force refresh
+                                        .into(ivUserAvatar);
+                            } else {
+                                // File doesn't exist, load default
+                                ivUserAvatar.setImageResource(R.drawable.profile_placeholder);
+                            }
+                        } else {
+                            // No profile image set, load default
+                            ivUserAvatar.setImageResource(R.drawable.profile_placeholder);
+                        }
+                    });
+                } catch (Exception e) {
+                    // Handle error and load default image
+                    itemView.post(() -> {
+                        ivUserAvatar.setImageResource(R.drawable.profile_placeholder);
+                    });
+                }
+            });
+        }
+    }
+    
+    // Method to refresh all profile images (useful when coming back from profile edit)
+    public void refreshProfileImages() {
+        notifyDataSetChanged();
+    }
+    
+    // Clean up resources
+    public void cleanup() {
+        if (executor != null && !executor.isShutdown()) {
+            executor.shutdown();
         }
     }
 }

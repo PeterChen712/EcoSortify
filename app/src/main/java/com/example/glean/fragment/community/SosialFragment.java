@@ -241,10 +241,15 @@ public class SosialFragment extends Fragment implements PostAdapter.OnPostClickL
             });
         }
     }
-    
-    @Override
+      @Override
     public void onDestroyView() {
         super.onDestroyView();
+        
+        // Clean up adapter resources
+        if (postAdapter != null) {
+            postAdapter.cleanup();
+        }
+        
         if (executor != null && !executor.isShutdown()) {
             executor.shutdown();
         }
