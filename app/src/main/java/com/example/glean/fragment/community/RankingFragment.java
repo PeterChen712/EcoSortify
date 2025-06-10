@@ -8,10 +8,12 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
@@ -23,6 +25,7 @@ import com.example.glean.model.RankingEntity;
 import com.example.glean.model.RecordEntity;
 import com.example.glean.model.TrashEntity;
 import com.example.glean.model.UserEntity;
+import de.hdodenhof.circleimageview.CircleImageView;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -330,8 +333,7 @@ public class RankingFragment extends Fragment {
                 
                 // Calculate current user's statistics
                 UserStatistics myStats = calculateUserStatistics(currentUserId);
-                
-                final int finalPosition = position;
+                  final int finalPosition = position;
                 getActivity().runOnUiThread(() -> {
                     binding.myRankingCard.setVisibility(View.VISIBLE);
                     binding.tvMyPosition.setText("#" + finalPosition);
@@ -339,6 +341,35 @@ public class RankingFragment extends Fragment {
                     binding.tvMyPoints.setText(currentUser.getPoints() + " poin");
                     binding.tvMyStats.setText(String.format("%.1fkg • %.1fkm • %d badge", 
                         myStats.totalTrashWeight, myStats.totalDistance, myStats.badgeCount));
+                    
+                    // Apply crown icon and border color based on position
+                    CircleImageView myProfileImage = binding.ivMyProfileImage;
+                    ImageView myCrownIcon = binding.ivMyCrownIcon;
+                    
+                    if (finalPosition == 1) {
+                        myProfileImage.setBorderColor(ContextCompat.getColor(requireContext(), R.color.badge_gold));
+                        myProfileImage.setBorderWidth(8);
+                        myCrownIcon.setVisibility(View.VISIBLE);
+                        myCrownIcon.setImageResource(R.drawable.ic_crown_gold);
+                        binding.tvMyPosition.setTextColor(ContextCompat.getColor(requireContext(), R.color.badge_gold));
+                    } else if (finalPosition == 2) {
+                        myProfileImage.setBorderColor(ContextCompat.getColor(requireContext(), R.color.badge_silver));
+                        myProfileImage.setBorderWidth(8);
+                        myCrownIcon.setVisibility(View.VISIBLE);
+                        myCrownIcon.setImageResource(R.drawable.ic_crown_silver);
+                        binding.tvMyPosition.setTextColor(ContextCompat.getColor(requireContext(), R.color.badge_silver));
+                    } else if (finalPosition == 3) {
+                        myProfileImage.setBorderColor(ContextCompat.getColor(requireContext(), R.color.badge_bronze));
+                        myProfileImage.setBorderWidth(8);
+                        myCrownIcon.setVisibility(View.VISIBLE);
+                        myCrownIcon.setImageResource(R.drawable.ic_crown_bronze);
+                        binding.tvMyPosition.setTextColor(ContextCompat.getColor(requireContext(), R.color.badge_bronze));
+                    } else {
+                        myProfileImage.setBorderColor(ContextCompat.getColor(requireContext(), R.color.divider_color));
+                        myProfileImage.setBorderWidth(4);
+                        myCrownIcon.setVisibility(View.GONE);
+                        binding.tvMyPosition.setTextColor(ContextCompat.getColor(requireContext(), R.color.card_text_secondary));
+                    }
                 });
                 
             } catch (Exception e) {
