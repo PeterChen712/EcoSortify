@@ -190,6 +190,18 @@ public class HomeFragment extends Fragment {
                         if (getActivity() instanceof MainActivity) {
                             ((MainActivity) getActivity()).navigateToTrashMap();
                         }
+                    }                });
+            }
+            
+            // Setup About card click listener
+            if (binding.cardAbout != null) {
+                binding.cardAbout.setOnClickListener(v -> {
+                    try {
+                        NavController navController = Navigation.findNavController(requireView());
+                        navController.navigate(R.id.action_homeFragment_to_aboutFragment);
+                    } catch (Exception e) {
+                        // Fallback if navigation fails
+                        Toast.makeText(requireContext(), "Membuka halaman About...", Toast.LENGTH_SHORT).show();
                     }
                 });
             }

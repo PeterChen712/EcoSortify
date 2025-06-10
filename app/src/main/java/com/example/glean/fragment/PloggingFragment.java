@@ -506,12 +506,12 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
 
     private void finishPlogging() {
         new MaterialAlertDialogBuilder(requireContext())
-                .setTitle("🏁 Finish Plogging?")
-                .setMessage("Are you sure you want to finish this plogging session? This action cannot be undone.")
-                .setPositiveButton("Yes, Finish", (dialog, which) -> {
+                .setTitle("🏁 Selesai Plogging?")
+                .setMessage("Apa Anda yakin ingin mengakhiri sesi plogging ini? Tindakan ini tidak dapat dibatalkan.")
+                .setPositiveButton("Ya, Selesai", (dialog, which) -> {
                     finishPloggingConfirmed();
                 })
-                .setNegativeButton("Cancel", null)
+                .setNegativeButton("Batal", null)
                 .show();
     }
 

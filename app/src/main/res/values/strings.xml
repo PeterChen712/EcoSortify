@@ -157,12 +157,13 @@
     <string name="plogging_stopped">🛑 Plogging dihentikan. Ketuk \"Mulai Plogging\" untuk melanjutkan atau \"Selesai\" untuk menyelesaikan.</string>
     <string name="finish_session">Selesai Sesi</string>
     
-    <!-- Additional UI strings that were missing -->
-    <string name="home_statistics_title">Statistik Keseluruhan</string>
+    <!-- Additional UI strings that were missing -->    <string name="home_statistics_title">Statistik Keseluruhan</string>
     <string name="home_start_plogging">Mulai Plogging</string>
     <string name="home_view_stats">Lihat Statistik</string>
     <string name="home_view_community">Lihat Komunitas</string>
     <string name="home_trash_map">Peta Sampah</string>
+    <string name="home_about_title">Tentang GleanGo</string>
+    <string name="home_about_description">Pelajari cerita di balik nama GleanGo dan filosofi plogging kami</string>
     <string name="navigation_not_available">Navigasi gak tersedia</string>
     <string name="error_loading_home">Error loading halaman utama: %s</string>
     

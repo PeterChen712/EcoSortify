@@ -22,13 +22,15 @@
             android:id="@+id/action_homeFragment_to_trashMapFragment"
             app:destination="@id/trashMapFragment" />
             
-        <!-- Additional actions for quick buttons -->
-        <action
+        <!-- Additional actions for quick buttons -->        <action
             android:id="@+id/action_homeFragment_to_statsFragment"
             app:destination="@id/statsFragment" />        <action
             android:id="@+id/action_homeFragment_to_communityFragment"
             app:destination="@id/communityFragment" />
-    </fragment>    <fragment
+        <action
+            android:id="@+id/action_homeFragment_to_aboutFragment"
+            app:destination="@id/aboutFragment" />
+    </fragment><fragment
         android:id="@+id/ploggingFragment"
         android:name="com.example.glean.fragment.PloggingFragment"
         android:label="Plogging"
