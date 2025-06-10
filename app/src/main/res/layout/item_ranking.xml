@@ -27,31 +27,14 @@
             android:layout_marginEnd="12dp"
             android:minWidth="24dp"
             android:gravity="center" />        <!-- User Profile with Border -->
-        <FrameLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="12dp">
-
-            <de.hdodenhof.circleimageview.CircleImageView
-                android:id="@+id/ivUserProfile"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:src="@drawable/ic_user_placeholder"
-                app:civ_border_width="3dp"
-                app:civ_border_color="?attr/colorPrimary" />
-
-            <!-- Crown icon for #1 position -->
-            <ImageView
-                android:id="@+id/ivCrownIcon"
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@drawable/ic_crown"
-                android:layout_gravity="top|end"
-                android:layout_marginTop="-6dp"
-                android:layout_marginEnd="-6dp"
-                android:visibility="gone" />
-
-        </FrameLayout>
+        <de.hdodenhof.circleimageview.CircleImageView
+            android:id="@+id/ivUserProfile"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@drawable/ic_user_placeholder"
+            app:civ_border_width="3dp"
+            app:civ_border_color="?attr/colorPrimary"
+            android:layout_marginEnd="12dp" />
 
         <!-- User Info -->
         <LinearLayout

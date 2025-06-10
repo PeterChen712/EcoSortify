@@ -49,7 +49,6 @@ public class RankingAdapter extends RecyclerView.Adapter<RankingAdapter.RankingV
         private TextView tvUsername, tvPoints, tvRankingPosition;
         private CardView cardRanking;
         private CircleImageView ivUserProfile;
-        private ImageView ivCrownIcon;
         
         public RankingViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -57,7 +56,6 @@ public class RankingAdapter extends RecyclerView.Adapter<RankingAdapter.RankingV
             tvPoints = itemView.findViewById(R.id.tvPoints);
             tvRankingPosition = itemView.findViewById(R.id.tvRankingPosition);
             ivUserProfile = itemView.findViewById(R.id.ivUserProfile);
-            ivCrownIcon = itemView.findViewById(R.id.ivCrownIcon);
             cardRanking = itemView.findViewById(R.id.cardRanking);
         }public void bind(RankingEntity ranking) {
             tvUsername.setText(ranking.getUsername());
@@ -103,18 +101,15 @@ public class RankingAdapter extends RecyclerView.Adapter<RankingAdapter.RankingV
             ivUserProfile.setBorderColor(borderColor);
             ivUserProfile.setBorderWidth(ranking.getPosition() <= 3 ? 6 : 3); // Thicker border for top 3
             
-            // Show appropriate crown icon for top 3 positions
+            // Apply card background border for top 3 positions
             if (ranking.getPosition() == 1) {
-                ivCrownIcon.setVisibility(View.VISIBLE);
-                ivCrownIcon.setImageResource(R.drawable.ic_crown_gold);
+                cardRanking.setBackground(ContextCompat.getDrawable(context, R.drawable.card_border_gold));
             } else if (ranking.getPosition() == 2) {
-                ivCrownIcon.setVisibility(View.VISIBLE);
-                ivCrownIcon.setImageResource(R.drawable.ic_crown_silver);
+                cardRanking.setBackground(ContextCompat.getDrawable(context, R.drawable.card_border_silver));
             } else if (ranking.getPosition() == 3) {
-                ivCrownIcon.setVisibility(View.VISIBLE);
-                ivCrownIcon.setImageResource(R.drawable.ic_crown_bronze);
+                cardRanking.setBackground(ContextCompat.getDrawable(context, R.drawable.card_border_bronze));
             } else {
-                ivCrownIcon.setVisibility(View.GONE);
+                cardRanking.setCardBackgroundColor(ContextCompat.getColor(context, R.color.card_background));
             }
             
             // Highlight current user

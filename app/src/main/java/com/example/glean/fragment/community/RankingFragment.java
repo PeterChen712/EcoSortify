@@ -8,11 +8,11 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.ImageView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.cardview.widget.CardView;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -340,34 +340,29 @@ public class RankingFragment extends Fragment {
                     binding.tvMyUsername.setText(currentUser.getUsername());
                     binding.tvMyPoints.setText(currentUser.getPoints() + " poin");
                     binding.tvMyStats.setText(String.format("%.1fkg • %.1fkm • %d badge", 
-                        myStats.totalTrashWeight, myStats.totalDistance, myStats.badgeCount));
-                    
-                    // Apply crown icon and border color based on position
+                        myStats.totalTrashWeight, myStats.totalDistance, myStats.badgeCount));                    // Apply border color based on position
                     CircleImageView myProfileImage = binding.ivMyProfileImage;
-                    ImageView myCrownIcon = binding.ivMyCrownIcon;
+                    CardView myRankingCard = binding.myRankingCard;
                     
                     if (finalPosition == 1) {
                         myProfileImage.setBorderColor(ContextCompat.getColor(requireContext(), R.color.badge_gold));
                         myProfileImage.setBorderWidth(8);
-                        myCrownIcon.setVisibility(View.VISIBLE);
-                        myCrownIcon.setImageResource(R.drawable.ic_crown_gold);
+                        myRankingCard.setBackground(ContextCompat.getDrawable(requireContext(), R.drawable.my_card_border_gold));
                         binding.tvMyPosition.setTextColor(ContextCompat.getColor(requireContext(), R.color.badge_gold));
                     } else if (finalPosition == 2) {
                         myProfileImage.setBorderColor(ContextCompat.getColor(requireContext(), R.color.badge_silver));
                         myProfileImage.setBorderWidth(8);
-                        myCrownIcon.setVisibility(View.VISIBLE);
-                        myCrownIcon.setImageResource(R.drawable.ic_crown_silver);
+                        myRankingCard.setBackground(ContextCompat.getDrawable(requireContext(), R.drawable.my_card_border_silver));
                         binding.tvMyPosition.setTextColor(ContextCompat.getColor(requireContext(), R.color.badge_silver));
                     } else if (finalPosition == 3) {
                         myProfileImage.setBorderColor(ContextCompat.getColor(requireContext(), R.color.badge_bronze));
                         myProfileImage.setBorderWidth(8);
-                        myCrownIcon.setVisibility(View.VISIBLE);
-                        myCrownIcon.setImageResource(R.drawable.ic_crown_bronze);
+                        myRankingCard.setBackground(ContextCompat.getDrawable(requireContext(), R.drawable.my_card_border_bronze));
                         binding.tvMyPosition.setTextColor(ContextCompat.getColor(requireContext(), R.color.badge_bronze));
                     } else {
                         myProfileImage.setBorderColor(ContextCompat.getColor(requireContext(), R.color.divider_color));
                         myProfileImage.setBorderWidth(4);
-                        myCrownIcon.setVisibility(View.GONE);
+                        myRankingCard.setCardBackgroundColor(ContextCompat.getColor(requireContext(), R.color.card_background));
                         binding.tvMyPosition.setTextColor(ContextCompat.getColor(requireContext(), R.color.card_text_secondary));
                     }
                 });
