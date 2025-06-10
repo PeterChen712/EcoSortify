@@ -220,7 +220,7 @@ public class PostDetailFragment extends Fragment {
             CommentEntity comment = new CommentEntity();
             comment.setPostId(postId);
             comment.setUserId(currentUserId);
-            comment.setUsername(user.getUsername() != null ? user.getUsername() : "Anonymous");
+            comment.setUsername(user.getName() != null ? user.getName() : "Anonymous");
             comment.setContent(commentText);
             comment.setTimestamp(System.currentTimeMillis());
             comment.setUserAvatar(user.getProfileImagePath());
