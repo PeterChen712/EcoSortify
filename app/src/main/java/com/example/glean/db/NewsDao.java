@@ -73,8 +73,10 @@ public interface NewsDao {
     // ===== OFFLINE OPERATIONS =====
     @Query("SELECT * FROM news WHERE isOfflineAvailable = 1 ORDER BY timestamp DESC")
     List<NewsItem> getOfflineNews();
+      // ===== DELETE OPERATIONS =====
+    @Query("DELETE FROM news WHERE id = :id")
+    void deleteById(int id);
     
-    // ===== DELETE OPERATIONS =====
     @Query("DELETE FROM news WHERE timestamp < :before")
     void deleteOldNews(long before);
     

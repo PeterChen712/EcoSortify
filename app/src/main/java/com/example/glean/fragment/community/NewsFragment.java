@@ -16,7 +16,13 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.glean.R;
 import com.example.glean.adapter.NewsAdapter;
+import com.example.glean.api.NewsApi;
 import com.example.glean.databinding.FragmentCommunityNewsBinding;
+import com.example.glean.helper.NetworkHelper;
+import com.example.glean.helper.NewsCacheManager;
+import com.example.glean.helper.NewsValidator;
+import com.example.glean.helper.UrlValidator;
+import com.example.glean.model.Article;
 import com.example.glean.model.NewsItem;
 
 import java.util.ArrayList;
@@ -28,15 +34,23 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
     private FragmentCommunityNewsBinding binding;
     private NewsAdapter newsAdapter;
     private List<NewsItem> newsList = new ArrayList<>();
+    
+    // API and cache components
+    private NewsApi newsApi;
+    private NewsCacheManager cacheManager;
+    private String currentCategory = "all";
       @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         binding = FragmentCommunityNewsBinding.inflate(inflater, container, false);
         return binding.getRoot();
-    }
-      @Override
+    }    @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        
+        // Initialize API and cache components
+        newsApi = new NewsApi();
+        cacheManager = new NewsCacheManager(requireContext());
         
         // Debug browser availability
         debugBrowserAvailability();
@@ -65,8 +79,9 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
         binding.chipTips.setOnClickListener(v -> filterByCategory("tips"));
         binding.chipEducation.setOnClickListener(v -> filterByCategory("education"));
     }
-    
-    private void filterByCategory(String category) {
+      private void filterByCategory(String category) {
+        currentCategory = category;
+        
         // Reset chip states
         binding.chipAll.setChecked(false);
         binding.chipEnvironment.setChecked(false);
@@ -93,88 +108,193 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
                 break;
         }
         
-        loadNews(category);
+        loadNews();
+    }
+      private void loadNews() {
+        binding.swipeRefreshLayout.setRefreshing(true);
+        
+        // Check network status
+        NetworkHelper.NetworkStatus networkStatus = NetworkHelper.getNetworkStatus(requireContext());
+        
+        if (networkStatus.isAvailable() && networkStatus.shouldFetch()) {
+            // Network available - fetch from API with validation
+            loadNewsFromApi();
+        } else if (networkStatus.isAvailable()) {
+            // Limited network - try quick validation
+            loadNewsWithQuickValidation();
+        } else {
+            // No network - load from cache
+            loadNewsFromCache();
+        }
     }
     
-    private void loadNews() {
-        loadNews("all");
-    }    private void loadNews(String category) {
-        binding.swipeRefreshLayout.setRefreshing(true);
+    private void loadNewsFromApi() {
+        android.util.Log.d(TAG, "Loading news from API with full validation...");
+        
+        newsApi.getValidatedEnvironmentalArticles(new NewsApi.ValidatedNewsCallback() {
+            @Override
+            public void onSuccess(List<Article> validArticles, NewsValidator.ValidationStats stats) {
+                android.util.Log.i(TAG, "API validation success: " + stats.getSummary());
+                
+                // Convert Articles to NewsItems
+                List<NewsItem> newsItems = convertArticlesToNewsItems(validArticles);
+                
+                // Cache the valid articles
+                cacheManager.cacheArticles(newsItems, new NewsCacheManager.CacheCallback() {
+                    @Override
+                    public void onCacheSuccess(int cachedCount) {
+                        android.util.Log.d(TAG, "Cached " + cachedCount + " articles");
+                    }
+
+                    @Override
+                    public void onCacheError(String error) {
+                        android.util.Log.w(TAG, "Cache error: " + error);
+                    }
+                });
+                  // Display filtered results
+                displayNewsItems(newsItems);
+                showSuccessMessage("Artikel berhasil dimuat dan divalidasi");
+            }
+
+            @Override
+            public void onValidationProgress(int processed, int total) {
+                // Update progress if needed
+                android.util.Log.d(TAG, "Validation progress: " + processed + "/" + total);
+            }
+
+            @Override            public void onError(String error) {
+                android.util.Log.e(TAG, "API validation error: " + error);
+                showErrorMessage("Gagal memuat dari API, mencoba alternatif...");
+                
+                // Fallback to quick validation
+                loadNewsWithQuickValidation();
+            }
+        });
+    }
+    
+    private void loadNewsWithQuickValidation() {
+        android.util.Log.d(TAG, "Loading news with quick validation...");
+        
+        newsApi.getQuickValidatedArticles(new NewsApi.NewsCallback() {
+            @Override
+            public void onSuccess(List<Article> articles) {
+                android.util.Log.d(TAG, "Quick validation success: " + articles.size() + " articles");
+                  List<NewsItem> newsItems = convertArticlesToNewsItems(articles);
+                displayNewsItems(newsItems);
+                showSuccessMessage("Artikel dimuat dengan validasi cepat");
+            }
+
+            @Override            public void onError(String error) {
+                android.util.Log.e(TAG, "Quick validation error: " + error);
+                showErrorMessage("Gagal validasi cepat, mencoba cache...");
+                
+                // Fallback to cache
+                loadNewsFromCache();
+            }
+        });
+    }
+    
+    private void loadNewsFromCache() {
+        android.util.Log.d(TAG, "Loading news from cache...");
+        
+        cacheManager.getValidatedCachedArticles(new NewsCacheManager.CacheRetrievalCallback() {
+            @Override
+            public void onCachedArticlesRetrieved(List<NewsItem> cachedArticles) {                if (!cachedArticles.isEmpty()) {
+                    android.util.Log.d(TAG, "Loaded " + cachedArticles.size() + " articles from cache");
+                    displayNewsItems(cachedArticles);
+                    showInfoMessage("Memuat " + cachedArticles.size() + " artikel dari cache");
+                } else {
+                    // Ultimate fallback: sample articles
+                    loadSampleArticles();
+                }
+            }
+
+            @Override
+            public void onRetrievalError(String error) {
+                android.util.Log.e(TAG, "Cache retrieval error: " + error);
+                loadSampleArticles();
+            }
+        });
+    }
+    
+    private void loadSampleArticles() {
+        android.util.Log.d(TAG, "Loading sample articles as final fallback");
+        
+        List<Article> sampleArticles = NewsApi.getSampleArticles();
+        List<NewsItem> newsItems = convertArticlesToNewsItems(sampleArticles);
+          displayNewsItems(newsItems);
+        showInfoMessage("Menampilkan artikel contoh");
+    }
+    
+    private List<NewsItem> convertArticlesToNewsItems(List<Article> articles) {
+        List<NewsItem> newsItems = new ArrayList<>();
+        
+        for (Article article : articles) {
+            NewsItem newsItem = article.toNewsItem();
+            
+            // Set additional fields for UI
+            if (newsItem.getCategory() == null || newsItem.getCategory().isEmpty()) {
+                newsItem.setCategory("environment"); // Default category
+            }
+            
+            // Ensure image URL for better UI
+            if (newsItem.getImageUrl() == null || newsItem.getImageUrl().isEmpty()) {
+                newsItem.setImageUrl("https://images.unsplash.com/photo-1611273426858-450d8e3c9fce?w=400&h=300&fit=crop");
+            }
+            
+            newsItems.add(newsItem);
+        }
+        
+        return newsItems;
+    }
+    
+    private void displayNewsItems(List<NewsItem> newsItems) {
         newsList.clear();
         
-        // Real environmental news with proper URLs and images
-        NewsItem news1 = new NewsItem();
-        news1.setId(1);
-        news1.setTitle("Indonesia Targetkan Zero Waste pada 2030");
-        news1.setPreview("Pemerintah Indonesia berkomitmen mencapai target zero waste melalui berbagai program pengelolaan sampah yang berkelanjutan dan pemberdayaan masyarakat.");
-        news1.setImageUrl("https://images.unsplash.com/photo-1611273426858-450d8e3c9fce?w=400&h=300&fit=crop");
-        news1.setUrl("https://www.mongabay.co.id/2023/01/15/indonesia-targetkan-zero-waste-2030/");
-        news1.setCategory("environment");
-        news1.setDate("2025-06-07T10:00:00Z");
-        news1.setSource("Kementerian Lingkungan Hidup");
-        newsList.add(news1);
-        
-        NewsItem news2 = new NewsItem();
-        news2.setId(2);
-        news2.setTitle("Tips Plogging untuk Pemula");
-        news2.setPreview("Panduan lengkap memulai aktivitas plogging dengan aman dan efektif untuk membersihkan lingkungan sambil berolahraga.");
-        news2.setImageUrl("https://images.unsplash.com/photo-1594736797933-d0d3c0204ee9?w=400&h=300&fit=crop");
-        news2.setUrl("https://www.alodokter.com/plogging-olahraga-sambil-membersihkan-lingkungan");
-        news2.setCategory("tips");
-        news2.setDate("2025-06-06T15:30:00Z");
-        news2.setSource("Komunitas Plogging Indonesia");
-        newsList.add(news2);
-        
-        NewsItem news3 = new NewsItem();
-        news3.setId(3);
-        news3.setTitle("Dampak Sampah Plastik terhadap Ekosistem Laut");
-        news3.setPreview("Penelitian terbaru menunjukkan dampak serius sampah plastik terhadap kehidupan laut dan rantai makanan global.");
-        news3.setImageUrl("https://images.unsplash.com/photo-1583212292454-1fe6229603b7?w=400&h=300&fit=crop");
-        news3.setUrl("https://www.greenpeace.org/indonesia/cerita/4298/dampak-sampah-plastik-bagi-ekosistem-laut/");
-        news3.setCategory("education");
-        news3.setDate("2025-06-05T09:15:00Z");
-        news3.setSource("Lembaga Penelitian Lingkungan");
-        newsList.add(news3);
-        
-        NewsItem news4 = new NewsItem();
-        news4.setId(4);
-        news4.setTitle("Gerakan Plogging Menyebar ke 50 Kota di Indonesia");
-        news4.setPreview("Aktivitas plogging kini telah menyebar ke 50 kota besar di Indonesia dengan partisipasi ribuan relawan lingkungan.");
-        news4.setImageUrl("https://images.unsplash.com/photo-1581833971358-2c8b550f87b3?w=400&h=300&fit=crop");
-        news4.setUrl("https://www.kompas.com/sports/read/2023/03/20/14000058/mengenal-plogging-olahraga-sambil-membersihkan-lingkungan");
-        news4.setCategory("plogging");
-        news4.setDate("2025-06-04T14:20:00Z");
-        news4.setSource("Plogging Indonesia");
-        newsList.add(news4);
-        
-        NewsItem news5 = new NewsItem();
-        news5.setId(5);
-        news5.setTitle("Cara Memilah Sampah yang Benar");
-        news5.setPreview("Edukasi tentang cara memilah sampah organik dan anorganik untuk mendukung program daur ulang dan ekonomi sirkular.");
-        news5.setImageUrl("https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?w=400&h=300&fit=crop");
-        news5.setUrl("https://dlh.jakarta.go.id/berita/detail/langkah-mudah-memilah-sampah-dari-rumah");
-        news5.setCategory("education");
-        news5.setDate("2025-06-03T11:45:00Z");
-        news5.setSource("Dinas Kebersihan DKI");
-        newsList.add(news5);
-        
         // Filter by category if not "all"
-        if (!"all".equals(category)) {
-            newsList.removeIf(news -> !news.getCategory().equals(category));
-        }
-        
-        newsAdapter.notifyDataSetChanged();
-        binding.swipeRefreshLayout.setRefreshing(false);
-        
-        // Show/hide empty state
-        if (newsList.isEmpty()) {
-            binding.emptyStateLayout.setVisibility(View.VISIBLE);
-            binding.recyclerViewNews.setVisibility(View.GONE);
+        if (!"all".equals(currentCategory)) {
+            for (NewsItem item : newsItems) {
+                if (currentCategory.equals(item.getCategory())) {
+                    newsList.add(item);
+                }
+            }
         } else {
-            binding.emptyStateLayout.setVisibility(View.GONE);
-            binding.recyclerViewNews.setVisibility(View.VISIBLE);
+            newsList.addAll(newsItems);
         }
-    }    @Override
+        
+        // Update UI on main thread
+        requireActivity().runOnUiThread(() -> {
+            newsAdapter.notifyDataSetChanged();
+            binding.swipeRefreshLayout.setRefreshing(false);
+            
+            // Show/hide empty state
+            if (newsList.isEmpty()) {
+                binding.emptyStateLayout.setVisibility(View.VISIBLE);
+                binding.recyclerViewNews.setVisibility(View.GONE);
+            } else {
+                binding.emptyStateLayout.setVisibility(View.GONE);
+                binding.recyclerViewNews.setVisibility(View.VISIBLE);
+            }
+        });
+    }
+    
+    private void showSuccessMessage(String message) {
+        requireActivity().runOnUiThread(() -> {
+            Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+        });
+    }
+    
+    private void showErrorMessage(String message) {
+        requireActivity().runOnUiThread(() -> {
+            Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show();
+        });
+    }
+    
+    private void showInfoMessage(String message) {
+        requireActivity().runOnUiThread(() -> {
+            Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+        });
+    }@Override
     public void onNewsItemClick(NewsItem news) {
         // Validate news data before navigation
         if (news == null) {

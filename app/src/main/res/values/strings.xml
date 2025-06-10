@@ -267,12 +267,52 @@
     <string name="news_already_refreshing">Udah lagi refresh berita...</string>
     <string name="news_failed_load_cached">Gagal load berita yang tersimpan</string>
     <string name="news_new_articles_loaded">🆕 %d artikel baru dimuat!</string>
-    <string name="news_no_new_articles">📡 Gak ada artikel baru</string>
-    <string name="news_check_internet">🌐 Cek koneksi internet kamu</string>
+    <string name="news_no_new_articles">📡 Gak ada artikel baru</string>    <string name="news_check_internet">🌐 Cek koneksi internet kamu</string>
     <string name="news_content_not_available">📰 Konten artikel gak tersedia</string>
-    <string name="news_failed_open_article">Gagal buka artikel</string>
-    <string name="news_cannot_open_link">🌐 Gak bisa buka link</string>
     <string name="news_no_link_available">🔗 Gak ada link tersedia</string>
     <string name="news_failed_share">📤 Gagal share artikel</string>
+    
+    <!-- Missing News Fragment strings -->
+    <string name="news_loading">Sedang memuat berita...</string>
+    <string name="news_refreshing">Sedang refresh berita...</string>
+    <string name="news_api_not_configured">NewsAPI key tidak dikonfigurasi. Gunakan artikel sample.</string>
+    <string name="news_no_new_articles_found">Tidak ada artikel baru ditemukan</string>
+    <string name="news_showing_sample_offline">Menampilkan artikel sample offline</string>
+    <string name="news_error_loading_sample">Error loading sample news: %s</string>
+    <string name="news_error_loading_cached">Error loading cached news: %s</string>
+    <string name="news_empty_message">Pull down to refresh and load environmental news articles</string>
+    <string name="news_invalid_data">Data berita tidak valid</string>
+      <!-- Additional missing News strings -->
+    <string name="news_failed_open_article">Gagal membuka berita</string>
+    <string name="news_cannot_open_link">Tidak dapat membuka link</string>
+    <string name="news_link_not_available">Link tidak tersedia untuk artikel ini</string>
+    <string name="news_failed_share_article">Gagal membagikan artikel</string>
+    <string name="news_added_to_favorites">💝 Ditambah ke favorit</string>
+    <string name="news_removed_from_favorites">💔 Dihapus dari favorit</string>
+    <string name="news_marked_as_read">✅ Ditandai sudah dibaca</string>
+    <string name="news_marked_as_unread">👁️ Ditandai belum dibaca</string>
+      <!-- Enhanced URL Validation strings -->
+    <string name="news_validation_success" formatted="false">✅ %d artikel valid dimuat (%d divalidasi)</string>
+    <string name="news_validation_progress" formatted="false">🔍 Memvalidasi artikel %d/%d...</string>
+    <string name="news_validation_failed">❌ Validasi artikel gagal, menggunakan validasi cepat</string>
+    <string name="news_quick_validation_success">⚡ %d artikel dimuat (validasi cepat)</string>
+    <string name="news_no_valid_articles_found">❌ Tidak ada artikel valid ditemukan. Silakan coba refresh.</string>
+    <string name="news_validated_cache_loaded" formatted="false">📚 %d artikel valid dari cache (%s)</string>
+    
+    <!-- URL Error Handling strings -->
+    <string name="news_url_might_be_invalid">⚠️ URL artikel mungkin tidak valid</string>
+    <string name="news_url_might_be_broken">⚠️ Link artikel mungkin rusak, tetapi tetap akan dibuka</string>
+    <string name="news_invalid_url_format">❌ Format URL tidak valid</string>
+    <string name="news_article_access_failed">❌ Artikel tidak dapat diakses, silakan pilih berita lain</string>
+    
+    <!-- Validation Error Messages -->
+    <string name="news_url_validation_timeout">⏱️ Validasi URL timeout</string>
+    <string name="news_content_not_relevant">📰 Konten tidak relevan dengan lingkungan</string>
+    <string name="news_format_validation_failed">📋 Validasi format artikel gagal</string>
+    <string name="news_cache_cleanup_success">🧹 Cache dibersihkan dari artikel tidak valid</string>
+    
+    <!-- Empty State Messages -->
+    <string name="news_empty_state_no_valid_articles">Tidak ada berita valid tersedia.\n\nSilakan:\n• Coba refresh\n• Periksa koneksi internet\n• Kembali lagi nanti</string>
+    <string name="news_empty_state_validation_failed">Validasi artikel gagal.\n\nMencoba memuat dari cache...</string>
     
 </resources>

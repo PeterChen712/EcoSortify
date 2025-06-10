@@ -64,8 +64,7 @@ public class NewsItem {
         this.isOfflineAvailable = false;
         this.readingTimeMinutes = 3;
     }
-    
-    @Ignore
+      @Ignore
     public NewsItem(String title, String preview, String fullContent, String date, 
                    String source, String imageUrl, String url, String category) {
         this();
@@ -77,6 +76,17 @@ public class NewsItem {
         this.imageUrl = imageUrl;
         this.url = url;
         this.category = category;
+    }
+    
+    // Additional constructor for Article conversion
+    @Ignore
+    public NewsItem(String title, String description, String url, String source, String formattedDate) {
+        this();
+        this.title = title;
+        this.preview = description;
+        this.url = url;
+        this.source = source;
+        this.date = formattedDate;
     }
     
     // Getters and Setters
