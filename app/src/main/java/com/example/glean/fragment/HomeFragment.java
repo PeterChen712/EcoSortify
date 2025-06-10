@@ -333,8 +333,7 @@ public class HomeFragment extends Fragment {
                 android.util.Log.e("HomeFragment", "DEBUG: Error updating dashboard stats", e);
             }
         });
-    }
-      private void updateStatsDisplay(float totalDistance, int totalTrash, int totalPoints, String badge) {
+    }    private void updateStatsDisplay(float totalDistance, int totalTrash, int totalPoints, String badge) {
         try {
             if (binding.tvQuickStatsDistance != null) {
                 binding.tvQuickStatsDistance.setText(String.format("%.1f km", totalDistance / 1000f));
@@ -349,22 +348,38 @@ public class HomeFragment extends Fragment {
             }
             
             if (binding.tvQuickStatsBadge != null) {
-                binding.tvQuickStatsBadge.setText(badge);
+                // Show badge count instead of badge name
+                int badgeCount = getBadgeCount(totalPoints);
+                binding.tvQuickStatsBadge.setText(String.valueOf(badgeCount));
             }
         } catch (Exception e) {
             // Handle error silently
         }
-    }      private void updateChallengeProgress(int totalTrash) {
+    }private void updateChallengeProgress(int totalTrash) {
         // Challenge Global section has been completely removed from layout
         // No UI updates needed as the section no longer exists
     }
-    
-    private String getBadge(int points) {
+      private String getBadge(int points) {
         if (points >= 1000) return "Eco Master";
         else if (points >= 500) return "Eco Expert";
         else if (points >= 200) return "Eco Warrior";
         else if (points >= 50) return "Eco Fighter";
         else return "Eco Beginner";
+    }
+    
+    private int getBadgeCount(int points) {
+        // Calculate badge count based on achievement levels
+        int count = 1; // Everyone gets at least the starter badge
+        
+        if (points >= 50) count++;   // Green Helper
+        if (points >= 100) count++;  // Eco Warrior  
+        if (points >= 200) count++;  // Green Champion
+        if (points >= 500) count++;  // Earth Guardian
+        if (points >= 1000) count++; // Expert Plogger
+        if (points >= 1500) count++; // Master Cleaner
+        if (points >= 2000) count++; // Eco Legend
+        
+        return count;
     }
     
     private long getStartOfWeek() {
