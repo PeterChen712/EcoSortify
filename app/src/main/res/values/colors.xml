@@ -108,11 +108,15 @@
     <color name="chip_background">#EEEEEE</color>
     <color name="chip_text">#212121</color>
     <color name="placeholder_text">#757575</color>
-    
-    <!-- Status and feedback colors for light theme -->
+      <!-- Status and feedback colors for light theme -->
     <color name="loading_background">#FFFFFF</color>
     <color name="empty_state_text">#757575</color>
     <color name="shimmer_base">#F0F0F0</color>
     <color name="shimmer_highlight">#FFFFFF</color>
+
+    <!-- Header colors -->
+    <color name="header_background">#388E3C</color>
+    <color name="header_text_primary">#FFFFFF</color>
+    <color name="header_text_secondary">#E8F5E8</color>
 
 </resources>

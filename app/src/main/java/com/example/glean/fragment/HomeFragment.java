@@ -6,6 +6,7 @@ import android.preference.PreferenceManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -207,18 +208,18 @@ public class HomeFragment extends Fragment {
                 LiveData<UserEntity> userLiveData = db.userDao().getUserById(userId);                userLiveData.observe(getViewLifecycleOwner(), user -> {                    if (user != null) {
                         String displayName = getDisplayName(user);
                         String greetingWithName = getTimeGreeting() + ", " + displayName + "!";
-                        
-                        // Update the welcome message in the simple header with actual user name
-                        if (binding.tvWelcomeUser != null) {
-                            binding.tvWelcomeUser.setText("Selamat Datang, " + displayName + "!");
+                          // Update the welcome message in the header with actual user name
+                        TextView tvWelcomeUser = binding.getRoot().findViewById(R.id.tvWelcomeUser);
+                        if (tvWelcomeUser != null) {
+                            tvWelcomeUser.setText("Selamat Datang, " + displayName + "!");
                         }
                         
                         loadUserStats(userId);
                     }
-                });            } else {
-                // Set default welcome message when no user is logged in
-                if (binding.tvWelcomeUser != null) {
-                    binding.tvWelcomeUser.setText("Selamat Datang!");
+                });            } else {                // Set default welcome message when no user is logged in
+                TextView tvWelcomeUser = binding.getRoot().findViewById(R.id.tvWelcomeUser);
+                if (tvWelcomeUser != null) {
+                    tvWelcomeUser.setText("Selamat Datang!");
                 }
             }
         } catch (Exception e) {

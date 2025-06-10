@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Header dimensions -->
+    <dimen name="header_height">140dp</dimen>
+    <dimen name="header_corner_radius">32dp</dimen>
+    <dimen name="header_padding_horizontal">24dp</dimen>
+    <dimen name="header_padding_vertical">20dp</dimen>
+    <dimen name="header_padding_top">40dp</dimen>
+    
+    <!-- Text sizes -->
+    <dimen name="header_title_text_size">24sp</dimen>
+    <dimen name="header_greeting_text_size">16sp</dimen>
+    
+    <!-- Spacing -->
+    <dimen name="header_title_margin_bottom">4dp</dimen>
+    <dimen name="header_spacing_small">8dp</dimen>
+    <dimen name="header_spacing_medium">16dp</dimen>
+    <dimen name="header_spacing_large">24dp</dimen>
+</resources>
