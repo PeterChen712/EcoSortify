@@ -256,9 +256,7 @@
 
                 </RelativeLayout>
 
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- Summary Stats Card -->
+            </com.google.android.material.card.MaterialCardView>            <!-- Summary Stats Card -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -267,7 +265,7 @@
                 app:cardElevation="8dp"
                 app:strokeColor="@color/primary_color"
                 app:strokeWidth="1dp"
-                android:backgroundTint="@android:color/white">
+                android:backgroundTint="@color/card_background">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -286,24 +284,20 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:orientation="vertical">
-
-                            <TextView
+                            android:orientation="vertical">                            <TextView
                                 android:id="@+id/tvDate"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:textSize="18sp"
                                 android:textStyle="bold"
-                                android:textColor="@color/primary"
+                                android:textColor="@color/card_text_primary"
                                 android:layout_marginBottom="4dp"
-                                tools:text="March 15, 2024" />
-
-                            <TextView
+                                tools:text="March 15, 2024" />                            <TextView
                                 android:id="@+id/tvLocation"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:textSize="14sp"
-                                android:textColor="@color/text_secondary"
+                                android:textColor="@color/card_text_secondary"
                                 android:layout_marginBottom="4dp"
                                 tools:text="📍 Central Park" />
 
@@ -312,7 +306,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:textSize="14sp"
-                                android:textColor="@color/text_secondary"
+                                android:textColor="@color/card_text_secondary"
                                 tools:text="Started at 08:30" />
 
                         </LinearLayout>
@@ -361,21 +355,17 @@
                             android:layout_columnWeight="1"
                             android:orientation="vertical"
                             android:gravity="center"
-                            android:padding="12dp">
-
-                            <ImageView
+                            android:padding="12dp">                            <ImageView
                                 android:layout_width="24dp"
                                 android:layout_height="24dp"
                                 android:src="@drawable/ic_distance"
                                 app:tint="@color/primary_color"
-                                android:layout_marginBottom="8dp" />
-
-                            <TextView
+                                android:layout_marginBottom="8dp" /><TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Distance"
                                 android:textSize="12sp"
-                                android:textColor="@color/text_secondary" />
+                                android:textColor="@color/card_text_secondary" />
 
                             <TextView
                                 android:id="@+id/tvDistance"
@@ -383,7 +373,7 @@
                                 android:layout_height="wrap_content"
                                 android:textSize="20sp"
                                 android:textStyle="bold"
-                                android:textColor="@color/text_primary"
+                                android:textColor="@color/card_text_primary"
                                 tools:text="2.5 km" />
 
                         </LinearLayout>
@@ -395,21 +385,17 @@
                             android:layout_columnWeight="1"
                             android:orientation="vertical"
                             android:gravity="center"
-                            android:padding="12dp">
-
-                            <ImageView
+                            android:padding="12dp">                            <ImageView
                                 android:layout_width="24dp"
                                 android:layout_height="24dp"
                                 android:src="@drawable/ic_timer"
-                                app:tint="#FF9800"
-                                android:layout_marginBottom="8dp" />
-
-                            <TextView
+                                app:tint="@color/warning_color"
+                                android:layout_marginBottom="8dp" /><TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Duration"
                                 android:textSize="12sp"
-                                android:textColor="@color/text_secondary" />
+                                android:textColor="@color/card_text_secondary" />
 
                             <TextView
                                 android:id="@+id/tvDuration"
@@ -417,7 +403,7 @@
                                 android:layout_height="wrap_content"
                                 android:textSize="20sp"
                                 android:textStyle="bold"
-                                android:textColor="@color/text_primary"
+                                android:textColor="@color/card_text_primary"
                                 tools:text="25 min" />
 
                         </LinearLayout>
@@ -436,14 +422,12 @@
                                 android:layout_height="24dp"
                                 android:src="@drawable/ic_trash"
                                 app:tint="@color/environmental_green"
-                                android:layout_marginBottom="8dp" />
-
-                            <TextView
+                                android:layout_marginBottom="8dp" />                            <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Trash Collected"
                                 android:textSize="12sp"
-                                android:textColor="@color/text_secondary" />
+                                android:textColor="@color/card_text_secondary" />
 
                             <TextView
                                 android:id="@+id/tvTrashCollected"
@@ -451,7 +435,7 @@
                                 android:layout_height="wrap_content"
                                 android:textSize="20sp"
                                 android:textStyle="bold"
-                                android:textColor="@color/text_primary"
+                                android:textColor="@color/card_text_primary"
                                 tools:text="12" />
 
                         </LinearLayout>
@@ -463,21 +447,17 @@
                             android:layout_columnWeight="1"
                             android:orientation="vertical"
                             android:gravity="center"
-                            android:padding="12dp">
-
-                            <ImageView
+                            android:padding="12dp">                            <ImageView
                                 android:layout_width="24dp"
                                 android:layout_height="24dp"
                                 android:src="@drawable/ic_star"
-                                app:tint="@color/primary"
-                                android:layout_marginBottom="8dp" />
-
-                            <TextView
+                                app:tint="@color/primary_color"
+                                android:layout_marginBottom="8dp" /><TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Points Earned"
                                 android:textSize="12sp"
-                                android:textColor="@color/text_secondary" />
+                                android:textColor="@color/card_text_secondary" />
 
                             <TextView
                                 android:id="@+id/tvPoints"
@@ -485,8 +465,8 @@
                                 android:layout_height="wrap_content"
                                 android:textSize="20sp"
                                 android:textStyle="bold"
-                                android:textColor="@color/primary"
-                                tools:text="120" />                        </LinearLayout>
+                                android:textColor="@color/card_text_primary"
+                                tools:text="120" /></LinearLayout>
 
                     </GridLayout>
 
@@ -499,9 +479,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:layout_marginTop="16dp">
-
-                <!-- Share to Community Button -->
+                android:layout_marginTop="16dp">                <!-- Share to Community Button -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnShareCommunity"
                     android:layout_width="match_parent"
@@ -517,9 +495,8 @@
                     app:iconGravity="textStart"
                     app:iconPadding="8dp"
                     app:iconTint="@android:color/white"
-                    style="@style/Widget.MaterialComponents.Button" />
-
-                <!-- Regular Share Button -->
+                    android:textAllCaps="false"
+                    style="@style/Widget.MaterialComponents.Button" />                <!-- Regular Share Button -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnShare"
                     android:layout_width="match_parent"
@@ -535,9 +512,8 @@
                     app:iconGravity="textStart"
                     app:iconPadding="8dp"
                     app:iconTint="@color/primary_color"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
-
-                <!-- Save to Gallery Button -->
+                    android:textAllCaps="false"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton" />                <!-- Save to Gallery Button -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnSaveToGallery"
                     android:layout_width="match_parent"
@@ -552,6 +528,7 @@
                     app:iconGravity="textStart"
                     app:iconPadding="8dp"
                     app:iconTint="@color/environmental_green"
+                    android:textAllCaps="false"
                     style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
 
             </LinearLayout>
