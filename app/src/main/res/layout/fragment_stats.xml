@@ -175,7 +175,7 @@
                                 android:layout_height="24dp"
                                 android:layout_gravity="center"
                                 android:contentDescription="Distance Icon"
-                                android:src="@drawable/ic_distance"
+                                android:src="@drawable/ic_run"
                                 app:tint="@color/primary_blue" />
 
                         </androidx.cardview.widget.CardView>
@@ -228,7 +228,7 @@
                                 android:layout_height="24dp"
                                 android:layout_gravity="center"
                                 android:contentDescription="Time Icon"
-                                android:src="@drawable/ic_timer"
+                                android:src="@drawable/ic_hourglass"
                                 app:tint="@color/primary_purple" />
 
                         </androidx.cardview.widget.CardView>

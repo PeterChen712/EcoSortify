@@ -55,11 +55,11 @@ public class TrashMapFragment extends Fragment implements OnMapReadyCallback, Go
     private AppDatabase db;
     private ExecutorService executor;
     private Map<Marker, TrashEntity> markerTrashMap = new HashMap<>();
-    private String currentFilter = "All";
-    
-    // Add these missing variables
+    private String currentFilter = "All";    // Add these missing variables
     private Marker currentLocationMarker;
     private LocationCallback locationCallback; // Add this line
+    private LocationCallback ultraDetailLocationCallback; // Callback for ultra detail location requests
+    private LocationCallback newLocationCallback; // Callback for new location requests
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -171,14 +171,19 @@ public class TrashMapFragment extends Fragment implements OnMapReadyCallback, Go
                     .setNumUpdates(15)  // 15 reading untuk presisi terbaik
                     .setSmallestDisplacement(0.05f); // Update untuk pergerakan 5 cm
             
-            LocationCallback ultraDetailCallback = new LocationCallback() {
+            ultraDetailLocationCallback = new LocationCallback() {
                 private int updateCount = 0;
                 private Location bestLocation = null;
                 private float bestAccuracy = Float.MAX_VALUE;
                 private List<Location> locationHistory = new ArrayList<>();
-                
-                @Override
+                  @Override
                 public void onLocationResult(LocationResult locationResult) {
+                    // Safety check: ensure fragment is still attached
+                    if (!isAdded() || getContext() == null) {
+                        Log.w("TrashMapFragment", "Location result received but fragment is detached - ignoring");
+                        return;
+                    }
+                    
                     if (locationResult == null || locationResult.getLocations().isEmpty()) {
                         Log.w("TrashMapFragment", "No location in result");
                         return;
@@ -287,24 +292,22 @@ public class TrashMapFragment extends Fragment implements OnMapReadyCallback, Go
                                 // Tambahkan marker untuk lokasi cache
                                 addCurrentLocationMarker(cachedLatLng, cachedLocation.getAccuracy());
                             }
-                        }
-                        
-                        // Step 2: Request ultra detail updates
-                        if (ActivityCompat.checkSelfPermission(requireContext(), 
+                        }                        // Step 2: Request ultra detail updates
+                        if (isAdded() && getContext() != null && 
+                            ActivityCompat.checkSelfPermission(getContext(), 
                                 Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                             fusedLocationClient.requestLocationUpdates(ultraDetailRequest, 
-                                                                      ultraDetailCallback,
+                                                                      ultraDetailLocationCallback,
                                                                       Looper.getMainLooper());
                         }
                     })
                     .addOnFailureListener(e -> {
-                        Log.e("TrashMapFragment", "Failed to get cached location", e);
-                        
-                        // Langsung ke ultra detail updates
-                        if (ActivityCompat.checkSelfPermission(requireContext(), 
+                        Log.e("TrashMapFragment", "Failed to get cached location", e);                        // Langsung ke ultra detail updates
+                        if (isAdded() && getContext() != null && 
+                            ActivityCompat.checkSelfPermission(getContext(), 
                                 Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                             fusedLocationClient.requestLocationUpdates(ultraDetailRequest, 
-                                                                      ultraDetailCallback,
+                                                                      ultraDetailLocationCallback,
                                                                       Looper.getMainLooper());
                         }
                     });
@@ -576,11 +579,15 @@ public class TrashMapFragment extends Fragment implements OnMapReadyCallback, Go
         if (provider != null && provider.equals("passive")) return false; // Hindari passive provider
         
         return true;
-    }
-
-    // Method untuk menampilkan informasi lokasi detail
+    }    // Method untuk menampilkan informasi lokasi detail
     private void showLocationInfo(Location location) {
         if (location == null) return;
+        
+        // Safety check: ensure fragment is still attached
+        if (!isAdded() || getContext() == null) {
+            Log.w("TrashMapFragment", "Fragment not attached, skipping location info display");
+            return;
+        }
         
         String locationInfo = String.format(Locale.getDefault(),
             "📍 Ultra Detail Location\n" +
@@ -598,10 +605,12 @@ public class TrashMapFragment extends Fragment implements OnMapReadyCallback, Go
         
         Log.d("TrashMapFragment", locationInfo);
         
-        // Tampilkan toast dengan info singkat
-        Toast.makeText(requireContext(), 
-            String.format("📍 Location: ±%.1fm accuracy", location.getAccuracy()), 
-            Toast.LENGTH_SHORT).show();
+        // Tampilkan toast dengan info singkat - use getContext() instead of requireContext()
+        if (getContext() != null) {
+            Toast.makeText(getContext(), 
+                String.format("📍 Location: ±%.1fm accuracy", location.getAccuracy()), 
+                Toast.LENGTH_SHORT).show();
+        }
     }
 
     // Method untuk zoom ke level detail tertentu
@@ -751,12 +760,21 @@ public class TrashMapFragment extends Fragment implements OnMapReadyCallback, Go
 
     @Override
     public void onDestroyView() {
-        super.onDestroyView();
-        
-        try {
+        super.onDestroyView();        try {
             // Stop location updates
-            if (fusedLocationClient != null && locationCallback != null) {
-                fusedLocationClient.removeLocationUpdates(locationCallback);
+            if (fusedLocationClient != null) {
+                if (locationCallback != null) {
+                    fusedLocationClient.removeLocationUpdates(locationCallback);
+                    locationCallback = null;
+                }
+                if (ultraDetailLocationCallback != null) {
+                    fusedLocationClient.removeLocationUpdates(ultraDetailLocationCallback);
+                    ultraDetailLocationCallback = null;
+                }
+                if (newLocationCallback != null) {
+                    fusedLocationClient.removeLocationUpdates(newLocationCallback);
+                    newLocationCallback = null;
+                }
             }
             
             // Clear map resources
@@ -807,12 +825,17 @@ public class TrashMapFragment extends Fragment implements OnMapReadyCallback, Go
                     .setNumUpdates(5) // Ambil beberapa reading untuk akurasi terbaik
                     .setSmallestDisplacement(0.5f); // Update jika bergerak 0.5 meter
                 
-            LocationCallback locationCallback = new LocationCallback() {
+            newLocationCallback = new LocationCallback() {
                 private int updateCount = 0;
                 private Location bestLocation = null;
-                
-                @Override
+                  @Override
                 public void onLocationResult(LocationResult locationResult) {
+                    // Safety check: ensure fragment is still attached
+                    if (!isAdded() || getContext() == null) {
+                        Log.w("TrashMapFragment", "New location result received but fragment is detached - ignoring");
+                        return;
+                    }
+                    
                     if (locationResult == null || locationResult.getLocations().isEmpty()) {
                         Log.w("TrashMapFragment", "Location result is empty");
                         return;
@@ -851,17 +874,17 @@ public class TrashMapFragment extends Fragment implements OnMapReadyCallback, Go
                         fusedLocationClient.removeLocationUpdates(this);
                     }
                 }
-            };
-            
-            // Request location updates
-            if (ActivityCompat.checkSelfPermission(requireContext(), 
+            };            // Request location updates
+            if (ActivityCompat.checkSelfPermission(getContext(), 
                     Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                 fusedLocationClient.requestLocationUpdates(locationRequest, 
-                                                         locationCallback,
+                                                         newLocationCallback,
                                                          Looper.getMainLooper());
-            }        } catch (SecurityException e) {
+            }} catch (SecurityException e) {
             Log.e("TrashMapFragment", "Error requesting new location", e);
-            Toast.makeText(requireContext(), getString(R.string.error_getting_location), Toast.LENGTH_SHORT).show();
+            if (getContext() != null) {
+                Toast.makeText(getContext(), getString(R.string.error_getting_location), Toast.LENGTH_SHORT).show();
+            }
         }
     }
 
