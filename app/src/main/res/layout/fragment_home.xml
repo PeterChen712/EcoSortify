@@ -352,10 +352,9 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:weightSum="2">
-                    <com.google.android.material.button.MaterialButton
+                    android:weightSum="2">                    <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnQuickAction1"
-                        style="@style/Widget.Material3.Button.TonalButton"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
                         android:layout_width="0dp"
                         android:layout_height="60dp"
                         android:layout_weight="1"
@@ -364,11 +363,11 @@
                         android:textSize="13sp"
                         android:textStyle="bold"
                         app:cornerRadius="12dp"
-                        app:backgroundTint="@color/environmental_green"
-                        android:textColor="@android:color/white"
-                        app:elevation="4dp"
+                        app:strokeColor="@color/environmental_green"
+                        android:textColor="@color/environmental_green"
+                        app:strokeWidth="2dp"
                         app:icon="@drawable/ic_run"
-                        app:iconTint="@android:color/white"
+                        app:iconTint="@color/environmental_green"
                         app:iconGravity="start" />
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnQuickAction2"
@@ -553,41 +552,28 @@
                         android:textSize="14sp"
                         android:textColor="@color/card_description_text"
                         android:alpha="0.8"
-                        android:lineSpacingExtra="2dp" />
-
-                </LinearLayout>
-
-                <!-- Arrow Icon -->
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_arrow_forward"
-                    app:tint="@color/environmental_green"
-                    android:alpha="0.6"
-                    android:contentDescription="Go to About" />
+                        android:lineSpacingExtra="2dp" />                </LinearLayout>
 
             </LinearLayout>
 
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Enhanced Start Plogging Button -->
+        </com.google.android.material.card.MaterialCardView><!-- Enhanced Start Plogging Button -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnStartPlogging"
-            style="@style/Widget.Material3.Button.UnelevatedButton"
+            style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="match_parent"
             android:layout_height="64dp"
             android:layout_marginTop="8dp"
             android:text="Mulai Plogging"
             android:textSize="18sp"
             android:textStyle="bold"
-            android:textColor="@android:color/white"
+            android:textColor="@color/environmental_green"
             app:cornerRadius="32dp"
-            app:backgroundTint="@color/environmental_green"
-            app:elevation="8dp"
+            app:strokeColor="@color/environmental_green"
+            app:strokeWidth="2dp"
             app:icon="@drawable/ic_play_arrow"
             app:iconGravity="textStart"
             app:iconPadding="8dp"
-            app:iconTint="@android:color/white" />        <!-- Add some bottom padding -->
+            app:iconTint="@color/environmental_green" /><!-- Add some bottom padding -->
         <View
             android:layout_width="match_parent"
             android:layout_height="16dp" />        </LinearLayout>

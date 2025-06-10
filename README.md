@@ -12,18 +12,26 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg"></a>
 </p>
 
+
+
+## 🌱 What is Plogging?
+
+<p align="center">
+  <img width="500" src="README/plogging_example.jpg" alt="Plogging Example"/>
+</p>
+
+**Just jogging and just pick up the trash!**  
+Plogging adalah gabungan aktivitas jogging dan memungut sampah. Nama ini berasal dari kata Swedia “plocka upp” (memungut) dan “jogga” (berlari). Plogging bukan sekadar olahraga, ini adalah aksi kecil untuk perubahan besar, membakar lebih banyak kalori dan membantu lingkungan tetap bersih!
+
 ---
+
 
 ## 🌏 Story
 
-<div align="center">
 
-<img width="300" src="README/cover_story.jpg" alt="GleanGo Cover"/>
-
-</div>
-
-**GleanGo lahir ri keinginan sederhana: membuat olahraga dan aksi nyata menjaga lingkungan jadi lebih seru dan bermakna.**  
-Bayangkan kamu jogging pagi, tapi kali ini setiap langkahmu tak hanya menyehatkan, tapi juga membersihkan jalanan dari sampah. Inilah plogging — tren positif dari Swedia yang menggabungkan “jogging” dan “plocka upp” (memungut).
+**GleanGo lahir dari keinginan sederhana: membuat olahraga dan aksi nyata menjaga lingkungan jadi lebih seru dan bermakna.**
+  
+Bayangkan kamu jogging pagi, tapi kali ini setiap langkahmu tak hanya menyehatkan, tapi juga membersihkan jalanan dari sampah. 
 
 Perubahan besar dimulai dari aksi kecil yang konsisten.  
 Dengan teknologi GPS presisi tinggi, AI untuk klasifikasi sampah, dan sistem gamifikasi yang seru, GleanGo ingin mengajakmu menjadi bagian dari gerakan hijau masa kini.
@@ -41,17 +49,6 @@ Setiap fitur di GleanGo dirancang untuk membuat kontribusimu terasa nyata. Mulai
 
 ---
 
-## 🌱 What is Plogging?
-
-<p align="center">
-  <img width="500" src="README/plogging_example.jpg" alt="Plogging Example"/>
-</p>
-
-**Just jogging and just pick up the trash!**  
-Plogging adalah gabungan aktivitas jogging dan memungut sampah. Nama ini berasal dari kata Swedia “plocka upp” (memungut) dan “jogga” (berlari). Plogging bukan sekadar olahraga — ini adalah aksi kecil untuk perubahan besar, membakar lebih banyak kalori dan membantu lingkungan tetap bersih!
-
----
-
 ## 🌐 Sustainable Development Goals (SDGs)
 
 ![SDG 17 Goals](README/sdg_17_goals.png)
@@ -63,7 +60,7 @@ GleanGo mendukung beberapa SDGs, khususnya:
 
 ---
 
-## 🎯 Our Goals
+## 🎯 Tujuan
 
 - Menjadikan plogging gaya hidup baru di Indonesia.
 - Menciptakan komunitas peduli lingkungan yang saling mendukung.
@@ -103,7 +100,6 @@ GleanGo mendukung beberapa SDGs, khususnya:
 - Tekan “Mulai Plogging” untuk memulai sesi plogging.
 
 ---
-
 ### 3. Tracking Plogging & Scan Sampah
 <p align="center">
   <img width="200" src="README/2.jpg" alt="Tracking Plogging"/>
@@ -125,10 +121,10 @@ GleanGo mendukung beberapa SDGs, khususnya:
   <img width="200" src="README/4.jpg" alt="Statistics"/>
 </p>
 
-- Bagikan aktivitas ke komunitas dan lihat aktivitas pengguna lain (3a).
-- Kompetisi sehat lewat leaderboard (3b).
-- Baca update berita lingkungan (3c).
-- Lihat statistik perkembangan plogging (4).
+- Bagikan aktivitas ke komunitas dan lihat aktivitas pengguna lain.
+- Kompetisi sehat lewat leaderboard.
+- Baca update berita lingkungan.
+- Lihat statistik perkembangan plogging.
 
 ---
 
@@ -139,8 +135,8 @@ GleanGo mendukung beberapa SDGs, khususnya:
   <img width="200" src="README/5b.jpg" alt="Points Shop"/>
 </p>
 
-- Personalisasi profil dan koleksi badge (5, 5a).
-- Tukar poin dengan reward virtual di menu belanja (5b).
+- Personalisasi profil dan koleksi badge.
+- Tukar poin dengan reward virtual di menu.
 
 ---
 
