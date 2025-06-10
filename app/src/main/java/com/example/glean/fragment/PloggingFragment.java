@@ -83,6 +83,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class PloggingFragment extends Fragment implements OnMapReadyCallback {
     private static final String TAG = "PloggingFragment";
@@ -1142,10 +1143,11 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         } catch (SecurityException e) {
 
         }
-    }
-
-    private void addCurrentLocationMarker(LatLng location, float accuracy) {
-        if (mMap == null) return;
+    }    private void addCurrentLocationMarker(LatLng location, float accuracy) {
+        if (mMap == null || !isAdded() || getContext() == null) {
+            Log.w(TAG, "Cannot add location marker - map is null or fragment not attached");
+            return;
+        }
 
         if (currentLocationMarker != null) {
             currentLocationMarker.remove();
@@ -1173,7 +1175,11 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                     .setFastestInterval(1000)
                     .setSmallestDisplacement(1f);            trackingCallback = new LocationCallback() {                @Override
                 public void onLocationResult(LocationResult locationResult) {
-                    if (locationResult == null || !isTracking) return;
+                    // Safety check: ensure fragment is still attached
+                    if (!isAdded() || getContext() == null || locationResult == null || !isTracking) {
+                        Log.w(TAG, "Location result received but fragment is detached or not tracking - ignoring");
+                        return;
+                    }
 
                     Location location = locationResult.getLastLocation();
                     if (location != null && mMap != null) {
@@ -1278,17 +1284,15 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                             }
                         } else {
                             Log.w(TAG, "⚠️  Cannot save location point: no active record (currentRecordId = " + currentRecordId + ")");
-                        }
-
-                        // Handle session saving and UI updates
-                        if (lastLocation != null) {
-                            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
+                        }                        // Handle session saving and UI updates
+                        if (lastLocation != null && isAdded() && getContext() != null) {
+                            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
                             long lastSaveTime = prefs.getLong("LAST_SAVE_TIME", 0);
                             boolean shouldSave = System.currentTimeMillis() - lastSaveTime > 10000 || totalDistance - prefs.getFloat("LAST_SAVED_DISTANCE", 0) > 10;
 
                             if (shouldSave) {
                                 saveTrackingSession(true, currentRecordId,
-                                        PreferenceManager.getDefaultSharedPreferences(requireContext())
+                                        PreferenceManager.getDefaultSharedPreferences(getContext())
                                                 .getLong("SESSION_START_TIME", System.currentTimeMillis()),
                                         totalDistance);
 
@@ -1330,33 +1334,73 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
     }    @Override
     public void onDestroyView() {
         super.onDestroyView();
-        hideNetworkWarning();
-        unregisterNetworkCallbacks();
-        unregisterGpsCallbacks();
-        dismissGpsDialog();
+        try {
+            // Stop location updates to prevent callbacks after fragment is detached
+            if (fusedLocationClient != null && trackingCallback != null) {
+                fusedLocationClient.removeLocationUpdates(trackingCallback);
+                Log.d(TAG, "Location updates removed in onDestroyView");
+            }
+            
+            // Hide warnings and unregister callbacks
+            hideNetworkWarning();
+            unregisterNetworkCallbacks();
+            unregisterGpsCallbacks();
+            dismissGpsDialog();
 
-        binding = null;
-    }
-
-    @Override
+            // Clear binding
+            binding = null;
+        } catch (Exception e) {
+            Log.e(TAG, "Error in onDestroyView", e);
+        }
+    }    @Override
     public void onDestroy() {
         super.onDestroy();
-        if (executor != null && !executor.isShutdown()) {
-            executor.shutdown();
-        }        // Cancel auto-finish timers when fragment is destroyed
-        cancelAutoFinishTimer();
-
-        if (autoFinishHandler != null) {
-            autoFinishHandler.removeCallbacksAndMessages(null);
+        try {
+            // Unregister network and GPS receivers
+            unregisterNetworkCallbacks();
+            unregisterGpsCallbacks();
+            
+            // Cancel any pending handlers
+            cancelAutoFinishTimer();
+            cancelMovementDetectionTimer();
+            
+            if (autoFinishHandler != null) {
+                autoFinishHandler.removeCallbacksAndMessages(null);
+            }
+            
+            // Cancel movement detection timers when fragment is destroyed
+            stopMovementDetection();
+            
+            if (movementCheckHandler != null) {
+                movementCheckHandler.removeCallbacksAndMessages(null);
+            }
+            
+            // Shutdown executor with proper timeout handling
+            if (executor != null && !executor.isShutdown()) {
+                executor.shutdown();
+                try {
+                    if (!executor.awaitTermination(1, java.util.concurrent.TimeUnit.SECONDS)) {
+                        executor.shutdownNow();
+                    }
+                } catch (InterruptedException e) {
+                    executor.shutdownNow();
+                    Thread.currentThread().interrupt();
+                }
+            }
+            
+            // Dismiss any open dialogs
+            if (networkDialog != null && networkDialog.isShowing()) {
+                networkDialog.dismiss();
+            }
+            if (gpsDialog != null && gpsDialog.isShowing()) {
+                gpsDialog.dismiss();
+            }
+            
+            Log.d(TAG, "PloggingFragment destroyed and cleaned up");
+        } catch (Exception e) {
+            Log.e(TAG, "Error in onDestroy", e);
         }
-        
-        // Cancel movement detection timers when fragment is destroyed
-        stopMovementDetection();
-        
-        if (movementCheckHandler != null) {
-            movementCheckHandler.removeCallbacksAndMessages(null);
-        }
-    }    private void updateUIForNetworkState(boolean networkAvailable) {
+    }private void updateUIForNetworkState(boolean networkAvailable) {
         if (binding == null) return;
 
         // Update network status indicator
@@ -2227,14 +2271,10 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         requireActivity().runOnUiThread(() -> {
             binding.notificationBanner.setVisibility(View.GONE);
         });
-    }
-
-    private void autoFinishDueToNetworkLoss() {
+    }    private void autoFinishDueToNetworkLoss() {
         if (hasActiveSession()) {
             showNetworkStatusMessage("⏰ Sesi otomatis selesai karena kehilangan internet yang lama", true);
             finishPloggingConfirmed();
-        }
-        cancelAutoFinishTimer();
-    }
+        }        cancelAutoFinishTimer();    }
 }
 
