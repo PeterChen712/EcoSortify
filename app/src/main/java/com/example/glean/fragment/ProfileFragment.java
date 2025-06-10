@@ -114,7 +114,7 @@ public class ProfileFragment extends Fragment {    private static final String T
         
         // Title
         TextView titleText = new TextView(requireContext());
-        titleText.setText("Profile");
+        titleText.setText("Profil");
         titleText.setTextSize(24);
         titleText.setGravity(android.view.Gravity.CENTER);
         titleText.setPadding(0, 0, 0, 24);
@@ -122,7 +122,7 @@ public class ProfileFragment extends Fragment {    private static final String T
         
         // User info
         TextView nameText = new TextView(requireContext());
-        nameText.setText("Loading...");
+        nameText.setText(getString(R.string.loading));
         nameText.setTextSize(18);
         nameText.setGravity(android.view.Gravity.CENTER);
         layout.addView(nameText);
@@ -153,7 +153,7 @@ public class ProfileFragment extends Fragment {    private static final String T
             updateProfileSkin(); // Apply current skin
         } catch (Exception e) {
             Log.e(TAG, "Error setting up ProfileFragment", e);
-            Toast.makeText(requireContext(), "Error loading profile", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), getString(R.string.error_loading_profile), Toast.LENGTH_SHORT).show();
         }
     }
       private void setupUI() {
@@ -901,9 +901,8 @@ public class ProfileFragment extends Fragment {    private static final String T
             dialogBinding.btnSave.setOnClickListener(v -> {
                 String name = dialogBinding.etName.getText().toString().trim();
                 String email = dialogBinding.etEmail.getText().toString().trim();
-                
-                if (name.isEmpty()) {
-                    Toast.makeText(requireContext(), "Name cannot be empty", Toast.LENGTH_SHORT).show();
+                  if (name.isEmpty()) {
+                    Toast.makeText(requireContext(), getString(R.string.name_empty_error), Toast.LENGTH_SHORT).show();
                     return;
                 }
                 
@@ -924,15 +923,13 @@ public class ProfileFragment extends Fragment {    private static final String T
                     executor.execute(() -> {
                         try {
                             db.userDao().update(currentUser);
-                            
-                            requireActivity().runOnUiThread(() -> {
-                                Toast.makeText(requireContext(), "Profile updated successfully!", Toast.LENGTH_SHORT).show();
+                              requireActivity().runOnUiThread(() -> {
+                                Toast.makeText(requireContext(), getString(R.string.profile_updated_success), Toast.LENGTH_SHORT).show();
                                 dialog.dismiss();
                             });
                         } catch (Exception e) {
-                            Log.e(TAG, "Error updating user profile", e);
-                            requireActivity().runOnUiThread(() -> {
-                                Toast.makeText(requireContext(), "Failed to update profile", Toast.LENGTH_SHORT).show();
+                            Log.e(TAG, "Error updating user profile", e);                            requireActivity().runOnUiThread(() -> {
+                                Toast.makeText(requireContext(), getString(R.string.profile_update_failed), Toast.LENGTH_SHORT).show();
                             });
                         }
                     });
@@ -942,10 +939,9 @@ public class ProfileFragment extends Fragment {    private static final String T
             dialogBinding.btnCancel.setOnClickListener(v -> dialog.dismiss());
             
             dialog.show();
-            
-        } catch (Exception e) {
+              } catch (Exception e) {
             Log.e(TAG, "Error showing edit profile dialog", e);
-            Toast.makeText(requireContext(), "Error opening edit dialog", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), getString(R.string.error_opening_edit_dialog), Toast.LENGTH_SHORT).show();
         }
     }
     
@@ -954,7 +950,7 @@ public class ProfileFragment extends Fragment {    private static final String T
             DialogSettingsBinding dialogBinding = DialogSettingsBinding.inflate(LayoutInflater.from(requireContext()));
             MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(requireContext());
             builder.setView(dialogBinding.getRoot());
-            builder.setTitle("Settings");
+            builder.setTitle(getString(R.string.settings_title));
             
             // Get current settings
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
@@ -982,20 +978,19 @@ public class ProfileFragment extends Fragment {    private static final String T
             });
             
             // Reset database button handler
-            dialogBinding.btnResetDatabase.setOnClickListener(v -> {
-                new MaterialAlertDialogBuilder(requireContext())
-                    .setTitle("Reset Database")
-                    .setMessage("This will reset all app data including posts, likes, and comments. Are you sure?")                    .setPositiveButton("Reset", (confirmDialog, which) -> {
+            dialogBinding.btnResetDatabase.setOnClickListener(v -> {                new MaterialAlertDialogBuilder(requireContext())
+                    .setTitle(getString(R.string.reset_database_title))
+                    .setMessage(getString(R.string.reset_database_message))                    .setPositiveButton(getString(R.string.reset), (confirmDialog, which) -> {
                         try {
                             DatabaseHelper.resetAppData(requireContext());
-                            Toast.makeText(requireContext(), "Database reset successfully! Please restart the app.", Toast.LENGTH_LONG).show();
+                            Toast.makeText(requireContext(), getString(R.string.database_reset_success), Toast.LENGTH_LONG).show();
                         } catch (Exception e) {
                             Log.e("ProfileFragment", "Error resetting database", e);
-                            Toast.makeText(requireContext(), "Error resetting database: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                            Toast.makeText(requireContext(), String.format(getString(R.string.database_reset_error), e.getMessage()), Toast.LENGTH_LONG).show();
                         }
                         confirmDialog.dismiss();
                     })
-                    .setNegativeButton("Cancel", null)
+                    .setNegativeButton(getString(R.string.cancel), null)
                     .show();
             });
             
@@ -1010,7 +1005,7 @@ public class ProfileFragment extends Fragment {    private static final String T
                     requireActivity().recreate();
                 }
                 
-                Toast.makeText(requireContext(), "Settings saved!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(), getString(R.string.settings_saved), Toast.LENGTH_SHORT).show();
             });
             
             dialogBinding.btnCancel.setOnClickListener(v -> {
@@ -1021,19 +1016,17 @@ public class ProfileFragment extends Fragment {    private static final String T
             });
             
             dialog.show();
-            
-        } catch (Exception e) {
+              } catch (Exception e) {
             Log.e(TAG, "Error showing settings dialog", e);
-            Toast.makeText(requireContext(), "Error opening settings", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), getString(R.string.error_opening_settings), Toast.LENGTH_SHORT).show();
         }
     }
-    
-    private void showLogoutConfirmation() {
+      private void showLogoutConfirmation() {
         new MaterialAlertDialogBuilder(requireContext())
-                .setTitle("Logout")
-                .setMessage("Are you sure you want to logout?")
-                .setPositiveButton("Logout", (dialog, which) -> logout())
-                .setNegativeButton("Cancel", null)
+                .setTitle(getString(R.string.logout_title))
+                .setMessage(getString(R.string.logout_message))
+                .setPositiveButton(getString(R.string.logout), (dialog, which) -> logout())
+                .setNegativeButton(getString(R.string.cancel), null)
                 .show();
     }
     
@@ -1046,7 +1039,7 @@ public class ProfileFragment extends Fragment {    private static final String T
             SharedPreferences defaultPrefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
             defaultPrefs.edit().remove("USER_ID").apply();
             
-            Toast.makeText(requireContext(), "Logged out successfully", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), getString(R.string.logged_out_success), Toast.LENGTH_SHORT).show();
             
             // Navigate to login screen
             try {
@@ -1060,7 +1053,7 @@ public class ProfileFragment extends Fragment {    private static final String T
             
         } catch (Exception e) {
             Log.e(TAG, "Error during logout", e);
-            Toast.makeText(requireContext(), "Error during logout", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), getString(R.string.logout_error), Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -1085,12 +1078,12 @@ public class ProfileFragment extends Fragment {    private static final String T
             
             // Check if user is valid before navigation
             if (currentUser == null) {
-                Toast.makeText(requireContext(), "Please wait for profile to load", Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(), getString(R.string.please_wait_profile_load), Toast.LENGTH_SHORT).show();
                 return;
             }
             
             // Show loading feedback
-            Toast.makeText(requireContext(), "Opening customization...", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), getString(R.string.opening_customization), Toast.LENGTH_SHORT).show();
             
             NavController navController = Navigation.findNavController(requireView());
             
@@ -1121,25 +1114,24 @@ public class ProfileFragment extends Fragment {    private static final String T
         }
     }
     
-    private void showTemporaryCustomizeDialog() {
-        new MaterialAlertDialogBuilder(requireContext())
-                .setTitle("🎨 Profile Customization")
-                .setMessage("Choose a profile decoration:")
-                .setPositiveButton("🥇 Gold Frame", (dialog, which) -> {
+    private void showTemporaryCustomizeDialog() {        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(getString(R.string.profile_customization_title))
+                .setMessage(getString(R.string.choose_decoration))
+                .setPositiveButton(getString(R.string.gold_frame), (dialog, which) -> {
                     if (currentUser != null) {
                         currentUser.setActiveDecoration("1");
                         updateProfileDecorations(currentUser);
                         saveUserDecoration();
                     }
                 })
-                .setNeutralButton("🥈 Silver Frame", (dialog, which) -> {
+                .setNeutralButton(getString(R.string.silver_frame), (dialog, which) -> {
                     if (currentUser != null) {
                         currentUser.setActiveDecoration("2");
                         updateProfileDecorations(currentUser);
                         saveUserDecoration();
                     }
                 })
-                .setNegativeButton("🥉 Bronze Frame", (dialog, which) -> {
+                .setNegativeButton(getString(R.string.bronze_frame), (dialog, which) -> {
                     if (currentUser != null) {
                         currentUser.setActiveDecoration("3");
                         updateProfileDecorations(currentUser);

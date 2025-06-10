@@ -475,9 +475,8 @@ public class TrashMapFragment extends Fragment implements OnMapReadyCallback, Go
                 
                 // Set marker color based on trash type
                 float markerColor = getMarkerColorForTrashType(trash.getTrashType());
-                
-                String title = trash.getTrashType() != null ? trash.getTrashType() : "Unknown";
-                String snippet = "Tap for details";
+                  String title = trash.getTrashType() != null ? trash.getTrashType() : getString(R.string.unknown);
+                String snippet = getString(R.string.tap_for_details);
                 
                 // Add additional info to snippet if available
                 if (trash.getDescription() != null && !trash.getDescription().isEmpty()) {
@@ -860,10 +859,9 @@ public class TrashMapFragment extends Fragment implements OnMapReadyCallback, Go
                 fusedLocationClient.requestLocationUpdates(locationRequest, 
                                                          locationCallback,
                                                          Looper.getMainLooper());
-            }
-        } catch (SecurityException e) {
+            }        } catch (SecurityException e) {
             Log.e("TrashMapFragment", "Error requesting new location", e);
-            Toast.makeText(requireContext(), "Error getting location", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), getString(R.string.error_getting_location), Toast.LENGTH_SHORT).show();
         }
     }
 

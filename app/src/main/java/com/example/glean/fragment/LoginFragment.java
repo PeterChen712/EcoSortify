@@ -56,11 +56,9 @@ public class LoginFragment extends Fragment {
 
     private void attemptLogin() {
         String email = binding.etEmail.getText().toString().trim();
-        String password = binding.etPassword.getText().toString().trim();
-
-        // Basic validation
+        String password = binding.etPassword.getText().toString().trim();        // Basic validation
         if (email.isEmpty() || password.isEmpty()) {
-            Toast.makeText(requireContext(), "Please fill all fields", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), getString(R.string.login_fill_all_fields), Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -86,9 +84,8 @@ public class LoginFragment extends Fragment {
                     // Navigate to main activity
                     Intent intent = new Intent(requireContext(), MainActivity.class);
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                    startActivity(intent);
-                } else {
-                    Toast.makeText(requireContext(), "Invalid credentials", Toast.LENGTH_SHORT).show();
+                    startActivity(intent);                } else {
+                    Toast.makeText(requireContext(), getString(R.string.login_invalid_credentials), Toast.LENGTH_SHORT).show();
                 }
             });
         });

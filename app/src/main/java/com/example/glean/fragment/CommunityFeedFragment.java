@@ -103,17 +103,16 @@ public class CommunityFeedFragment extends Fragment implements
     }    private void showOfflineContent() {
         binding.layoutCommunity.setVisibility(View.VISIBLE);
         binding.fabCreatePost.setVisibility(View.GONE);
-        
-        // Show message about offline mode
+          // Show message about offline mode
         binding.tvOfflineMessage.setVisibility(View.VISIBLE);
-        binding.tvOfflineMessage.setText("Community features require user account");
+        binding.tvOfflineMessage.setText(getString(R.string.community_features_require_account));
         
         // Show empty state
         showEmptyState();
     }
 
     private void showLoginMessage() {
-        Toast.makeText(requireContext(), "Please create a user profile to post content", Toast.LENGTH_SHORT).show();
+        Toast.makeText(requireContext(), getString(R.string.community_create_profile_to_post), Toast.LENGTH_SHORT).show();
     }
 
     private void loadLocalPosts() {
@@ -176,7 +175,7 @@ public class CommunityFeedFragment extends Fragment implements
                     // Fallback to cached data if user not found
                     if (getActivity() != null) {
                         getActivity().runOnUiThread(() -> {
-                            finalModel.setUserName(entity.getUsername() != null ? entity.getUsername() : "Unknown User");
+                            finalModel.setUserName(entity.getUsername() != null ? entity.getUsername() : getString(R.string.community_unknown_user));
                             finalModel.setUserProfileUrl(entity.getUserAvatar());
                             // Find position using the stored reference
                             int position = postList.indexOf(finalModel);
@@ -190,7 +189,7 @@ public class CommunityFeedFragment extends Fragment implements
                 // Fallback to cached data on error
                 if (getActivity() != null) {
                     getActivity().runOnUiThread(() -> {
-                        finalModel.setUserName(entity.getUsername() != null ? entity.getUsername() : "Unknown User");
+                        finalModel.setUserName(entity.getUsername() != null ? entity.getUsername() : getString(R.string.community_unknown_user));
                         finalModel.setUserProfileUrl(entity.getUserAvatar());
                         // Find position using the stored reference
                         int position = postList.indexOf(finalModel);
@@ -203,7 +202,7 @@ public class CommunityFeedFragment extends Fragment implements
         });
         
         // Set initial values from cached data (will be updated by async call above)
-        model.setUserName(entity.getUsername() != null ? entity.getUsername() : "Loading...");
+        model.setUserName(entity.getUsername() != null ? entity.getUsername() : getString(R.string.community_loading_user));
         model.setUserProfileUrl(entity.getUserAvatar());
         
         return model;
@@ -231,7 +230,7 @@ public class CommunityFeedFragment extends Fragment implements
     @Override
     public void onLikeClick(CommunityPostModel post, int position) {
         if (currentUserId == -1) {
-            Toast.makeText(requireContext(), "Please sign in to like posts", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), getString(R.string.community_sign_in_to_like), Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -251,7 +250,7 @@ public class CommunityFeedFragment extends Fragment implements
             } catch (NumberFormatException e) {
                 if (getActivity() != null) {
                     getActivity().runOnUiThread(() -> 
-                        Toast.makeText(requireContext(), "Error updating like", Toast.LENGTH_SHORT).show());
+                        Toast.makeText(requireContext(), getString(R.string.community_error_updating_like), Toast.LENGTH_SHORT).show());
                 }
             }
         });

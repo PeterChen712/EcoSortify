@@ -80,9 +80,8 @@ public class CreatePostFragment extends Fragment {
     }    @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        
-        if (currentUserId == -1) {
-            Toast.makeText(requireContext(), "Please sign in to create posts", Toast.LENGTH_SHORT).show();
+          if (currentUserId == -1) {
+            Toast.makeText(requireContext(), getString(R.string.create_post_sign_in_required), Toast.LENGTH_SHORT).show();
             navigateBack();
             return;
         }
@@ -127,11 +126,10 @@ public class CreatePostFragment extends Fragment {
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         if (takePictureIntent.resolveActivity(requireActivity().getPackageManager()) != null) {
             // Create the File where the photo should go
-            File photoFile = null;
-            try {
+            File photoFile = null;            try {
                 photoFile = createImageFile();
             } catch (IOException ex) {
-                Toast.makeText(requireContext(), "Error creating image file", Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(), getString(R.string.create_post_error_image_file), Toast.LENGTH_SHORT).show();
                 return;
             }
             
@@ -179,9 +177,8 @@ public class CreatePostFragment extends Fragment {
                     }
                 })
                 .addOnFailureListener(e -> {
-                    binding.btnLocation.setEnabled(true);
-                    binding.tvLocationStatus.setText("Location error");
-                    Toast.makeText(requireContext(), "Error getting location: " + e.getMessage(), 
+                    binding.btnLocation.setEnabled(true);                binding.tvLocationStatus.setText("Location error");
+                    Toast.makeText(requireContext(), getString(R.string.create_post_location_error, e.getMessage()), 
                                    Toast.LENGTH_SHORT).show();
                 });
     }
@@ -230,9 +227,8 @@ public class CreatePostFragment extends Fragment {
             UserEntity user = db.userDao().getUserByIdSync(currentUserId);
             if (user == null) {
                 requireActivity().runOnUiThread(() -> {
-                    binding.btnPost.setEnabled(true);
-                    binding.progressBar.setVisibility(View.GONE);
-                    Toast.makeText(requireContext(), "User not found", Toast.LENGTH_SHORT).show();
+                    binding.btnPost.setEnabled(true);                binding.progressBar.setVisibility(View.GONE);
+                    Toast.makeText(requireContext(), getString(R.string.create_post_user_not_found), Toast.LENGTH_SHORT).show();
                 });
                 return;
             }
@@ -276,8 +272,7 @@ public class CreatePostFragment extends Fragment {
                 repository.insertPost(post, insertedPost -> {
                     requireActivity().runOnUiThread(() -> {
                         binding.btnPost.setEnabled(true);
-                        binding.progressBar.setVisibility(View.GONE);
-                        Toast.makeText(requireContext(), "Post created successfully!", Toast.LENGTH_SHORT).show();
+                        binding.progressBar.setVisibility(View.GONE);                    Toast.makeText(requireContext(), getString(R.string.create_post_success), Toast.LENGTH_SHORT).show();
                         navigateBack();
                     });
                 });
@@ -285,7 +280,7 @@ public class CreatePostFragment extends Fragment {
                 requireActivity().runOnUiThread(() -> {
                     binding.btnPost.setEnabled(true);
                     binding.progressBar.setVisibility(View.GONE);
-                    Toast.makeText(requireContext(), "Error creating post: " + e.getMessage(), 
+                    Toast.makeText(requireContext(), getString(R.string.create_post_error, e.getMessage()), 
                                    Toast.LENGTH_SHORT).show();
                 });
             }
@@ -347,9 +342,8 @@ public class CreatePostFragment extends Fragment {
         
         if (requestCode == REQUEST_LOCATION_PERMISSION) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                getCurrentLocation();
-            } else {
-                Toast.makeText(requireContext(), "Location permission denied", Toast.LENGTH_SHORT).show();
+                getCurrentLocation();            } else {
+                Toast.makeText(requireContext(), getString(R.string.create_post_location_permission_denied), Toast.LENGTH_SHORT).show();
             }
         }
     }

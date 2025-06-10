@@ -1,6 +1,265 @@
 <resources>
+    <!-- App Info -->
     <string name="app_name">Glean</string>
-    <string name="add_trash_shortcut_short_label">Add Trash</string>
-    <string name="add_trash_shortcut_long_label">Report new trash</string>
-    <!-- Add other strings as needed -->
+    <string name="add_trash_shortcut_short_label">Tambah Sampah</string>
+    <string name="add_trash_shortcut_long_label">Laporkan sampah baru</string>
+    
+    <!-- Plogging Fragment -->
+    <string name="checking_connection">🔄 Mengecek...</string>
+    <string name="retry_connection">🔄 Coba Lagi Koneksi</string>
+    <string name="collect_trash">Sampah</string>
+    <string name="collect_trash_points">Sampah (+%d)</string>
+    <string name="network_warning">⚠️ Harap periksa pengaturan internet dan lokasi Anda</string>
+    <string name="stop_plogging_title">🛑 Stop Plogging?</string>
+    <string name="stop_plogging_message">Yakin mau berhenti plogging? Data yang udah dikumpulin bakal disimpan kok.</string>
+    <string name="yes_stop">Ya, Stop</string>
+    <string name="continue_plogging">Lanjut Plogging</string>
+    <string name="internet_required_title">🌐 Perlu Koneksi Internet</string>
+    <string name="internet_required_message">Koneksi internet dibutuhkan buat tracking plogging.\n\nSilakan cek koneksi WiFi atau data seluler kamu.</string>
+    <string name="open_settings">Buka Pengaturan</string>
+    <string name="mobile_data">Data Seluler</string>
+    <string name="cancel">Batal</string>
+    <string name="cannot_open_network_settings">Gak bisa buka pengaturan jaringan</string>
+    <string name="cannot_open_mobile_data_settings">Gak bisa buka pengaturan data seluler</string>
+    
+    <!-- Profile Fragment -->
+    <string name="profile_customization_title">🎨 Kustomisasi Profil</string>
+    <string name="choose_decoration">Pilih hiasan profil:</string>
+    <string name="gold_frame">🥇 Frame Emas</string>
+    <string name="silver_frame">🥈 Frame Perak</string>
+    <string name="bronze_frame">🥉 Frame Perunggu</string>
+    <string name="settings_title">Pengaturan</string>
+    <string name="name_empty_error">Nama gak boleh kosong</string>
+    <string name="profile_updated_success">Profil berhasil diupdate!</string>
+    <string name="profile_update_failed">Gagal update profil</string>
+    <string name="error_opening_edit_dialog">Error buka dialog edit</string>
+    <string name="save">Simpan</string>
+    <string name="reset_database_title">Reset Database</string>
+    <string name="reset_database_message">Ini bakal reset semua data app termasuk postingan, like, dan komentar. Yakin?</string>
+    <string name="reset">Reset</string>
+    <string name="discard">Buang</string>
+    <string name="database_reset_success">Database berhasil direset! Tolong restart app-nya.</string>
+    <string name="database_reset_error">Error reset database: %s</string>
+    <string name="settings_saved">Pengaturan tersimpan!</string>
+    <string name="error_opening_settings">Error buka pengaturan</string>
+    <string name="logout_title">Logout</string>
+    <string name="logout_message">Yakin mau logout?</string>
+    <string name="logout">Logout</string>
+    
+    <!-- CustomizeProfile Activity -->
+    <string name="badges_tab">Lencana</string>
+    <string name="backgrounds_tab">Background</string>
+    <string name="user_not_found_error">Error: User gak ditemukan</string>
+    <string name="unsaved_changes_title">Perubahan Belum Disimpan</string>
+    <string name="unsaved_changes_message">Ada perubahan yang belum disimpan. Mau disimpan?</string>
+    
+    <!-- Event Adapter -->
+    <string name="register_event">DAFTAR EVENT</string>
+    <string name="join_challenge">IKUT CHALLENGE</string>
+    <string name="join_contest">IKUT KONTES</string>
+    <string name="plogging_session">Sesi Plogging</string>
+    
+    <!-- Home Fragment -->
+    <string name="eco_master">Eco Master</string>
+    <string name="eco_expert">Eco Expert</string>
+    <string name="eco_warrior">Eco Warrior</string>
+    <string name="eco_fighter">Eco Fighter</string>
+    <string name="eco_beginner">Eco Beginner</string>
+    
+    <!-- TrashML Fragment -->
+    <string name="ready_for_new_photo">Siap untuk mengambil foto baru. Pastikan objek sampah terlihat jelas!</string>
+    <string name="ai_not_sure_warning">⚠️ AI tidak yakin ini adalah sampah. Coba foto ulang dengan objek yang lebih jelas.</string>
+    
+    <!-- General UI -->
+    <string name="ok">OK</string>
+    <string name="yes">Ya</string>
+    <string name="no">Tidak</string>
+    <string name="done">Selesai</string>
+    <string name="retry">Coba Lagi</string>
+    <string name="loading">Loading...</string>
+    <string name="error">Error</string>
+    <string name="success">Berhasil</string>
+    <string name="failed">Gagal</string>
+    <string name="warning">Peringatan</string>
+    <string name="info">Info</string>
+    
+    <!-- Distance and Units -->
+    <string name="km_format">%.2f km</string>
+    <string name="meters_format">%.0f m</string>
+      <!-- Time formats -->
+    <string name="time_format">HH:mm</string>
+    <string name="date_format">dd MMM yyyy</string>
+    <string name="datetime_format">dd MMM yyyy, HH:mm</string>
+    <string name="time_with_date_format">HH:mm • dd MMM</string>
+    
+    <!-- Additional UI Strings -->
+    <string name="profile_title">Profil</string>
+    <string name="error_loading_profile">Error loading profil</string>
+    <string name="logged_out_success">Berhasil logout</string>
+    <string name="logout_error">Error logout</string>
+    <string name="profile_picture_updated">Foto profil berhasil diupdate!</string>
+    <string name="profile_picture_save_failed">Gagal simpan foto profil</string>
+    <string name="please_wait_profile_load">Tunggu sebentar, profil lagi dimuat</string>
+    <string name="opening_customization">Buka kustomisasi...</string>
+    
+    <!-- GPS and Location -->
+    <string name="enable_location_title">📍 Aktifkan Layanan Lokasi</string>
+    <string name="enable_location_message">Layanan lokasi diperlukan untuk tracking plogging.\n\nSilakan aktifkan GPS atau lokasi jaringan di pengaturan perangkat kamu.</string>
+    <string name="cannot_open_location_settings">Gak bisa buka pengaturan lokasi</string>
+      <!-- Network Status -->
+    <string name="connected">🌐 Terhubung</string>
+    <string name="no_internet">❌ Gak Ada Internet</string>
+    <string name="internet_restored">🌐 Koneksi internet dipulihkan! Kamu bisa lanjut tracking.</string>
+    <string name="internet_connected">🌐 Internet Terhubung!</string>
+    <string name="internet_lost">🌐 Koneksi internet terputus! Tracking dijeda.</string>
+    
+    <!-- TrashML and Detection -->
+    <string name="ready_for_new_photo_detailed">Siap untuk mengambil foto baru. Pastikan objek sampah terlihat jelas!</string>
+    <string name="ai_not_sure_detailed">⚠️ AI tidak yakin ini adalah sampah. Coba foto ulang dengan objek yang lebih jelas.</string>
+    <string name="analyzing_with_ai">🤖 Sedang menganalisis gambar dengan AI...</string>
+    <string name="take_photo_first">❌ Ambil foto terlebih dahulu</string>
+    <string name="ai_detection_unavailable">❌ Deteksi AI tidak tersedia</string>
+    <string name="photo_taken_success">Foto berhasil diambil! Sekarang Anda dapat menekan tombol \"Mulai Deteksi\" untuk menganalisis sampah.</string>
+    <string name="failed_to_load_photo">Gagal memuat foto yang diambil. Silakan coba lagi.</string>
+    <string name="trash_saved_success">✅ Data sampah berhasil disimpan!\n\nTerima kasih telah berkontribusi untuk lingkungan yang lebih bersih! 🌱</string>
+    <string name="failed_to_save_trash">❌ Gagal menyimpan data sampah. Silakan coba lagi.</string>
+    
+    <!-- TrashDetail and TrashMap -->
+    <string name="unknown">Unknown</string>
+    <string name="tap_for_details">Tap for details</string>
+    <string name="click_for_details">Click for details</string>
+    <string name="collected_label">Collected: %s</string>    <string name="location_label" formatted="false">Location: %.6f, %.6f</string>
+    <string name="ml_prediction_label" formatted="false">ML Prediction: %s (%.1f%% confidence)</string>
+    <string name="ai_label" formatted="false">AI: %s (%.1f%%)</string>
+    <string name="trash_details_updated">Trash details updated</string>
+    <string name="trash_item_deleted">Trash item deleted</string>
+    <string name="unknown_time">Unknown time</string>
+    <string name="no_ml_suggestion">No ML suggestion available</string>
+    <string name="ml_suggestion_format" formatted="false">ML Suggestion: %s (%.1f%% confidence)</string>
+    <string name="trash_classification_updated">Trash classification updated</string>
+    <string name="error_getting_location">Error getting location</string>
+    
+    <!-- Trash Types (in Indonesian) -->
+    <string name="trash_type_unknown">Tidak Diketahui</string>
+    <string name="trash_type_plastic_bottle">Botol Plastik</string>
+    <string name="trash_type_plastic_bag">Kantong Plastik</string>
+    <string name="trash_type_paper">Kertas</string>
+    <string name="trash_type_metal_can">Kaleng Logam</string>
+    <string name="trash_type_glass">Kaca</string>
+    <string name="trash_type_food_waste">Sisa Makanan</string>
+    <string name="trash_type_cigarette_butt">Puntung Rokok</string>
+    <string name="trash_type_other">Lainnya</string>
+    <string name="trash_type_plastic">Plastik</string>
+    <string name="trash_type_metal">Logam</string>
+    <string name="trash_type_organic">Organik</string>
+    <string name="trash_type_electronic">Elektronik</string>
+    <string name="trash_type_hazardous">Berbahaya</string>
+    <string name="plogging_stopped">🛑 Plogging dihentikan. Ketuk \"Mulai Plogging\" untuk melanjutkan atau \"Selesai\" untuk menyelesaikan.</string>
+    <string name="finish_session">Selesai Sesi</string>
+    
+    <!-- Additional UI strings that were missing -->
+    <string name="home_statistics_title">Statistik Keseluruhan</string>
+    <string name="home_start_plogging">Mulai Plogging</string>
+    <string name="home_view_stats">Lihat Statistik</string>
+    <string name="home_view_community">Lihat Komunitas</string>
+    <string name="home_trash_map">Peta Sampah</string>
+    <string name="navigation_not_available">Navigasi gak tersedia</string>
+    <string name="error_loading_home">Error loading halaman utama: %s</string>
+    
+    <!-- Home Fragment Daily Tips -->
+    <string name="eco_tip_1">Bawa botol minum sendiri untuk mengurangi sampah plastik!</string>
+    <string name="eco_tip_2">Pilah sampah organik dan anorganik saat plogging!</string>
+    <string name="eco_tip_3">1 botol plastik butuh 450 tahun untuk terurai di alam!</string>
+    <string name="eco_tip_4">Setiap langkah kecil membuat perubahan besar untuk bumi!</string>
+    <string name="eco_tip_5">Plogging membakar 300-400 kalori per 30 menit!</string>
+    <string name="eco_tip_6">Gunakan sarung tangan saat memungut sampah untuk keamanan!</string>
+    <string name="eco_tip_7">Foto sampah sebelum dipungut untuk dokumentasi yang baik!</string>
+    
+    <!-- CommunityPagerAdapter tab titles -->
+    <string name="tab_social">Sosial</string>
+    <string name="tab_ranking">Ranking</string>
+    <string name="tab_news">News</string>
+    
+    <!-- NewsFragment strings -->
+    <string name="added_to_favorites">💝 Ditambah ke favorit</string>
+    <string name="removed_from_favorites">💔 Dihapus dari favorit</string>
+    <string name="marked_as_read">✅ Ditandai sudah dibaca</string>
+    <string name="marked_as_unread">👁️ Ditandai belum dibaca</string>
+    
+    <!-- LoginFragment strings -->
+    <string name="please_fill_all_fields">Tolong isi semua field</string>
+    <string name="invalid_credentials">Email atau password salah</string>
+    
+    <!-- RegisterFragment strings -->
+    <string name="passwords_do_not_match">Password gak cocok</string>
+    <string name="registration_successful">Berhasil daftar! Silakan login.</string>
+    <string name="email_already_exists">Email udah kepake</string>
+    <string name="registration_failed">Gagal daftar: %s</string>
+    
+    <!-- PloggingSummaryFragment strings -->
+    <string name="plogging_complete_emoji">🎉 Plogging Selesai!</string>
+    <string name="distance_label_emoji">📍 Jarak: %.2f km</string>
+    <string name="trash_label_emoji">🗑️ Sampah: %d item</string>
+    <string name="points_label_emoji">⭐ Poin: %d</string>
+    <string name="duration_label_emoji">⏱️ Durasi: %s</string>
+    <string name="no_data_to_save">Gak ada data untuk disimpan</string>
+    
+    <!-- Additional General strings -->
+    <string name="user_default">User</string>
+      <!-- CustomizeProfileActivity error fix -->
+    <string name="tab_badges">Lencana</string>
+    <string name="tab_backgrounds">Background</string>
+    
+    <!-- Community Fragment strings -->
+    <string name="community_social_tab">Sosial</string>
+    <string name="community_ranking_tab">Ranking</string>
+    <string name="community_news_tab">News</string>
+    
+    <!-- Login Fragment strings -->
+    <string name="login_fill_all_fields">Isi semua field dulu ya</string>
+    <string name="login_invalid_credentials">Email atau password salah nih</string>
+    
+    <!-- Register Fragment strings -->
+    <string name="register_fill_all_fields">Lengkapin dulu semua datanya</string>
+    <string name="register_passwords_no_match">Password gak sama nih</string>
+    <string name="register_email_already_exists">Email udah terdaftar sebelumnya</string>
+    <string name="register_success">Berhasil daftar! Sekarang bisa login</string>
+    <string name="register_failed">Gagal daftar, coba lagi ya</string>
+    
+    <!-- Create Post Fragment strings -->
+    <string name="create_post_sign_in_required">Login dulu buat bikin postingan</string>
+    <string name="create_post_error_image_file">Error bikin file gambar</string>
+    <string name="create_post_location_error">Error dapetin lokasi: %s</string>
+    <string name="create_post_user_not_found">User gak ditemukan</string>
+    <string name="create_post_success">Postingan berhasil dibuat!</string>
+    <string name="create_post_error">Error bikin postingan: %s</string>
+    <string name="create_post_location_permission_denied">Izin lokasi ditolak</string>
+      <!-- CommunityFeedFragment strings -->
+    <string name="community_offline_mode">Mode Offline</string>
+    <string name="community_no_internet">Gak ada internet nih</string>
+    <string name="community_switch_offline">Pindah ke mode offline</string>
+    <string name="community_network_error">Error jaringan</string>
+    <string name="community_features_require_account">Fitur komunitas perlu akun user</string>
+    <string name="community_create_profile_to_post">Bikin profil user dulu buat posting konten</string>
+    <string name="community_unknown_user">User Gak Dikenal</string>
+    <string name="community_loading_user">Loading...</string>
+    <string name="community_sign_in_to_like">Login dulu buat like postingan</string>
+    <string name="community_error_updating_like">Error update like</string>
+      <!-- News Fragment strings -->
+    <string name="news_marked_favorite">Ditandai sebagai favorit</string>
+    <string name="news_removed_favorite">Dihapus dari favorit</string>
+    <string name="news_marked_read">Ditandai udah dibaca</string>
+    <string name="news_error_loading">Error loading berita</string>
+    <string name="news_already_loading">Tunggu sebentar, lagi loading berita...</string>
+    <string name="news_already_refreshing">Udah lagi refresh berita...</string>
+    <string name="news_failed_load_cached">Gagal load berita yang tersimpan</string>
+    <string name="news_new_articles_loaded">🆕 %d artikel baru dimuat!</string>
+    <string name="news_no_new_articles">📡 Gak ada artikel baru</string>
+    <string name="news_check_internet">🌐 Cek koneksi internet kamu</string>
+    <string name="news_content_not_available">📰 Konten artikel gak tersedia</string>
+    <string name="news_failed_open_article">Gagal buka artikel</string>
+    <string name="news_cannot_open_link">🌐 Gak bisa buka link</string>
+    <string name="news_no_link_available">🔗 Gak ada link tersedia</string>
+    <string name="news_failed_share">📤 Gagal share artikel</string>
+    
 </resources>

@@ -64,9 +64,8 @@ public class HomeFragment extends Fragment {
             setupStartPloggingButton();
             setupQuickActionButtons();
             loadUserData();
-            updateDashboardStats();
-        } catch (Exception e) {
-            showErrorMessage("Error loading home screen: " + e.getMessage());
+            updateDashboardStats();        } catch (Exception e) {
+            showErrorMessage(getString(R.string.error_loading_home, e.getMessage()));
         }
     }
 
@@ -75,9 +74,8 @@ public class HomeFragment extends Fragment {
             binding.btnStartPlogging.setVisibility(View.VISIBLE);
             binding.btnStartPlogging.setOnClickListener(v -> {
                 if (getActivity() instanceof MainActivity) {
-                    ((MainActivity) getActivity()).navigateToPlgging();
-                } else {
-                    Toast.makeText(requireContext(), "Navigation not available", Toast.LENGTH_SHORT).show();
+                    ((MainActivity) getActivity()).navigateToPlgging();                } else {
+                    Toast.makeText(requireContext(), getString(R.string.navigation_not_available), Toast.LENGTH_SHORT).show();
                 }
             });
         }
@@ -101,26 +99,24 @@ public class HomeFragment extends Fragment {
             // Handle error silently
         }
     }
-    
-    private String getDailyTip() {
+      private String getDailyTip() {
         String[] ecoTips = {
-            "Bawa botol minum sendiri untuk mengurangi sampah plastik!",
-            "Pilah sampah organik dan anorganik saat plogging!",
-            "1 botol plastik butuh 450 tahun untuk terurai di alam!",
-            "Setiap langkah kecil membuat perubahan besar untuk bumi!",
-            "Plogging membakar 300-400 kalori per 30 menit!",
-            "Gunakan sarung tangan saat memungut sampah untuk keamanan!",
-            "Foto sampah sebelum dipungut untuk dokumentasi yang baik!"
+            getString(R.string.eco_tip_1),
+            getString(R.string.eco_tip_2),
+            getString(R.string.eco_tip_3),
+            getString(R.string.eco_tip_4),
+            getString(R.string.eco_tip_5),
+            getString(R.string.eco_tip_6),
+            getString(R.string.eco_tip_7)
         };
         
         int dayOfWeek = Calendar.getInstance().get(Calendar.DAY_OF_WEEK);
         return ecoTips[dayOfWeek % ecoTips.length];
     }
 
-    private void updateQuickStatsUI() {
-        try {
+    private void updateQuickStatsUI() {        try {
             if (binding.tvQuickStatsTitle != null) {
-                binding.tvQuickStatsTitle.setText("Statistik Keseluruhan");
+                binding.tvQuickStatsTitle.setText(getString(R.string.home_statistics_title));
                 binding.tvQuickStatsTitle.setVisibility(View.VISIBLE);
             }
             
@@ -148,10 +144,9 @@ public class HomeFragment extends Fragment {
         // No UI updates needed as the section no longer exists
     }
 
-    private void setupQuickActionButtons() {
-        try {
+    private void setupQuickActionButtons() {        try {
             if (binding.btnQuickAction1 != null) {
-                binding.btnQuickAction1.setText("Mulai Plogging");
+                binding.btnQuickAction1.setText(getString(R.string.home_start_plogging));
                 binding.btnQuickAction1.setVisibility(View.VISIBLE);
                 binding.btnQuickAction1.setOnClickListener(v -> {
                     try {
@@ -166,7 +161,7 @@ public class HomeFragment extends Fragment {
             }
 
             if (binding.btnQuickAction2 != null) {
-                binding.btnQuickAction2.setText("Lihat Statistik");
+                binding.btnQuickAction2.setText(getString(R.string.home_view_stats));
                 binding.btnQuickAction2.setVisibility(View.VISIBLE);
                 binding.btnQuickAction2.setOnClickListener(v -> {
                     if (getActivity() instanceof MainActivity) {
@@ -174,7 +169,7 @@ public class HomeFragment extends Fragment {
                     }
                 });
             }            if (binding.btnQuickAction3 != null) {
-                binding.btnQuickAction3.setText("Lihat Komunitas");
+                binding.btnQuickAction3.setText(getString(R.string.home_view_community));
                 binding.btnQuickAction3.setVisibility(View.VISIBLE);
                 binding.btnQuickAction3.setOnClickListener(v -> {
                     if (getActivity() instanceof MainActivity) {
@@ -184,7 +179,7 @@ public class HomeFragment extends Fragment {
             }
 
             if (binding.btnQuickAction4 != null) {
-                binding.btnQuickAction4.setText("Peta Sampah");
+                binding.btnQuickAction4.setText(getString(R.string.home_trash_map));
                 binding.btnQuickAction4.setVisibility(View.VISIBLE);
                 binding.btnQuickAction4.setOnClickListener(v -> {
                     try {
@@ -255,9 +250,8 @@ public class HomeFragment extends Fragment {
         } else if (user.getUsername() != null && !user.getUsername().isEmpty()) {
             return user.getUsername();
         } else if (user.getEmail() != null && !user.getEmail().isEmpty()) {
-            return user.getEmail().split("@")[0];
-        }
-        return "User";
+            return user.getEmail().split("@")[0];        }
+        return getString(R.string.user_default);
     }
     
     private List<RecordEntity> getAllRecords(List<RecordEntity> allRecords) {

@@ -88,14 +88,13 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             } else {
                 llProgress.setVisibility(View.GONE);
             }
-            
-            // Set button text based on event type
+              // Set button text based on event type
             if ("event".equals(event.getType())) {
-                btnEventAction.setText("DAFTAR EVENT");
+                btnEventAction.setText(itemView.getContext().getString(R.string.register_event));
             } else if ("challenge".equals(event.getType())) {
-                btnEventAction.setText("IKUT CHALLENGE");
+                btnEventAction.setText(itemView.getContext().getString(R.string.join_challenge));
             } else if ("contest".equals(event.getType())) {
-                btnEventAction.setText("IKUT KONTES");
+                btnEventAction.setText(itemView.getContext().getString(R.string.join_contest));
             }
             
             // Set click listeners

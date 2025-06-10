@@ -57,11 +57,10 @@ public class TrashAdapter extends RecyclerView.Adapter<TrashAdapter.TrashViewHol
             this.binding = binding;
         }
 
-        public void bind(TrashEntity trash) {
-            // Set trash type
+        public void bind(TrashEntity trash) {            // Set trash type
             String trashType = trash.getTrashType();
             if (trashType == null || trashType.isEmpty()) {
-                trashType = "Unknown";
+                trashType = binding.getRoot().getContext().getString(R.string.unknown);
             }
             binding.tvTrashType.setText(trashType);
 
@@ -73,11 +72,10 @@ public class TrashAdapter extends RecyclerView.Adapter<TrashAdapter.TrashViewHol
             if (description != null && !description.isEmpty()) {
                 displayText = description;
             }
-            
-            // Add ML prediction info if available
+              // Add ML prediction info if available
             if (trash.getMlLabel() != null && !trash.getMlLabel().isEmpty() && trash.getConfidence() > 0) {
-                String mlInfo = String.format(Locale.getDefault(),
-                    "AI: %s (%.1f%%)", trash.getMlLabel(), trash.getConfidence() * 100);
+                String mlInfo = binding.getRoot().getContext().getString(R.string.ai_label, 
+                    trash.getMlLabel(), trash.getConfidence() * 100);
                 
                 if (!displayText.isEmpty()) {
                     displayText += "\n" + mlInfo;
@@ -96,12 +94,10 @@ public class TrashAdapter extends RecyclerView.Adapter<TrashAdapter.TrashViewHol
 
             // Set timestamp
             String timeStr = formatTimestamp(trash.getTimestamp());
-            binding.tvTimestamp.setText(timeStr);
-
-            // Set location if available
+            binding.tvTimestamp.setText(timeStr);            // Set location if available
             if (trash.getLatitude() != 0 && trash.getLongitude() != 0) {
-                String location = String.format(Locale.getDefault(), 
-                    "%.6f, %.6f", trash.getLatitude(), trash.getLongitude());
+                String location = binding.getRoot().getContext().getString(R.string.location_label, 
+                    trash.getLatitude(), trash.getLongitude());
                 binding.tvLocation.setText(location);
                 binding.tvLocation.setVisibility(ViewGroup.VISIBLE);
             } else {

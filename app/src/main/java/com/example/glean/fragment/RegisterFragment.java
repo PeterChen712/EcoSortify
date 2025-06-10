@@ -53,26 +53,22 @@ public class RegisterFragment extends Fragment {
         String email = binding.etEmail.getText().toString().trim();
         String password = binding.etPassword.getText().toString().trim();
         String confirmPassword = binding.etConfirmPassword.getText().toString().trim();
-        String name = binding.etName.getText().toString().trim();
-
-        // Basic validation
+        String name = binding.etName.getText().toString().trim();        // Basic validation
         if (email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty() || name.isEmpty()) {
-            Toast.makeText(requireContext(), "Please fill all fields", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), getString(R.string.register_fill_all_fields), Toast.LENGTH_SHORT).show();
             return;
         }
 
         if (!password.equals(confirmPassword)) {
-            Toast.makeText(requireContext(), "Passwords do not match", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), getString(R.string.register_passwords_no_match), Toast.LENGTH_SHORT).show();
             return;
         }
 
         // Check if email is already registered
         executor.execute(() -> {
-            UserEntity existingUser = db.userDao().getUserByEmailSync(email);
-
-            requireActivity().runOnUiThread(() -> {
+            UserEntity existingUser = db.userDao().getUserByEmailSync(email);            requireActivity().runOnUiThread(() -> {
                 if (existingUser != null) {
-                    Toast.makeText(requireContext(), "Email already registered", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(requireContext(), getString(R.string.register_email_already_exists), Toast.LENGTH_SHORT).show();
                 } else {
                     registerUser(email, password, name);
                 }
@@ -95,17 +91,15 @@ public class RegisterFragment extends Fragment {
 
         // Insert in background thread
         executor.execute(() -> {
-            long userId = db.userDao().insert(user);
-
-            requireActivity().runOnUiThread(() -> {
+            long userId = db.userDao().insert(user);            requireActivity().runOnUiThread(() -> {
                 if (userId > 0) {
-                    Toast.makeText(requireContext(), "Registration successful", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(requireContext(), getString(R.string.register_success), Toast.LENGTH_SHORT).show();
                     
                     // Navigate to login
                     NavController navController = Navigation.findNavController(requireView());
                     navController.navigate(R.id.action_registerFragment_to_loginFragment);
                 } else {
-                    Toast.makeText(requireContext(), "Registration failed", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(requireContext(), getString(R.string.register_failed), Toast.LENGTH_SHORT).show();
                 }
             });
         });

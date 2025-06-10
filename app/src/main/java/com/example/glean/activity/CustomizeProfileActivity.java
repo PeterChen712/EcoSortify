@@ -28,9 +28,8 @@ public class CustomizeProfileActivity extends AppCompatActivity {
     private TabAdapter tabAdapter;
     private int userId;
     private boolean hasChanges = false;
-    
-    // Tab titles
-    private final String[] tabTitles = {"Badges", "Backgrounds"};
+      // Tab titles
+    private String[] tabTitles;
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,10 +43,12 @@ public class CustomizeProfileActivity extends AppCompatActivity {
         
         if (userId == -1) {
             Log.e(TAG, "No user ID found");
-            Toast.makeText(this, "Error: User not found", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.user_not_found_error), Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
+          // Initialize tab titles
+        tabTitles = new String[]{getString(R.string.badges_tab), getString(R.string.backgrounds_tab)};
         
         setupUI();
         setupTabs();

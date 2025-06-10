@@ -67,11 +67,17 @@ public class TrashDetailFragment extends Fragment {
         // Load trash data
         loadTrashDetails();
     }
-    
-    private void setupTrashTypeSpinner() {
+      private void setupTrashTypeSpinner() {
         String[] trashTypes = {
-            "Unknown", "Plastic Bottle", "Plastic Bag", "Paper", "Metal Can", 
-            "Glass", "Food Waste", "Cigarette Butt", "Other"
+            getString(R.string.trash_type_unknown), 
+            getString(R.string.trash_type_plastic_bottle), 
+            getString(R.string.trash_type_plastic_bag), 
+            getString(R.string.trash_type_paper), 
+            getString(R.string.trash_type_metal_can), 
+            getString(R.string.trash_type_glass), 
+            getString(R.string.trash_type_food_waste), 
+            getString(R.string.trash_type_cigarette_butt), 
+            getString(R.string.trash_type_other)
         };
         
         ArrayAdapter<String> adapter = new ArrayAdapter<>(
@@ -112,15 +118,13 @@ public class TrashDetailFragment extends Fragment {
         if (description != null) {
             binding.etDescription.setText(description);
         }
-        
-        // Set timestamp
+          // Set timestamp
         String timeStr = formatTimestamp(currentTrash.getTimestamp());
-        binding.tvTimestamp.setText("Collected: " + timeStr);
+        binding.tvTimestamp.setText(getString(R.string.collected_label, timeStr));
         
         // Set location
         if (currentTrash.getLatitude() != 0 && currentTrash.getLongitude() != 0) {
-            String location = String.format(Locale.getDefault(), 
-                "Location: %.6f, %.6f", currentTrash.getLatitude(), currentTrash.getLongitude());
+            String location = getString(R.string.location_label, currentTrash.getLatitude(), currentTrash.getLongitude());
             binding.tvLocation.setText(location);
             binding.tvLocation.setVisibility(View.VISIBLE);
         } else {
@@ -152,11 +156,9 @@ public class TrashDetailFragment extends Fragment {
                     .placeholder(R.drawable.ic_placeholder)
                     .into(binding.ivTrashPhoto);
         }
-        
-        // Set ML prediction info
+          // Set ML prediction info
         if (currentTrash.getMlLabel() != null && !currentTrash.getMlLabel().isEmpty()) {
-            String mlInfo = String.format(Locale.getDefault(),
-                "ML Prediction: %s (%.1f%% confidence)", 
+            String mlInfo = getString(R.string.ml_prediction_label, 
                 currentTrash.getMlLabel(), currentTrash.getConfidence() * 100);
             binding.tvMlPrediction.setText(mlInfo);
             binding.tvMlPrediction.setVisibility(View.VISIBLE);
@@ -164,8 +166,7 @@ public class TrashDetailFragment extends Fragment {
             binding.tvMlPrediction.setVisibility(View.GONE);
         }
     }
-    
-    private void saveTrashDetails() {
+      private void saveTrashDetails() {
         if (currentTrash == null) return;
         
         String selectedType = binding.spTrashType.getSelectedItem().toString();
@@ -178,7 +179,7 @@ public class TrashDetailFragment extends Fragment {
             db.trashDao().update(currentTrash);
             
             requireActivity().runOnUiThread(() -> {
-                Toast.makeText(requireContext(), "Trash details updated", Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(), getString(R.string.trash_details_updated), Toast.LENGTH_SHORT).show();
                 navigateBack();
             });
         });
@@ -191,19 +192,18 @@ public class TrashDetailFragment extends Fragment {
             db.trashDao().delete(currentTrash);
             
             requireActivity().runOnUiThread(() -> {
-                Toast.makeText(requireContext(), "Trash item deleted", Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(), getString(R.string.trash_item_deleted), Toast.LENGTH_SHORT).show();
                 navigateBack();
             });
         });
     }
-    
-    private String formatTimestamp(long timestamp) {
+      private String formatTimestamp(long timestamp) {
         try {
             Date date = new Date(timestamp);
             SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault());
             return sdf.format(date);
         } catch (Exception e) {
-            return "Unknown time";
+            return getString(R.string.unknown_time);
         }
     }
     

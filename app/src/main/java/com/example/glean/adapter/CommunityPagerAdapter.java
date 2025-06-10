@@ -1,20 +1,26 @@
 package com.example.glean.adapter;
 
+import android.content.Context;
+
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.Lifecycle;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 
+import com.example.glean.R;
 import com.example.glean.fragment.community.NewsFragment;
 import com.example.glean.fragment.community.RankingFragment;
 import com.example.glean.fragment.community.SosialFragment;
 
 public class CommunityPagerAdapter extends FragmentStateAdapter {
 
-    public CommunityPagerAdapter(@NonNull FragmentManager fragmentManager, @NonNull Lifecycle lifecycle) {
+    private Context context;
+
+    public CommunityPagerAdapter(@NonNull FragmentManager fragmentManager, @NonNull Lifecycle lifecycle, Context context) {
         super(fragmentManager, lifecycle);
-    }    @NonNull
+        this.context = context;
+    }@NonNull
     @Override
     public Fragment createFragment(int position) {
         switch (position) {
@@ -35,13 +41,13 @@ public class CommunityPagerAdapter extends FragmentStateAdapter {
     }    public String getPageTitle(int position) {
         switch (position) {
             case 0:
-                return "Sosial";
+                return context.getString(R.string.community_social_tab);
             case 1:
-                return "Ranking";
+                return context.getString(R.string.community_ranking_tab);
             case 2:
-                return "News";
+                return context.getString(R.string.community_news_tab);
             default:
-                return "Sosial";
+                return context.getString(R.string.community_social_tab);
         }
     }
 }

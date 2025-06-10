@@ -112,7 +112,7 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
                 refreshNews();
             } else {
                 binding.swipeRefreshLayout.setRefreshing(false);
-                showMessage("Please wait, already loading news...", false);
+                showMessage(getString(R.string.news_already_loading), false);
             }
         });
     }
@@ -122,7 +122,7 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
             if (!isLoading) {
                 refreshNews();
             } else {
-                showMessage("Already refreshing news...", false);
+                showMessage(getString(R.string.news_already_refreshing), false);
             }
         });
         
@@ -155,7 +155,7 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
                 requireActivity().runOnUiThread(() -> {
                     showLoading(false);
                     showEmptyState(true);
-                    showMessage("Failed to load cached news", true);
+                    showMessage(getString(R.string.news_failed_load_cached), true);
                 });
             }
         });
@@ -219,12 +219,12 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
                         updateUnreadCounter();
                         showEmptyState(false);
                         
-                        showMessage(String.format("🆕 %d new articles loaded!", freshNews.size()), false);
+                        showMessage(getString(R.string.news_new_articles_loaded, freshNews.size()), false);
                         
                         // Scroll to top to show new content
                         binding.recyclerViewNews.smoothScrollToPosition(0);
                     } else {
-                        showMessage("📡 No new articles available", false);
+                        showMessage(getString(R.string.news_no_new_articles), false);
                     }
                 });
                 
@@ -233,7 +233,7 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
                     isRefreshing = false;
                     binding.swipeRefreshLayout.setRefreshing(false);
                     binding.fabRefresh.setImageResource(R.drawable.ic_refresh);
-                    showMessage("🌐 Check your internet connection", true);
+                    showMessage(getString(R.string.news_check_internet), true);
                 });
             }
         });
@@ -375,11 +375,11 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
                   NavController navController = Navigation.findNavController(requireView());
                 navController.navigate(R.id.newsDetailFragment, args);
             } else {
-                showMessage("📰 Article content not available", true);
+                showMessage(getString(R.string.news_content_not_available), true);
             }
             
         } catch (Exception e) {
-            showMessage("Failed to open article", true);
+            showMessage(getString(R.string.news_failed_open_article), true);
         }
     }
 
@@ -447,10 +447,10 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
                 Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(newsItem.getUrl()));
                 startActivity(intent);
             } catch (Exception e) {
-                showMessage("🌐 Cannot open link", true);
+                showMessage(getString(R.string.news_cannot_open_link), true);
             }
         } else {
-            showMessage("🔗 No link available", true);
+            showMessage(getString(R.string.news_no_link_available), true);
         }
     }
 
@@ -467,7 +467,7 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
             
             startActivity(Intent.createChooser(shareIntent, "📤 Share Article"));
         } catch (Exception e) {
-            showMessage("📤 Failed to share article", true);
+            showMessage(getString(R.string.news_failed_share), true);
         }
     }
 

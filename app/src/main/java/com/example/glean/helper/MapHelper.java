@@ -166,9 +166,7 @@ public class MapHelper {
             case "organic":
                 markerColor = BitmapDescriptorFactory.HUE_MAGENTA;
                 break;
-        }
-
-        map.addMarker(new MarkerOptions()
+        }        map.addMarker(new MarkerOptions()
                 .position(location)
                 .title(trashType)
                 .snippet("Click for details")

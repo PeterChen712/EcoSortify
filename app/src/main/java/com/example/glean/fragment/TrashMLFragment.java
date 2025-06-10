@@ -267,11 +267,10 @@ public class TrashMLFragment extends Fragment {
             if (photoFile != null && photoFile.exists()) {
                 capturedImage = BitmapFactory.decodeFile(photoFile.getAbsolutePath());
                   if (capturedImage != null) {
-                    displayCapturedImage();
-                    enableStartDetectionButton();
-                    updateInstructionText("Foto berhasil diambil! Sekarang Anda dapat menekan tombol 'Mulai Deteksi' untuk menganalisis sampah.");
+                    displayCapturedImage();                    enableStartDetectionButton();
+                    updateInstructionText(getString(R.string.photo_taken_success));
                 } else {
-                    updateInstructionText("Gagal memuat foto yang diambil. Silakan coba lagi.");
+                    updateInstructionText(getString(R.string.failed_to_load_photo));
                 }
             }
         }
@@ -367,20 +366,19 @@ public class TrashMLFragment extends Fragment {
         } catch (Exception e) {
             Log.e(TAG, "Error hiding progress overlay: " + e.getMessage());
         }
-    }      private void classifyTrash() {
+    }    private void classifyTrash() {
         if (capturedImage == null) {
-            updateInstructionText("❌ Ambil foto terlebih dahulu");
+            updateInstructionText(getString(R.string.take_photo_first));
             return;
         }
         
         if (geminiHelper == null || !geminiHelper.isApiKeyConfigured()) {
-            updateInstructionText("❌ Deteksi AI tidak tersedia");
+            updateInstructionText(getString(R.string.ai_detection_unavailable));
             return;
-        }
-          // Show loading state with progress overlay
+        }        // Show loading state with progress overlay
         showProgressOverlay();
         disableStartDetectionButton();
-        updateInstructionText("🤖 Sedang menganalisis gambar dengan AI...");
+        updateInstructionText(getString(R.string.analyzing_with_ai));
         
         // Hide any previous results or warnings
         hideClassificationResult();
@@ -500,14 +498,13 @@ public class TrashMLFragment extends Fragment {
                 if (retakeBtn != null) {
                     retakeBtn.setOnClickListener(v -> {
                         hideConfidenceWarning();
-                        resetForNewCapture();
-                        updateInstructionText("Siap untuk mengambil foto baru. Pastikan objek sampah terlihat jelas!");
+                        resetForNewCapture();                        updateInstructionText(getString(R.string.ready_for_new_photo_detailed));
                     });
                 }
             }
         } catch (Exception e) {
             Log.e(TAG, "Error showing confidence warning: " + e.getMessage());
-            updateInstructionText("⚠️ AI tidak yakin ini adalah sampah. Coba foto ulang dengan objek yang lebih jelas.");
+            updateInstructionText(getString(R.string.ai_not_sure_detailed));
         }
     }
     
@@ -647,9 +644,8 @@ public class TrashMLFragment extends Fragment {
                   // Check total trash count for this record
                 int totalTrashCount = db.trashDao().getTrashCountByRecordIdSync(recordId);
                 Log.d(TAG, "SAVE: Total trash count for record " + recordId + ": " + totalTrashCount);
-                
-                requireActivity().runOnUiThread(() -> {
-                    updateInstructionText("✅ Data sampah berhasil disimpan!\n\nTerima kasih telah berkontribusi untuk lingkungan yang lebih bersih! 🌱");
+                  requireActivity().runOnUiThread(() -> {
+                    updateInstructionText(getString(R.string.trash_saved_success));
                     resetForNewCapture();
                     
                     // Navigate back after delay

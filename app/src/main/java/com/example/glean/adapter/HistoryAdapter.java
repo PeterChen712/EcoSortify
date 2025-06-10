@@ -6,6 +6,7 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.glean.R;
 import com.example.glean.databinding.ItemHistoryBinding;
 import com.example.glean.model.RecordEntity;
 
@@ -60,11 +61,10 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.HistoryV
             SimpleDateFormat dateFormat = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
             String formattedDate = dateFormat.format(new Date(record.getCreatedAt()));
             binding.tvDate.setText(formattedDate);
-            
-            // Set location - use description or a placeholder since getLocation() doesn't exist
+              // Set location - use description or a placeholder since getLocation() doesn't exist
             String location = record.getDescription() != null && !record.getDescription().isEmpty() 
                 ? record.getDescription() 
-                : "Plogging Session";
+                : itemView.getContext().getString(R.string.plogging_session);
             binding.tvLocation.setText(location);
             
             // Format start time from createdAt

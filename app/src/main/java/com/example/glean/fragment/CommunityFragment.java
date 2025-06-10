@@ -43,20 +43,19 @@ public class CommunityFragment extends Fragment {
     
     private void setupTabs() {
         pagerAdapter = new CommunityPagerAdapter(requireActivity());
-        binding.viewPager.setAdapter(pagerAdapter);
-          new TabLayoutMediator(binding.tabLayout, binding.viewPager,
+        binding.viewPager.setAdapter(pagerAdapter);        new TabLayoutMediator(binding.tabLayout, binding.viewPager,
                 (tab, position) -> {
                     switch (position) {
                         case 0:
-                            tab.setText("Sosial");
+                            tab.setText(getString(R.string.community_social_tab));
                             tab.setIcon(R.drawable.ic_social);
                             break;
                         case 1:
-                            tab.setText("Ranking");
+                            tab.setText(getString(R.string.community_ranking_tab));
                             tab.setIcon(R.drawable.ic_ranking);
                             break;
                         case 2:
-                            tab.setText("News");
+                            tab.setText(getString(R.string.community_news_tab));
                             tab.setIcon(R.drawable.ic_news);
                             break;
                     }

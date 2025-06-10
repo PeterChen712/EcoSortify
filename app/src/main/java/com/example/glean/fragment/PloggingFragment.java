@@ -212,12 +212,12 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         
         if (btnRetryConnection != null) {
             btnRetryConnection.setOnClickListener(v -> {
-                btnRetryConnection.setText("🔄 Checking...");
+                btnRetryConnection.setText(getString(R.string.checking_connection));
                 btnRetryConnection.setEnabled(false);
 
                 binding.getRoot().postDelayed(() -> {
                     checkNetworkStatus();
-                    btnRetryConnection.setText("🔄 Retry Connection");
+                    btnRetryConnection.setText(getString(R.string.retry_connection));
                     btnRetryConnection.setEnabled(true);
                 }, 1500);
             });
@@ -276,13 +276,13 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
             if (isTracking) {
                 String buttonText;
                 if (currentTrashCount > 0) {
-                    buttonText = String.format("Sampah (+%d)", currentPoints);
+                    buttonText = String.format(getString(R.string.collect_trash_points), currentPoints);
                 } else {
-                    buttonText = "Sampah";
+                    buttonText = getString(R.string.collect_trash);
                 }
                 binding.btnCollectTrash.setText(buttonText);
             } else {
-                binding.btnCollectTrash.setText("Sampah");
+                binding.btnCollectTrash.setText(getString(R.string.collect_trash));
             }
         }
     }    private void toggleTracking() {
@@ -296,10 +296,9 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         if (!isGpsEnabled) {
             showGpsDisabledDialog();
             return;
-        }
-          // If both conditions are met, proceed with normal tracking
+        }        // If both conditions are met, proceed with normal tracking
         if (!isPloggingEnabled) {
-            showNetworkStatusMessage("⚠️ Harap periksa pengaturan internet dan lokasi Anda", true);
+            showNetworkStatusMessage(getString(R.string.network_warning), true);
             return;
         }
 
@@ -315,15 +314,12 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
     }
 
     private void showStopConfirmationDialog() {
-        new MaterialAlertDialogBuilder(requireContext())
-                .setTitle("🛑 Stop Plogging?")
-                .setMessage("Do you want to stop the current plogging session?\n\n" +
-                        "⚠️ Note: You can finish the session to save your progress, or continue tracking.")
-                .setPositiveButton("Stop", (dialog, which) -> {
+        new MaterialAlertDialogBuilder(requireContext())                .setTitle(getString(R.string.stop_plogging_title))
+                .setMessage(getString(R.string.stop_plogging_message))
+                .setPositiveButton(getString(R.string.yes_stop), (dialog, which) -> {
                     internalPauseTracking();
-                    showNetworkStatusMessage("🛑 Plogging dihentikan. Ketuk 'Mulai Plogging' untuk melanjutkan atau 'Selesai' untuk menyelesaikan.", false);
-                })                .setNegativeButton("Cancel", null)
-                .setNeutralButton("Finish Session", (dialog, which) -> {
+                    showNetworkStatusMessage("🛑 Plogging dihentikan. Ketuk 'Mulai Plogging' untuk melanjutkan atau 'Selesai' untuk menyelesaikan.", false);                })                .setNegativeButton(getString(R.string.continue_plogging), null)
+                .setNeutralButton("Selesai Sesi", (dialog, which) -> {
                     finishPlogging();
                 })
                 .show();
@@ -1401,15 +1397,13 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
             Log.e(TAG, "Error in onDestroy", e);
         }
     }private void updateUIForNetworkState(boolean networkAvailable) {
-        if (binding == null) return;
-
-        // Update network status indicator
+        if (binding == null) return;        // Update network status indicator
         if (binding.networkStatusIndicator != null) {
             if (networkAvailable) {
                 binding.networkStatusIndicator.setVisibility(View.GONE);
             } else {
                 binding.networkStatusIndicator.setVisibility(View.VISIBLE);
-                binding.tvNetworkStatus.setText("❌ No Internet");
+                binding.tvNetworkStatus.setText(getString(R.string.no_internet));
                 binding.networkStatusDot.setBackgroundResource(R.drawable.network_dot_disconnected);
             }
         }
@@ -1417,7 +1411,7 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         // Legacy support for old network status view
         if (binding.tvNetworkStatus != null) {
             if (networkAvailable) {
-                binding.tvNetworkStatus.setText("🌐 Connected");
+                binding.tvNetworkStatus.setText(getString(R.string.connected));
                 binding.tvNetworkStatus.setTextColor(getResources().getColor(android.R.color.holo_green_dark));
                 binding.tvNetworkStatus.setVisibility(View.VISIBLE);
 
@@ -1427,7 +1421,7 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                     }
                 }, 3000);
             } else {
-                binding.tvNetworkStatus.setText("❌ No Internet");
+                binding.tvNetworkStatus.setText(getString(R.string.no_internet));
                 binding.tvNetworkStatus.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
                 binding.tvNetworkStatus.setVisibility(View.VISIBLE);
             }
@@ -1645,20 +1639,17 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         }
         
         if (getContext() == null || !isAdded()) return;
-        
-        gpsDialog = new MaterialAlertDialogBuilder(requireContext())
-                .setTitle("📍 Enable Location Services")
-                .setMessage("Location services are required for plogging tracking.\n\n" +
-                           "Please enable GPS or Network location in your device settings.")
-                .setPositiveButton("Open Settings", (dialog, which) -> {
+          gpsDialog = new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(getString(R.string.enable_location_title))
+                .setMessage(getString(R.string.enable_location_message))
+                .setPositiveButton(getString(R.string.open_settings), (dialog, which) -> {
                     try {
                         Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
                         startActivity(intent);
                     } catch (Exception e) {
-                        Toast.makeText(requireContext(), "Cannot open location settings", Toast.LENGTH_SHORT).show();
-                    }
+                        Toast.makeText(requireContext(), getString(R.string.cannot_open_location_settings), Toast.LENGTH_SHORT).show();                    }
                 })
-                .setNegativeButton("Cancel", null)
+                .setNegativeButton(getString(R.string.cancel), null)
                 .setCancelable(false)
                 .show();
     }
@@ -1674,13 +1665,10 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
     }
     
     private void showNetworkOptionsDialog() {
-        if (getContext() == null || !isAdded()) return;
-        
-        new MaterialAlertDialogBuilder(requireContext())
-                .setTitle("🌐 Internet Connection Required")
-                .setMessage("Internet connection is required for plogging tracking.\n\n" +
-                           "Please check your WiFi or mobile data connection.")
-                .setPositiveButton("Open Settings", (dialog, which) -> {
+        if (getContext() == null || !isAdded()) return;        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(getString(R.string.internet_required_title))
+                .setMessage(getString(R.string.internet_required_message))
+                .setPositiveButton(getString(R.string.open_settings), (dialog, which) -> {
                     try {
                         Intent intent = new Intent(Settings.ACTION_WIFI_SETTINGS);
                         startActivity(intent);
@@ -1690,11 +1678,11 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                             Intent fallbackIntent = new Intent(Settings.ACTION_WIRELESS_SETTINGS);
                             startActivity(fallbackIntent);
                         } catch (Exception ex) {
-                            Toast.makeText(requireContext(), "Cannot open network settings", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(requireContext(), getString(R.string.cannot_open_network_settings), Toast.LENGTH_SHORT).show();
                         }
                     }
                 })
-                .setNeutralButton("Mobile Data", (dialog, which) -> {
+                .setNeutralButton(getString(R.string.mobile_data), (dialog, which) -> {
                     try {
                         Intent intent = new Intent(Settings.ACTION_DATA_ROAMING_SETTINGS);
                         startActivity(intent);
@@ -1702,13 +1690,12 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                         try {
                             // Fallback to main settings
                             Intent fallbackIntent = new Intent(Settings.ACTION_SETTINGS);
-                            startActivity(fallbackIntent);
-                        } catch (Exception ex) {
-                            Toast.makeText(requireContext(), "Cannot open mobile data settings", Toast.LENGTH_SHORT).show();
+                            startActivity(fallbackIntent);                        } catch (Exception ex) {
+                            Toast.makeText(requireContext(), getString(R.string.cannot_open_mobile_data_settings), Toast.LENGTH_SHORT).show();
                         }
                     }
                 })
-                .setNegativeButton("Cancel", null)
+                .setNegativeButton(getString(R.string.cancel), null)
                 .setCancelable(false)
                 .show();
     }
@@ -2077,28 +2064,26 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
             Log.e(TAG, "Error unregistering network callbacks", e);
         }
     }
-    
-    private void onNetworkAvailable() {
+      private void onNetworkAvailable() {
         Log.d(TAG, "Network connection available");
         enablePloggingFeatures();
         hideNetworkWarning();
         
         if (wasTrackingBeforeNetworkLoss && hasActiveSession() && isGpsEnabled) {
-            showNetworkStatusMessage("🌐 Koneksi internet dipulihkan! Anda dapat melanjutkan pelacakan.", false);
+            showNetworkStatusMessage(getString(R.string.internet_restored), false);
         } else {
             updateUIForNetworkState(true);
-            showNetworkStatusMessage("🌐 Internet Terhubung!", false);
+            showNetworkStatusMessage(getString(R.string.internet_connected), false);
         }
     }
-    
-    private void onNetworkLost() {
+      private void onNetworkLost() {
         Log.d(TAG, "Network connection lost");
         
         wasTrackingBeforeNetworkLoss = isTracking;
         
         if (isTracking) {
             internalPauseTracking();
-            showNetworkStatusMessage("🌐 Koneksi internet terputus! Pelacakan dijeda.", true);
+            showNetworkStatusMessage(getString(R.string.internet_lost), true);
         }
         
         // Disable plogging features when network is lost
@@ -2106,7 +2091,7 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         updateUIForNetworkState(false);
         
         showOfflineModeDialog();
-    }      private void hideNetworkWarning() {
+    }private void hideNetworkWarning() {
         if (networkDialog != null && networkDialog.isShowing()) {
             networkDialog.dismiss();
             networkDialog = null;
