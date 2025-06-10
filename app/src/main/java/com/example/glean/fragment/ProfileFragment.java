@@ -914,33 +914,32 @@ public class ProfileFragment extends Fragment {    private static final String T
             Toast.makeText(requireContext(), getString(R.string.error_opening_edit_dialog), Toast.LENGTH_SHORT).show();
         }
     }
-    
-    private void showSettingsDialog() {
+      private void showSettingsDialog() {
         try {
             DialogSettingsBinding dialogBinding = DialogSettingsBinding.inflate(LayoutInflater.from(requireContext()));
             MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(requireContext());
             builder.setView(dialogBinding.getRoot());
-            builder.setTitle(getString(R.string.settings_title));
+            builder.setTitle("⚙️ Pengaturan");
             
             // Get current settings
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
-            boolean notificationsEnabled = prefs.getBoolean("NOTIFICATIONS_ENABLED", true);
             boolean isDarkMode = prefs.getBoolean("DARK_MODE", false);
             
-            // Set current values
-            dialogBinding.switchNotifications.setChecked(notificationsEnabled);
+            // Set current value for dark mode switch
             dialogBinding.switchDarkMode.setChecked(isDarkMode);
             
             // Create dialog
             androidx.appcompat.app.AlertDialog dialog = builder.create();
             
-            // Set listeners
-            dialogBinding.switchNotifications.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                prefs.edit().putBoolean("NOTIFICATIONS_ENABLED", isChecked).apply();
-            });            dialogBinding.switchDarkMode.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            // Set listener for dark mode switch with animation
+            dialogBinding.switchDarkMode.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 prefs.edit().putBoolean("DARK_MODE", isChecked).apply();
+                
+                // Add haptic feedback for better UX
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+                    buttonView.performHapticFeedback(android.view.HapticFeedbackConstants.CONTEXT_CLICK);
+                }
             });
-              // Settings actions handled elsewhere as needed
             
             dialogBinding.btnSave.setOnClickListener(v -> {
                 dialog.dismiss();
@@ -953,12 +952,11 @@ public class ProfileFragment extends Fragment {    private static final String T
                     requireActivity().recreate();
                 }
                 
-                Toast.makeText(requireContext(), getString(R.string.settings_saved), Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(), "Pengaturan tersimpan", Toast.LENGTH_SHORT).show();
             });
             
             dialogBinding.btnCancel.setOnClickListener(v -> {
-                // Revert any changes
-                prefs.edit().putBoolean("NOTIFICATIONS_ENABLED", notificationsEnabled).apply();
+                // Revert dark mode changes
                 prefs.edit().putBoolean("DARK_MODE", isDarkMode).apply();
                 dialog.dismiss();
             });

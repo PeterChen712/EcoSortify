@@ -4,7 +4,9 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="24dp">    <!-- Dark Mode Setting -->
+    android:padding="24dp">
+
+    <!-- Dark Mode Setting -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -19,24 +21,35 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical"
-            android:layout_marginEnd="16dp">            <TextView
+            android:layout_marginEnd="16dp">
+
+            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Mode Gelap"
-                style="@style/SettingsItemTextStyle" />
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="?attr/colorOnSurface" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Gunakan tema gelap untuk pengalaman yang lebih nyaman"
-                style="@style/SettingsDescriptionTextStyle"
+                android:textSize="14sp"
+                android:textColor="?attr/colorOnSurfaceVariant"
                 android:layout_marginTop="4dp" />
 
-        </LinearLayout>        <com.google.android.material.switchmaterial.SwitchMaterial
+        </LinearLayout>
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
             android:id="@+id/switchDarkMode"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            style="@style/ModernSwitchStyle" />
+            android:scaleX="1.2"
+            android:scaleY="1.2"
+            app:thumbTint="@color/switch_thumb_color"
+            app:trackTint="@color/switch_track_color"
+            app:trackDecorationTint="@color/switch_track_decoration_color" />
 
     </LinearLayout>
 

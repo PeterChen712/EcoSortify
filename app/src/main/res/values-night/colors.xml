@@ -116,10 +116,18 @@
     
     <!-- Icon background colors for dark theme -->
     <color name="light_green">#1B3B1C</color>
-    
-    <!-- Status and feedback colors for dark theme -->
+      <!-- Status and feedback colors for dark theme -->
     <color name="loading_background">#1E1E1E</color>
     <color name="empty_state_text">#888888</color>
     <color name="shimmer_base">#2D2D2D</color>
     <color name="shimmer_highlight">#424242</color>
+
+    <!-- Modern Switch Colors for Dark Theme -->
+    <color name="switch_thumb_on">#FFFFFF</color>
+    <color name="switch_thumb_off">#E0E0E0</color>
+    <color name="switch_track_on">#66BB6A</color>
+    <color name="switch_track_off">#616161</color>
+    <color name="switch_track_decoration_on">#4CAF50</color>
+    <color name="switch_track_decoration_off">#424242</color>
+
 </resources>

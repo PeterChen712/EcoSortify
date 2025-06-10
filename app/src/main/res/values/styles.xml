@@ -88,12 +88,39 @@
         <item name="android:textColor">@color/environmental_green</item>
         <item name="android:minHeight">60dp</item>
     </style>
-    
-    <!-- Tab Text Style for Community Feature -->
+      <!-- Tab Text Style for Community Feature -->
     <style name="TabTextStyle" parent="TextAppearance.Material3.LabelMedium">
         <item name="android:textColor">@color/primary_color</item>
         <item name="android:textSize">12sp</item>
         <item name="android:textStyle">bold</item>
+    </style>    <!-- Modern Switch Style -->
+    <style name="ModernSwitchStyle" parent="Widget.Material3.CompoundButton.Switch">
+        <item name="thumbTint">@color/switch_thumb_color</item>
+        <item name="trackTint">@color/switch_track_color</item>
+        <item name="android:scaleX">1.2</item>
+        <item name="android:scaleY">1.2</item>
+        <item name="android:layout_marginStart">8dp</item>
+        <item name="android:layout_marginEnd">8dp</item>
+    </style>
+
+    <!-- Settings Dialog Styles -->
+    <style name="SettingsDialogStyle" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="android:windowBackground">@color/dialog_background</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+    </style>
+
+    <style name="SettingsItemTextStyle" parent="TextAppearance.Material3.HeadlineSmall">
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">18sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="SettingsDescriptionTextStyle" parent="TextAppearance.Material3.BodyMedium">
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:lineSpacingExtra">2dp</item>
     </style>
 
 </resources>
