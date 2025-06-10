@@ -27,12 +27,10 @@
             android:hint="Full Name"
             android:inputType="textPersonName" />
 
-    </com.google.android.material.textfield.TextInputLayout>
-
-    <com.google.android.material.textfield.TextInputLayout
+    </com.google.android.material.textfield.TextInputLayout>    <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="24dp"
+        android:layout_marginBottom="16dp"
         app:boxStrokeColor="@color/primary"
         app:hintTextColor="@color/primary">
 
@@ -40,8 +38,25 @@
             android:id="@+id/etEmail"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Email"
+            android:hint="Email (Read Only)"
             android:inputType="textEmailAddress" />
+
+    </com.google.android.material.textfield.TextInputLayout>    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
+        app:boxStrokeColor="@color/primary"
+        app:hintTextColor="@color/primary"
+        app:endIconMode="password_toggle"
+        app:helperText="Minimal 8 karakter, huruf besar, huruf kecil, dan angka"
+        app:helperTextTextColor="@color/text_secondary">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etPassword"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="New Password (Optional)"
+            android:inputType="textPassword" />
 
     </com.google.android.material.textfield.TextInputLayout>
 

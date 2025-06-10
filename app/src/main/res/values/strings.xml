@@ -228,8 +228,16 @@
     <string name="register_fill_all_fields">Lengkapin dulu semua datanya</string>
     <string name="register_passwords_no_match">Password gak sama nih</string>
     <string name="register_email_already_exists">Email udah terdaftar sebelumnya</string>
-    <string name="register_success">Berhasil daftar! Sekarang bisa login</string>
-    <string name="register_failed">Gagal daftar, coba lagi ya</string>
+    <string name="register_success">Berhasil daftar! Sekarang bisa login</string>    <string name="register_failed">Gagal daftar, coba lagi ya</string>
+    
+    <!-- Password Validation strings -->
+    <string name="password_validation_error">Password harus minimal 8 karakter, mengandung huruf besar, huruf kecil, dan angka.</string>
+    <string name="password_too_short">Password harus minimal %d karakter</string>
+    <string name="password_needs_uppercase">Password harus mengandung minimal 1 huruf besar (A-Z)</string>
+    <string name="password_needs_lowercase">Password harus mengandung minimal 1 huruf kecil (a-z)</string>
+    <string name="password_needs_digit">Password harus mengandung minimal 1 angka (0-9)</string>
+    <string name="password_cannot_be_empty">Password tidak boleh kosong</string>
+    <string name="password_valid">Password valid</string>
     
     <!-- Create Post Fragment strings -->
     <string name="create_post_sign_in_required">Login dulu buat bikin postingan</string>

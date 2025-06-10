@@ -9,6 +9,8 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -42,6 +44,7 @@ import com.example.glean.databinding.DialogSettingsBinding;
 import com.example.glean.db.AppDatabase;
 import com.example.glean.model.Badge;
 import com.example.glean.model.UserEntity;
+import com.example.glean.util.PasswordValidator;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.yalantis.ucrop.UCrop;
@@ -861,23 +864,49 @@ public class ProfileFragment extends Fragment {    private static final String T
             BottomSheetDialog dialog = new BottomSheetDialog(requireContext());
             DialogEditProfileBinding dialogBinding = DialogEditProfileBinding.inflate(getLayoutInflater());
             dialog.setContentView(dialogBinding.getRoot());
-            
-            // Set current values
+              // Set current values
             if (currentUser != null) {
                 String currentName = getDisplayName(currentUser);
                 dialogBinding.etName.setText(currentName);
-                
+                  // Show email as read-only (disable editing)
                 if (currentUser.getEmail() != null) {
                     dialogBinding.etEmail.setText(currentUser.getEmail());
+                    dialogBinding.etEmail.setEnabled(false); // Make email field read-only
+                    dialogBinding.etEmail.setAlpha(0.6f); // Visual indication that it's disabled
                 }
             }
+            
+            // Add real-time password validation
+            dialogBinding.etPassword.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+                @Override
+                public void afterTextChanged(Editable s) {
+                    String password = s.toString();
+                    if (!password.isEmpty()) {
+                        PasswordValidator.ValidationResult result = PasswordValidator.validatePassword(password);
+                        if (!result.isValid()) {
+                            dialogBinding.etPassword.setError(result.getErrorMessage());
+                        } else {
+                            dialogBinding.etPassword.setError(null);
+                        }
+                    } else {
+                        dialogBinding.etPassword.setError(null);
+                    }
+                }
+            });
             
             // Set click listeners
             dialogBinding.btnSave.setOnClickListener(v -> {
                 String name = dialogBinding.etName.getText().toString().trim();
-                String email = dialogBinding.etEmail.getText().toString().trim();
-                  if (name.isEmpty()) {
-                    Toast.makeText(requireContext(), getString(R.string.name_empty_error), Toast.LENGTH_SHORT).show();
+                String password = dialogBinding.etPassword.getText().toString().trim();
+                
+                if (name.isEmpty()) {
+                    Toast.makeText(requireContext(), "Name cannot be empty", Toast.LENGTH_SHORT).show();
                     return;
                 }
                 
@@ -890,9 +919,15 @@ public class ProfileFragment extends Fragment {    private static final String T
                     } else {
                         currentUser.setLastName("");
                     }
-                    
-                    if (!email.isEmpty()) {
-                        currentUser.setEmail(email);
+                      // Update password only if provided
+                    if (!password.isEmpty()) {
+                        // Validate password strength
+                        PasswordValidator.ValidationResult passwordValidation = PasswordValidator.validatePasswordWithDetailedMessage(password);
+                        if (!passwordValidation.isValid()) {
+                            Toast.makeText(requireContext(), passwordValidation.getErrorMessage(), Toast.LENGTH_LONG).show();
+                            return;
+                        }
+                        currentUser.setPassword(password);
                     }
                     
                     executor.execute(() -> {

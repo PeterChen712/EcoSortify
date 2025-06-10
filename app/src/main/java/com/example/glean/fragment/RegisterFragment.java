@@ -1,6 +1,8 @@
 package com.example.glean.fragment;
 
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,6 +18,7 @@ import com.example.glean.R;
 import com.example.glean.databinding.FragmentRegisterBinding;
 import com.example.glean.db.AppDatabase;
 import com.example.glean.model.UserEntity;
+import com.example.glean.util.PasswordValidator;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -38,15 +41,43 @@ public class RegisterFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         binding = FragmentRegisterBinding.inflate(inflater, container, false);
         return binding.getRoot();
-    }
-
-    @Override
+    }    @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
         // Set click listeners
         binding.btnRegister.setOnClickListener(v -> attemptRegister());
         binding.tvLogin.setOnClickListener(v -> navigateBack());
+        
+        // Add real-time password validation
+        setupPasswordValidation();
+    }
+    
+    private void setupPasswordValidation() {
+        binding.etPassword.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                String password = s.toString();
+                if (!password.isEmpty()) {
+                    PasswordValidator.ValidationResult result = PasswordValidator.validatePassword(password);
+                    if (!result.isValid()) {
+                        binding.tilPassword.setError(result.getErrorMessage());
+                    } else {
+                        binding.tilPassword.setError(null);
+                        binding.tilPassword.setHelperText("✓ Password valid");
+                    }
+                } else {
+                    binding.tilPassword.setError(null);
+                    binding.tilPassword.setHelperText("Minimal 8 karakter, huruf besar, huruf kecil, dan angka");
+                }
+            }
+        });
     }
 
     private void attemptRegister() {
@@ -57,10 +88,15 @@ public class RegisterFragment extends Fragment {
         if (email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty() || name.isEmpty()) {
             Toast.makeText(requireContext(), getString(R.string.register_fill_all_fields), Toast.LENGTH_SHORT).show();
             return;
+        }        if (!password.equals(confirmPassword)) {
+            Toast.makeText(requireContext(), getString(R.string.register_passwords_no_match), Toast.LENGTH_SHORT).show();
+            return;
         }
 
-        if (!password.equals(confirmPassword)) {
-            Toast.makeText(requireContext(), getString(R.string.register_passwords_no_match), Toast.LENGTH_SHORT).show();
+        // Validate password strength
+        PasswordValidator.ValidationResult passwordValidation = PasswordValidator.validatePasswordWithDetailedMessage(password);
+        if (!passwordValidation.isValid()) {
+            Toast.makeText(requireContext(), passwordValidation.getErrorMessage(), Toast.LENGTH_LONG).show();
             return;
         }
 

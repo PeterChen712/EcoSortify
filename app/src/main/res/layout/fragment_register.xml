@@ -63,15 +63,15 @@
             android:layout_height="wrap_content"
             android:inputType="textEmailAddress" />
 
-    </com.google.android.material.textfield.TextInputLayout>
-
-    <com.google.android.material.textfield.TextInputLayout
+    </com.google.android.material.textfield.TextInputLayout>    <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/til_password"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:hint="Password"
         app:passwordToggleEnabled="true"
+        app:helperText="Minimal 8 karakter, huruf besar, huruf kecil, dan angka"
+        app:helperTextTextColor="@color/auth_secondary_text"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/til_email">
