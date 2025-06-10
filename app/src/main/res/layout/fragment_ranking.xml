@@ -4,14 +4,14 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/background_color">    <!-- Filter Header -->
+    android:background="?attr/colorSurface"><!-- Filter Header -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:padding="16dp"
         android:gravity="center_vertical"
-        android:background="@color/white">
+        android:background="?attr/colorSurface">
 
         <TextView
             android:layout_width="match_parent"
@@ -19,11 +19,9 @@
             android:text="Peringkat Global"
             android:textSize="18sp"
             android:textStyle="bold"
-            android:textColor="@color/text_primary" />
+            android:textColor="?attr/colorOnSurface" />
 
-    </LinearLayout>
-
-    <!-- My Ranking Card -->
+    </LinearLayout>    <!-- My Ranking Card -->
     <androidx.cardview.widget.CardView
         android:id="@+id/myRankingCard"
         android:layout_width="match_parent"
@@ -31,15 +29,14 @@
         android:layout_margin="16dp"
         android:visibility="gone"
         app:cardCornerRadius="12dp"
-        app:cardElevation="4dp">
-
-        <LinearLayout
+        app:cardElevation="4dp"
+        app:cardBackgroundColor="@color/card_background"><LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:padding="16dp"
             android:gravity="center_vertical"
-            android:background="@color/primary_light">
+            android:background="@color/card_background">
 
             <TextView
                 android:id="@+id/tvMyPosition"
@@ -48,7 +45,7 @@
                 android:text="#15"
                 android:textSize="24sp"
                 android:textStyle="bold"
-                android:textColor="@color/primary_color"
+                android:textColor="?attr/colorPrimary"
                 android:layout_marginEnd="16dp" />
 
             <ImageView
@@ -71,7 +68,7 @@
                     android:text="You"
                     android:textSize="16sp"
                     android:textStyle="bold"
-                    android:textColor="@color/text_primary" />
+                    android:textColor="@color/card_text_primary" />
 
                 <TextView
                     android:id="@+id/tvMyPoints"
@@ -79,7 +76,7 @@
                     android:layout_height="wrap_content"
                     android:text="850 poin"
                     android:textSize="14sp"
-                    android:textColor="@color/primary_color"
+                    android:textColor="?attr/colorPrimary"
                     android:textStyle="bold" />
 
                 <TextView
@@ -88,21 +85,20 @@
                     android:layout_height="wrap_content"
                     android:text="18.5kg • 12.3km • 3 badge"
                     android:textSize="12sp"
-                    android:textColor="@color/text_secondary" />
+                    android:textColor="@color/card_text_secondary" />
 
             </LinearLayout>
 
         </LinearLayout>
 
-    </androidx.cardview.widget.CardView>
-
-    <!-- Rankings List -->
+    </androidx.cardview.widget.CardView>    <!-- Rankings List -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewRanking"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:clipToPadding="false"
         android:paddingHorizontal="16dp"
-        android:paddingBottom="16dp" />
+        android:paddingBottom="16dp"
+        android:background="?attr/colorSurface" />
 
 </LinearLayout>

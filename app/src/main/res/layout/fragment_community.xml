@@ -4,14 +4,14 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/background_color">    <!-- Header with Fixed Height -->
+    android:background="?attr/colorSurface">    <!-- Header with Fixed Height -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="56dp"
         android:orientation="horizontal"
         android:paddingStart="16dp"
         android:paddingEnd="16dp"
-        android:background="@color/primary_color"
+        android:background="?attr/colorPrimary"
         android:gravity="center_vertical">
 
         <ImageView
@@ -19,7 +19,7 @@
             android:layout_height="24dp"
             android:src="@drawable/ic_community"
             android:layout_marginEnd="12dp"
-            app:tint="@color/white"
+            app:tint="?attr/colorOnPrimary"
             android:contentDescription="Community Icon" />
 
         <TextView
@@ -27,7 +27,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Komunitas"
-            android:textColor="@color/white"
+            android:textColor="?attr/colorOnPrimary"
             android:textSize="20sp"
             android:textStyle="bold"
             android:gravity="center_vertical" />
@@ -37,12 +37,12 @@
         android:id="@+id/tabLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/white"
+        android:background="?attr/colorSurface"
         app:tabMode="fixed"
         app:tabGravity="fill"
-        app:tabSelectedTextColor="@color/primary_color"
-        app:tabTextColor="@color/text_secondary"
-        app:tabIndicatorColor="@color/primary_color"
+        app:tabSelectedTextColor="?attr/colorPrimary"
+        app:tabTextColor="?attr/colorOnSurfaceVariant"
+        app:tabIndicatorColor="?attr/colorPrimary"
         app:tabIndicatorHeight="3dp"
         app:tabTextAppearance="@style/TabTextStyle" />
 

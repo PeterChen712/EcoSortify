@@ -1,19 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- Primary brand color -->
+<resources>    <!-- Primary brand color -->
     <color name="primary">#4CAF50</color>
     <color name="primary_dark">#388E3C</color>
+    <color name="primary_darker">#2E7D32</color>
     <color name="accent">#8BC34A</color>
     <color name="accent_dark">#689F38</color>
-    
-    <!-- Additional colors for the app -->
+    <color name="accent_darker">#558B2F</color>
+      <!-- Additional colors for the app -->
     <color name="background_light">#F5F5F5</color>
+    <color name="background_dark">#FFFFFF</color>
+    <color name="surface_dark">#FFFFFF</color>
     <color name="white">#FFFFFF</color>
     <color name="black">#000000</color>
     <color name="gray">#757575</color>
-    <color name="light_gray">#EEEEEE</color>
-      <!-- Text colors -->
+    <color name="light_gray">#EEEEEE</color><!-- Text colors -->
     <color name="text_primary">#212121</color>
+    <color name="text_primary_dark">#212121</color>
     <color name="text_secondary">#757575</color>
     <color name="text_tertiary">#9E9E9E</color>
       <!-- Card text colors for light theme - ensuring readability on light card backgrounds -->
