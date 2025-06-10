@@ -122,12 +122,17 @@
     <color name="shimmer_base">#2D2D2D</color>
     <color name="shimmer_highlight">#424242</color>
 
-    <!-- Modern Switch Colors for Dark Theme -->
-    <color name="switch_thumb_on">#FFFFFF</color>
+    <!-- Modern Switch Colors for Dark Theme -->    <color name="switch_thumb_on">#FFFFFF</color>
     <color name="switch_thumb_off">#E0E0E0</color>
     <color name="switch_track_on">#66BB6A</color>
     <color name="switch_track_off">#616161</color>
     <color name="switch_track_decoration_on">#4CAF50</color>
     <color name="switch_track_decoration_off">#424242</color>
+
+    <!-- Login/Register Colors for Dark Mode -->
+    <color name="auth_background">#121212</color>
+    <color name="auth_primary_text">#FFFFFF</color>
+    <color name="auth_secondary_text">#B0B0B0</color>
+    <color name="auth_accent">#66BB6A</color>
 
 </resources>

@@ -1,6 +1,6 @@
 <resources>
     <!-- App Info -->
-    <string name="app_name">Glean</string>
+    <string name="app_name">GleanGo</string>
     <string name="add_trash_shortcut_short_label">Tambah Sampah</string>
     <string name="add_trash_shortcut_long_label">Laporkan sampah baru</string>
     

@@ -123,4 +123,18 @@
         <item name="android:lineSpacingExtra">2dp</item>
     </style>
 
+    <!-- Auth Screen Styles -->
+    <style name="AuthTextInputLayoutStyle" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="boxStrokeColor">@color/auth_accent</item>
+        <item name="hintTextColor">@color/auth_secondary_text</item>
+        <item name="android:textColorHint">@color/auth_secondary_text</item>
+    </style>
+
+    <style name="AuthButtonStyle" parent="Widget.Material3.Button">
+        <item name="backgroundTint">@color/auth_accent</item>
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textStyle">bold</item>
+        <item name="cornerRadius">8dp</item>
+    </style>
+
 </resources>

@@ -14,7 +14,7 @@
 
 
 
-## 🌱 What is Plogging?
+## 🌱 Apa itu Plogging?
 
 <p align="center">
   <img width="500" src="README/plogging_example.jpg" alt="Plogging Example"/>
@@ -26,7 +26,7 @@ Plogging adalah gabungan aktivitas jogging dan memungut sampah. Nama ini berasal
 ---
 
 
-## 🌏 Story
+## 🌏 Filosofi
 
 **GleanGo lahir dari keinginan sederhana: membuat olahraga dan aksi nyata menjaga lingkungan jadi lebih seru dan bermakna.**
   
@@ -78,7 +78,7 @@ GleanGo mendukung beberapa SDGs, khususnya:
 
 ---
 
-## Cara Penggunaan
+## 🙌 Cara Penggunaan
 
 ### 1. Login & Registrasi
 <p align="center">

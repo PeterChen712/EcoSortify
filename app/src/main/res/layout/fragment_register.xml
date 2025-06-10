@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="24dp"
-    android:background="#F5F5F5">
+    android:background="@color/auth_background">
 
     <ImageView
         android:id="@+id/iv_logo"
@@ -16,9 +16,7 @@
         android:contentDescription="GleanGo Logo"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <TextView
+        app:layout_constraintTop_toTopOf="parent" />    <TextView
         android:id="@+id/tv_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -26,7 +24,7 @@
         android:text="Create Account"
         android:textSize="28sp"
         android:textStyle="bold"
-        android:textColor="#4CAF50"
+        android:textColor="@color/auth_accent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/iv_logo" />
@@ -103,9 +101,7 @@
             android:layout_height="wrap_content"
             android:inputType="textPassword" />
 
-    </com.google.android.material.textfield.TextInputLayout>
-
-    <Button
+    </com.google.android.material.textfield.TextInputLayout>    <Button
         android:id="@+id/btn_register"
         android:layout_width="0dp"
         android:layout_height="56dp"
@@ -113,7 +109,7 @@
         android:text="Register"
         android:textSize="16sp"
         android:textStyle="bold"
-        android:backgroundTint="#4CAF50"
+        android:backgroundTint="@color/auth_accent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/til_confirm_password" />
@@ -131,14 +127,14 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Already have an account? "
-            android:textColor="@android:color/darker_gray" />
+            android:textColor="@color/auth_secondary_text" />
 
         <TextView
             android:id="@+id/tv_login"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Login here"
-            android:textColor="#4CAF50"
+            android:textColor="@color/auth_accent"
             android:textStyle="bold"
             android:clickable="true"
             android:focusable="true"

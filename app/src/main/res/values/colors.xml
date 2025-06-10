@@ -117,12 +117,17 @@
     <color name="header_text_primary">#FFFFFF</color>
     <color name="header_text_secondary">#E8F5E8</color>
 
-    <!-- Modern Switch Colors -->
-    <color name="switch_thumb_on">#FFFFFF</color>
+    <!-- Modern Switch Colors -->    <color name="switch_thumb_on">#FFFFFF</color>
     <color name="switch_thumb_off">#FFFFFF</color>
     <color name="switch_track_on">#4CAF50</color>
     <color name="switch_track_off">#E0E0E0</color>
     <color name="switch_track_decoration_on">#2E7D32</color>
     <color name="switch_track_decoration_off">#BDBDBD</color>
+
+    <!-- Login/Register Colors -->
+    <color name="auth_background">#F5F5F5</color>
+    <color name="auth_primary_text">#212121</color>
+    <color name="auth_secondary_text">#757575</color>
+    <color name="auth_accent">#4CAF50</color>
 
 </resources>
