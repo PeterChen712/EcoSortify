@@ -191,13 +191,19 @@ public class ProfileFragment extends Fragment {    private static final String T
                 showLogoutConfirmation();
             });
         }
-        
-        // Profile picture click
+          // Profile picture click
         if (binding.ivProfilePic != null) {
             binding.ivProfilePic.setOnClickListener(v -> {
                 Log.d(TAG, "Profile picture clicked");
                 checkPermissionsAndSelectImage();
             });        }
+          // Customize Profile button
+        if (binding.btnCustomize != null) {
+            binding.btnCustomize.setOnClickListener(v -> {
+                Log.d(TAG, "Customize profile button clicked");
+                openCustomizeProfileActivity();
+            });
+        }
         
         // Settings icon in header
         if (binding.btnSettings != null) {
@@ -456,11 +462,10 @@ public class ProfileFragment extends Fragment {    private static final String T
     }
       private void setupBadges(UserEntity user) {
         List<Badge> badges = generateUserBadges(user);
-          if (binding.rvBadges != null) {
-            // Use the new ProfileBadgeAdapter
+          if (binding.rvBadges != null) {            // Use the new ProfileBadgeAdapter
             ProfileBadgeAdapter adapter = new ProfileBadgeAdapter(requireContext(), badges, badge -> {
                 // Navigate to Profile Customization when badge is clicked
-                navigateToProfileDecor();
+                openCustomizeProfileActivity();
             });
             binding.rvBadges.setAdapter(adapter);
         }
@@ -1016,94 +1021,32 @@ public class ProfileFragment extends Fragment {    private static final String T
         }
         
         requireActivity().recreate();
-    }
-
-    private void navigateToProfileDecor() {
+    }    private void openCustomizeProfileActivity() {
         try {
-            Log.d(TAG, "Navigating to ProfileDecorFragment...");
+            Log.d(TAG, "Opening CustomizeProfileActivity...");
             
-            // Check if user is valid before navigation
+            // Check if user is valid before opening activity
             if (currentUser == null) {
-                Toast.makeText(requireContext(), getString(R.string.please_wait_profile_load), Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(), "Please wait for profile to load", Toast.LENGTH_SHORT).show();
                 return;
             }
             
-            // Show loading feedback
-            Toast.makeText(requireContext(), getString(R.string.opening_customization), Toast.LENGTH_SHORT).show();
+            // Create intent to open CustomizeProfileActivity
+            Intent intent = new Intent(requireContext(), com.example.glean.activity.CustomizeProfileActivity.class);
             
-            NavController navController = Navigation.findNavController(requireView());
+            // Pass user data if needed
+            intent.putExtra("USER_ID", userId);
             
-            // Create bundle with user data
-            Bundle args = new Bundle();
-            args.putInt("USER_ID", userId);
-            args.putInt("USER_POINTS", currentUser.getPoints());
-            
-            // Navigate with enhanced error handling
-            try {
-                navController.navigate(R.id.action_profileFragment_to_profileDecorFragment, args);
-                Log.d(TAG, "Navigation to ProfileDecorFragment successful");
-            } catch (IllegalArgumentException e) {
-                Log.e(TAG, "Navigation action not found, trying alternative", e);
-                // Try alternative navigation ID
-                try {
-                    navController.navigate(R.id.profileDecorFragment, args);
-                } catch (Exception e2) {
-                    Log.e(TAG, "Alternative navigation failed", e2);
-                    // Show temporary customization dialog as fallback
-                    showTemporaryCustomizeDialog();
-                }
-            }
+            // Start activity
+            startActivity(intent);
+            Log.d(TAG, "CustomizeProfileActivity opened successfully");
             
         } catch (Exception e) {
-            Log.e(TAG, "Error navigating to profile customization", e);
-            showTemporaryCustomizeDialog();
-        }
-    }
-    
-    private void showTemporaryCustomizeDialog() {        new MaterialAlertDialogBuilder(requireContext())
-                .setTitle(getString(R.string.profile_customization_title))
-                .setMessage(getString(R.string.choose_decoration))
-                .setPositiveButton(getString(R.string.gold_frame), (dialog, which) -> {
-                    if (currentUser != null) {
-                        currentUser.setActiveDecoration("1");
-                        updateProfileDecorations(currentUser);
-                        saveUserDecoration();
-                    }
-                })
-                .setNeutralButton(getString(R.string.silver_frame), (dialog, which) -> {
-                    if (currentUser != null) {
-                        currentUser.setActiveDecoration("2");
-                        updateProfileDecorations(currentUser);
-                        saveUserDecoration();
-                    }
-                })
-                .setNegativeButton(getString(R.string.bronze_frame), (dialog, which) -> {
-                    if (currentUser != null) {
-                        currentUser.setActiveDecoration("3");
-                        updateProfileDecorations(currentUser);
-                        saveUserDecoration();
-                    }
-                })
-                .show();
-    }
-    
-    private void saveUserDecoration() {
-        if (currentUser != null) {
-            executor.execute(() -> {
-                try {
-                    db.userDao().update(currentUser);
-                    requireActivity().runOnUiThread(() -> {
-                        Toast.makeText(requireContext(), "Decoration applied!", Toast.LENGTH_SHORT).show();
-                    });
-                } catch (Exception e) {
-                    Log.e(TAG, "Error saving decoration", e);
-                    requireActivity().runOnUiThread(() -> {
-                        Toast.makeText(requireContext(), "Failed to save decoration", Toast.LENGTH_SHORT).show();
-                    });
-                }
-            });
-        }
-    }    @Override
+            Log.e(TAG, "Error opening CustomizeProfileActivity", e);
+            Toast.makeText(requireContext(), "Failed to open profile customization", Toast.LENGTH_SHORT).show();
+        }    }
+
+    @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         

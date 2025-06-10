@@ -136,26 +136,15 @@
         <argument
             android:name="NEWS_ID"
             app:argType="integer" />
-    </fragment>
-
-    <fragment
+    </fragment>    <fragment
         android:id="@+id/profileFragment"
         android:name="com.example.glean.fragment.ProfileFragment"
         android:label="Profile"
         tools:layout="@layout/fragment_profile">
         <action
-            android:id="@+id/action_profileFragment_to_profileDecorFragment"
-            app:destination="@id/profileDecorFragment" />
-        <action
             android:id="@+id/action_profileFragment_to_loginFragment"
             app:destination="@id/loginFragment" />
     </fragment>
-
-    <fragment
-        android:id="@+id/profileDecorFragment"
-        android:name="com.example.glean.fragment.ProfileDecorFragment"
-        android:label="Profile Customization"
-        tools:layout="@layout/fragment_profile_decor" />
 
     <fragment
         android:id="@+id/historyFragment"
