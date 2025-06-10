@@ -26,16 +26,14 @@
             android:paddingTop="@dimen/header_spacing_large"
             android:paddingBottom="24dp"
             android:paddingStart="20dp"
-            android:paddingEnd="20dp">
-
-        <com.google.android.material.card.MaterialCardView
+            android:paddingEnd="20dp">        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="20dp"
             app:cardCornerRadius="16dp"
             app:cardElevation="8dp"
             app:strokeWidth="0dp"
-            android:backgroundTint="@android:color/white">
+            app:cardBackgroundColor="@color/card_background">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -60,43 +58,39 @@
                             android:layout_marginEnd="8dp"
                             android:src="@drawable/ic_bar_chart"
                             app:tint="@color/environmental_green"
-                            android:contentDescription="Statistics Icon" />
-
-                        <TextView
+                            android:contentDescription="Statistics Icon" />                        <TextView
                             android:id="@+id/tvQuickStatsTitle"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Statistik Keseluruhan"
                             android:textSize="18sp"
                             android:textStyle="bold"
-                            android:textColor="@color/text_primary" />
+                            android:textColor="@color/card_title_text" />
 
                     </LinearLayout>
-
-                    <View
-                        android:layout_width="6dp"
-                        android:layout_height="6dp"
-                        android:background="@drawable/circle_indicator"
-                        android:backgroundTint="@color/environmental_green" />
+                    
 
                 </LinearLayout>                <!--
                 Achievement Status -->
+                <!--
+                Stats Grid -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:background="@drawable/gradient_background_welcome"
-                    android:padding="16dp"
                     android:layout_marginBottom="16dp"
-                    android:elevation="2dp">
+                    android:background="@drawable/gradient_background_welcome"
+                    android:elevation="2dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+
                     <ImageView
                         android:layout_width="24dp"
                         android:layout_height="24dp"
                         android:layout_marginEnd="12dp"
+                        android:contentDescription="Achievement Icon"
                         android:src="@drawable/ic_star"
-                        app:tint="@android:color/white"
-                        android:contentDescription="Achievement Icon" />
+                        app:tint="@android:color/white" />
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -107,25 +101,25 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:layout_marginBottom="4dp"
                             android:text="Status Pencapaian"
-                            android:textSize="14sp"
-                            android:textStyle="bold"
                             android:textColor="@android:color/white"
-                            android:layout_marginBottom="4dp" />
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
 
                         <TextView
                             android:id="@+id/tvAchievementStatus"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:alpha="0.9"
                             android:text="Terus semangat! Kamu sudah berkontribusi untuk lingkungan."
-                            android:textSize="13sp"
                             android:textColor="@android:color/white"
-                            android:alpha="0.9" />
+                            android:textSize="13sp" />
 
                     </LinearLayout>
 
-                </LinearLayout>                <!--
-                Stats Grid -->
+                </LinearLayout>
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -156,15 +150,13 @@
                                 app:tint="@color/environmental_green"
                                 android:contentDescription="Running Icon" />
 
-                        </androidx.cardview.widget.CardView>
-
-                        <TextView
+                        </androidx.cardview.widget.CardView>                        <TextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:text="Total Lari"
                             android:textSize="14sp"
-                            android:textColor="@color/text_secondary"
+                            android:textColor="@color/card_text_secondary"
                             android:gravity="start|center_vertical" />
 
                         <TextView
@@ -174,7 +166,7 @@
                             android:text="0.5 km"
                             android:textSize="14sp"
                             android:textStyle="bold"
-                            android:textColor="@color/text_primary"
+                            android:textColor="@color/card_text_primary"
                             android:gravity="end|center_vertical" />
 
                     </LinearLayout>
@@ -204,15 +196,13 @@
                                 app:tint="@color/environmental_green"
                                 android:contentDescription="Star Icon" />
 
-                        </androidx.cardview.widget.CardView>
-
-                        <TextView
+                        </androidx.cardview.widget.CardView>                        <TextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:text="Poin"
                             android:textSize="14sp"
-                            android:textColor="@color/text_secondary"
+                            android:textColor="@color/card_text_secondary"
                             android:gravity="start|center_vertical" />
 
                         <TextView
@@ -222,7 +212,7 @@
                             android:text="30"
                             android:textSize="14sp"
                             android:textStyle="bold"
-                            android:textColor="@color/text_primary"
+                            android:textColor="@color/card_text_primary"
                             android:gravity="end|center_vertical" />
 
                     </LinearLayout>
@@ -252,15 +242,13 @@
                                 app:tint="@color/environmental_green"
                                 android:contentDescription="Trash Icon" />
 
-                        </androidx.cardview.widget.CardView>
-
-                        <TextView
+                        </androidx.cardview.widget.CardView>                        <TextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:text="Sampah Terkumpul"
                             android:textSize="14sp"
-                            android:textColor="@color/text_secondary"
+                            android:textColor="@color/card_text_secondary"
                             android:gravity="start|center_vertical" />
 
                         <TextView
@@ -270,7 +258,7 @@
                             android:text="3"
                             android:textSize="14sp"
                             android:textStyle="bold"
-                            android:textColor="@color/text_primary"
+                            android:textColor="@color/card_text_primary"
                             android:gravity="end|center_vertical" />
 
                     </LinearLayout>
@@ -299,15 +287,13 @@
                                 app:tint="@color/environmental_green"
                                 android:contentDescription="Trophy Icon" />
 
-                        </androidx.cardview.widget.CardView>
-
-                        <TextView
+                        </androidx.cardview.widget.CardView>                        <TextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:text="Badge"
                             android:textSize="14sp"
-                            android:textColor="@color/text_secondary"
+                            android:textColor="@color/card_text_secondary"
                             android:gravity="start|center_vertical" />
 
                         <TextView
@@ -317,7 +303,7 @@
                             android:text="Eco Beginner"
                             android:textSize="14sp"
                             android:textStyle="bold"
-                            android:textColor="@color/text_primary"
+                            android:textColor="@color/card_text_primary"
                             android:gravity="end|center_vertical" />
 
                     </LinearLayout>
@@ -325,9 +311,7 @@
                 </LinearLayout>
 
             </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Enhanced Quick Action Buttons -->
+        </com.google.android.material.card.MaterialCardView>        <!-- Enhanced Quick Action Buttons -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -335,7 +319,7 @@
             app:cardCornerRadius="16dp"
             app:cardElevation="8dp"
             app:strokeWidth="0dp"
-            android:backgroundTint="@android:color/white">
+            app:cardBackgroundColor="@color/card_background">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -354,15 +338,13 @@
                         android:layout_marginEnd="8dp"
                         android:src="@drawable/ic_flash"
                         app:tint="@color/environmental_green"
-                        android:contentDescription="Quick Action Icon" />
-
-                    <TextView
+                        android:contentDescription="Quick Action Icon" />                    <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Aksi Cepat"
                         android:textSize="18sp"
                         android:textStyle="bold"
-                        android:textColor="@color/text_primary" />
+                        android:textColor="@color/card_title_text" />
 
                 </LinearLayout>
 

@@ -99,9 +99,7 @@
     <color name="warning_color">#FFB74D</color>
     <color name="error_color">#EF5350</color>
     <color name="red_heart">#F48FB1</color>
-    
-    <!-- Additional colors for dark theme -->
-    <color name="light_green">#2E4D2E</color>
+      <!-- Additional colors for dark theme -->
     <color name="background_color">#121212</color>
     <color name="success_color">#66BB6A</color>
     <color name="background_secondary">#2D2D2D</color>
@@ -113,7 +111,11 @@
     <color name="fab_background">#66BB6A</color>
     <color name="chip_background">#2D2D2D</color>
     <color name="chip_text">#FFFFFF</color>
+
     <color name="placeholder_text">#888888</color>
+    
+    <!-- Icon background colors for dark theme -->
+    <color name="light_green">#1B3B1C</color>
     
     <!-- Status and feedback colors for dark theme -->
     <color name="loading_background">#1E1E1E</color>
