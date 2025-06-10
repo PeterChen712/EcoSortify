@@ -5,14 +5,16 @@
 [![Java](https://img.shields.io/badge/Language-Java-orange.svg)](https://www.java.com)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-> **Make Your World Clean** - Aplikasi Android inovatif untuk aktivitas plogging yang menggabungkan olahraga dengan kepedulian lingkungan melalui teknologi AI dan GPS presisi tinggi.
+> **GleanGO** - Aplikasi Android inovatif untuk aktivitas plogging yang menggabungkan olahraga dengan kepedulian lingkungan melalui teknologi AI dan GPS presisi tinggi.
 
 **GleanGo** adalah aplikasi Android native yang dirancang untuk mendukung aktivitas plogging (jogging sambil memungut sampah) dengan fitur tracking GPS ultra-presisi, klasifikasi sampah berbasis AI, analitik komprehensif, dan sistem gamifikasi yang menarik. Aplikasi ini sepenuhnya offline-first dengan data tersimpan aman di SQLite lokal.
 
+---
 
 ## 📋 Table of Contents
 
 - [About The Project](#-about-the-project)
+- [About Fragment & Philosophy](#-about-fragment--philosophy)
 - [Features](#-features)
 - [Screenshots](#-screenshots)
 - [Technical Implementation](#-technical-implementation)
@@ -22,6 +24,8 @@
   - [Configuration](#configuration)
 - [Usage Guide](#-usage-guide)
 - [Tech Stack](#-tech-stack)
+
+---
 
 ## 🎯 About The Project
 
@@ -39,6 +43,53 @@ GleanGo menyediakan platform terintegrasi yang memadukan:
 - **AI Classification**: Identifikasi otomatis jenis sampah dengan Gemini AI
 - **Data Analytics**: Visualisasi statistik personal dan environmental impact
 - **Gamifikasi**: Sistem reward dan achievement untuk motivasi berkelanjutan
+
+---
+
+## 🧩 About Fragment & Philosophy
+
+### Logo dan Nama Aplikasi
+![Logo GleanGo](README/logo-circle.png) <!-- Ganti dengan nama file logo lingkaran -->
+
+### Tentang GleanGo
+GleanGo adalah aplikasi plogging yang mengajak pengguna berolahraga sambil menjaga lingkungan dengan memungut sampah.
+
+### Versi Aplikasi
+Versi 1.0
+
+### Cerita di Balik Nama & Inspirasi
+
+Nama **GleanGo** terinspirasi dari dua sumber utama:
+- Kata "glean" (memungut sisa), selaras dengan aktivitas plogging yang gerakannya sering membungkuk memungut sampah.
+- Kata "Go" juga terinspirasi dari game populer Pokémon Go, yang mengajak pemain berjalan dan mencari sesuatu di luar ruangan; GleanGo mengadopsi semangat aktif dan eksplorasi ini dalam aktivitas plogging.
+
+Filosofi ini juga terinspirasi dari lukisan terkenal “The Gleaners” karya Jean-François Millet, yang menggambarkan orang-orang memungut sisa panen di ladang sebagai simbol kerja keras dan kepedulian lingkungan.  
+![The Gleaners - Jean-François Millet](README/the_gleaners.jpg)  
+[Lihat di Wikipedia](https://en.wikipedia.org/wiki/The_Gleaners)
+
+---
+
+### Apa itu Plogging?
+![Plogging Example](README/plogging_example.png)
+Plogging adalah gabungan aktivitas jogging dan memungut sampah. Nama ini berasal dari kata Swedia “plocka upp” (memungut) dan “jogga” (berlari). Plogging menjadi olahraga yang juga bermanfaat bagi lingkungan dan kesehatan karena membakar lebih banyak kalori dibanding jogging biasa.
+
+### Apa itu Sustainable Development Goals?
+![SDG 17 Goals](README/sdg_17_goals.png)
+Sustainable Development Goals (SDGs) adalah 17 tujuan global yang menjadi “blueprint” untuk masa depan yang lebih baik dan berkelanjutan. GleanGo mendukung beberapa tujuan SDGs, khususnya kesehatan, lingkungan, dan konsumsi bertanggung jawab.
+
+### Tujuan Kami
+![Our Goal](README/our_goal.png)
+Kami memilih beberapa SDGs dan mengembangkan GleanGo sebagai aplikasi plogging yang mendorong aktivitas sehat sekaligus ramah lingkungan.
+
+### Good Health and Well-Being
+![Good Health](README/good_health.png)
+Melalui plogging, pengguna bisa meningkatkan kesehatan sekaligus berbagi pencapaian dengan komunitas.
+
+### Responsible Consumption and Production
+![Responsible Consumption](README/responsible_consumption.png)
+Dengan memungut dan mendaur ulang sampah saat berolahraga, pengguna berkontribusi pada konsumsi dan produksi yang bertanggung jawab.
+
+---
 
 ## ✨ Features
 
@@ -78,6 +129,8 @@ GleanGo menyediakan platform terintegrasi yang memadukan:
 - **Location Sharing**: Bagikan lokasi sampah ke komunitas
 - **Hotspot Detection**: Identifikasi area dengan sampah terbanyak
 
+---
+
 ## 📱 Screenshots
 
 ### Registration Screen
@@ -90,63 +143,53 @@ Tampilan untuk login ke akun yang sudah terdaftar.
 
 ### Dashboard & Home Screen
 Tampilan utama aplikasi dengan statistik cepat dan akses mudah ke fitur utama.
-
 ![Menu Beranda](README/1.jpg)
 
 ### Plogging Activity Tracking
 Interface untuk tracking aktivitas plogging dengan GPS real-time dan kontrol session.
-
 ![Menu PLogging](README/2.jpg)
 
 ### AI Waste Recognition
 Fitur pengenalan sampah otomatis menggunakan kamera dan AI classification.
-
 ![Fitur Pengenalan Sampah](README/2a.jpg)
 
 ### Activity Summary
 Ringkasan detail setelah menyelesaikan aktivitas plogging.
-
 ![Ringkasan Aktivitas](README/2b.jpg)
 
 ### Social Sharing
 Fitur berbagi aktivitas ke komunitas dengan opsi kustomisasi post.
-
 ![Sharing Aktivitas](README/2c.jpg)
 
 ### Community Hub
 Platform sosial untuk berinteraksi dengan sesama pecinta lingkungan.
-
 ![Tab Sosial](README/3a.jpg)
 
 ### Leaderboard & Rankings
 Sistem peringkat berdasarkan aktivitas dan kontribusi pengguna.
-
 ![Tab Ranking](README/3b.jpg)
 
 ### Environmental News
 Berita terkini seputar lingkungan dan keberlanjutan.
-
 ![Tab News](README/3c.jpg)
 
 ### Statistics & Analytics
 Dashboard analytics dengan visualisasi data komprehensif.
-
 ![Menu Statistik](README/4.jpg)
 
 ### User Profile
 Profil pengguna dengan sistem badge dan achievement.
-
 ![Menu Profile](README/5.jpg)
 
 ### Badge Customization
 Pengaturan badge dan dekorasi profil.
-
 ![Atur Badge](README/5a.jpg)
 
 ### Points Shop
 Sistem marketplace untuk menukar poin dengan reward.
-
 ![Belanja Poin](README/5b.jpg)
+
+---
 
 ## 🔧 Technical Implementation
 
@@ -166,6 +209,8 @@ Sistem marketplace untuk menukar poin dengan reward.
 - **Data Encryption**: Local SQLite database dengan encryption
 - **Privacy Protection**: User data protection compliance
 - **Secure API Calls**: Encrypted communication dengan external APIs
+
+---
 
 ## 🚀 Getting Started
 
@@ -224,6 +269,8 @@ Aplikasi memerlukan permissions berikut:
 - Storage access
 - Internet connection
 
+---
+
 ## 📖 Usage Guide
 
 ### 1. Onboarding & Registration
@@ -276,6 +323,7 @@ Aplikasi memerlukan permissions berikut:
 - **Goal Setting**: Set dan track personal goals
 - **Achievement Unlocks**: Unlock badge berdasarkan milestone
 
+---
 
 ## 🛠️ Tech Stack
 
@@ -304,7 +352,6 @@ Aplikasi memerlukan permissions berikut:
 - **Version Control**: Git
 - **Testing**: JUnit, Espresso
 - **Code Analysis**: Android Lint
-  
 
 ---
 

@@ -150,47 +150,7 @@
                     android:drawablePadding="8dp"
                     android:gravity="center_vertical" />
 
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>        <!-- Action Buttons Section -->
-        <Button
-            android:id="@+id/btn_visit_website"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="Visit Our Website"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/card_story" />
-
-        <Button
-            android:id="@+id/btn_contact_us"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Contact Us"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/btn_visit_website" />
-
-        <Button
-            android:id="@+id/btn_privacy_policy"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Privacy Policy"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/btn_contact_us" />
-
-        <Button
-            android:id="@+id/btn_terms_of_service"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Terms of Service"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/btn_privacy_policy" />
+            </LinearLayout>        </androidx.cardview.widget.CardView>
 
         <TextView
             android:id="@+id/tv_copyright"
@@ -203,7 +163,7 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/btn_terms_of_service" />
+            app:layout_constraintTop_toBottomOf="@+id/card_story" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </ScrollView>

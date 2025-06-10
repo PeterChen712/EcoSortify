@@ -29,13 +29,8 @@ public class AboutFragment extends Fragment {
     }    @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        
-        // Setup click listeners
+          // Setup click listeners
         binding.btnBack.setOnClickListener(v -> navigateBack());
-        binding.btnVisitWebsite.setOnClickListener(v -> openWebsite());
-        binding.btnContactUs.setOnClickListener(v -> contactUs());
-        binding.btnPrivacyPolicy.setOnClickListener(v -> openPrivacyPolicy());
-        binding.btnTermsOfService.setOnClickListener(v -> openTermsOfService());
         binding.tvWikipediaLink.setOnClickListener(v -> openWikipediaLink());
         
         // Set app version dynamically
@@ -54,26 +49,10 @@ public class AboutFragment extends Fragment {
       private void navigateBack() {
         NavController navController = Navigation.findNavController(requireView());
         navController.navigateUp();
-    }
-    
+    }    
     private void openWikipediaLink() {
         String wikipediaUrl = "https://en.wikipedia.org/wiki/The_Gleaners";
         openUrl(wikipediaUrl, "Tidak dapat membuka link Wikipedia");
-    }
-    
-    private void openWebsite() {
-        String websiteUrl = "https://example.com/glean";
-        openUrl(websiteUrl, "Tidak dapat membuka website");
-    }
-    
-    private void openPrivacyPolicy() {
-        String privacyUrl = "https://example.com/glean/privacy";
-        openUrl(privacyUrl, "Tidak dapat membuka halaman kebijakan privasi");
-    }
-    
-    private void openTermsOfService() {
-        String termsUrl = "https://example.com/glean/terms";
-        openUrl(termsUrl, "Tidak dapat membuka halaman syarat & ketentuan");
     }
     
     /**
@@ -121,25 +100,8 @@ public class AboutFragment extends Fragment {
             
         } catch (Exception e) {
             Toast.makeText(requireContext(), errorMessage + ": " + e.getMessage(), Toast.LENGTH_LONG).show();
-        }
-    }
-      private void contactUs() {
-        try {
-            Intent intent = new Intent(Intent.ACTION_SENDTO);
-            intent.setData(Uri.parse("mailto:support@gleango.app"));
-            intent.putExtra(Intent.EXTRA_SUBJECT, "Inquiry about GleanGo App");
-            intent.putExtra(Intent.EXTRA_TEXT, "Halo Tim GleanGo,\n\nSaya ingin bertanya tentang...\n\nTerima kasih.");
-            
-            if (intent.resolveActivity(requireContext().getPackageManager()) != null) {
-                startActivity(intent);
-            } else {
-                Toast.makeText(requireContext(), "Tidak ada aplikasi email yang tersedia", Toast.LENGTH_SHORT).show();
-            }
-        } catch (Exception e) {
-            Toast.makeText(requireContext(), "Tidak dapat membuka aplikasi email", Toast.LENGTH_SHORT).show();
-        }
-    }
-
+        }    }
+      
     @Override
     public void onDestroyView() {
         super.onDestroyView();
