@@ -527,10 +527,9 @@ public class TrashMLFragment extends Fragment {
         } catch (Exception e) {
             Log.e(TAG, "Error hiding classification result: " + e.getMessage());
         }
-    }
-      private void saveTrashItem() {
-        if (capturedImage == null || currentPhotoPath == null) {
-            updateInstructionText("❌ Tidak ada gambar untuk disimpan");
+    }    private void saveTrashItem() {
+        if (capturedImage == null) {
+            updateInstructionText("❌ Tidak ada data untuk disimpan");
             return;
         }
         
@@ -564,7 +563,10 @@ public class TrashMLFragment extends Fragment {
             }
         }
         
-        // Get current location and save
+        // Clean up temporary photo immediately after AI processing
+        cleanupTemporaryPhoto();
+        
+        // Get current location and save (without photo)
         getCurrentLocationAndSave(trashType, confidence, description);
     }
       private String getResultText() {
@@ -613,15 +615,14 @@ public class TrashMLFragment extends Fragment {
         Log.d(TAG, "SAVE: currentPhotoPath = " + currentPhotoPath);
         
         executor.execute(() -> {
-            try {
-                Log.d(TAG, "SAVE: Creating TrashEntity...");
+            try {                Log.d(TAG, "SAVE: Creating TrashEntity...");
                 TrashEntity trash = new TrashEntity();
                 trash.setRecordId(recordId);
                 trash.setTrashType(trashType);
                 trash.setMlLabel(trashType);
                 trash.setConfidence(confidence);
                 trash.setDescription(description);
-                trash.setImagePath(currentPhotoPath);
+                // NOTE: ImagePath is intentionally NOT set - photos are not saved per requirement
                 trash.setLatitude(latitude);
                 trash.setLongitude(longitude);
                 trash.setTimestamp(System.currentTimeMillis());
@@ -663,11 +664,13 @@ public class TrashMLFragment extends Fragment {
             }
             Log.d(TAG, "=== TRASH SAVE DEBUG END ===");
         });
-    }
-      private void resetForNewCapture() {
+    }    private void resetForNewCapture() {
         try {
+            // Clean up temporary photo before resetting
+            cleanupTemporaryPhoto();
+            
+            // Clear captured image from memory
             capturedImage = null;
-            currentPhotoPath = null;
             photoFile = null;
             
             // Hide all result cards
@@ -680,7 +683,7 @@ public class TrashMLFragment extends Fragment {
                 imageCard.setVisibility(View.GONE);
             }
             
-            Log.d(TAG, "UI reset for new capture");
+            Log.d(TAG, "UI reset for new capture with photo cleanup");
         } catch (Exception e) {
             Log.e(TAG, "Error resetting for new capture: " + e.getMessage());
         }
@@ -813,6 +816,27 @@ public class TrashMLFragment extends Fragment {
             return String.format("Tingkat keyakinan AI rendah (%.1f%%). " +
                     "Coba ambil foto dengan sudut yang berbeda atau pencahayaan yang lebih baik.", 
                     confidence * 100);
+        }
+    }
+    
+    /**
+     * Clean up temporary photo file and memory after AI processing
+     * This ensures photos are not permanently stored on device
+     */
+    private void cleanupTemporaryPhoto() {
+        try {
+            // Delete temporary photo file from storage
+            if (photoFile != null && photoFile.exists()) {
+                boolean deleted = photoFile.delete();
+                Log.d(TAG, "Temporary photo file deleted: " + deleted);
+            }
+            
+            // Clear photo path
+            currentPhotoPath = null;
+            
+            Log.d(TAG, "Temporary photo cleanup completed");
+        } catch (Exception e) {
+            Log.e(TAG, "Error cleaning up temporary photo: " + e.getMessage());
         }
     }
 }

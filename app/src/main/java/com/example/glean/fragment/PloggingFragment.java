@@ -646,56 +646,7 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         // Save the file path for later use
         currentPhotoPath = image.getAbsolutePath();
         return image;
-    }
-
-    /**
-     * Save the captured photo to database and show completion dialog
-     */
-    private void savePloggingPhotoToDatabase() {
-        if (completedRecordId == -1 || photoUri == null) {
-            Log.w(TAG, "Cannot save photo: invalid record ID or photo URI");
-            navigateToSummary(completedRecordId);
-            return;
-        }
-
-        executor.execute(() -> {
-            try {
-                // Update the record with photo path
-                RecordEntity record = db.recordDao().getRecordByIdSync(completedRecordId);
-                if (record != null) {
-                    record.setPhotoPath(currentPhotoPath);
-                    db.recordDao().update(record);
-                    
-                    requireActivity().runOnUiThread(() -> {
-                        Toast.makeText(requireContext(), "Foto dokumentasi tersimpan!", Toast.LENGTH_SHORT).show();
-                        
-                        // Show completion dialog with navigation options
-                        new MaterialAlertDialogBuilder(requireContext())
-                            .setTitle("Foto Tersimpan")
-                            .setMessage("Foto dokumentasi plogging berhasil disimpan! Lihat hasil plogging Anda sekarang?")
-                            .setPositiveButton("Lihat Hasil", (dialog, which) -> {
-                                navigateToSummary(completedRecordId);
-                            })
-                            .setNegativeButton("Nanti", null)
-                            .show();
-                    });
-                } else {
-                    requireActivity().runOnUiThread(() -> {
-                        Toast.makeText(requireContext(), "Error: Record not found", Toast.LENGTH_SHORT).show();
-                        navigateToSummary(completedRecordId);
-                    });
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "Error saving photo to database", e);
-                requireActivity().runOnUiThread(() -> {
-                    Toast.makeText(requireContext(), "Error saving photo", Toast.LENGTH_SHORT).show();
-                    navigateToSummary(completedRecordId);
-                });
-            }
-        });
-    }
-
-    private void restoreTrackingSession() {
+    }    private void restoreTrackingSession() {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
 
         boolean wasTracking = prefs.getBoolean("IS_TRACKING", false);
@@ -1977,11 +1928,10 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         cameraLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
-                if (result.getResultCode() == Activity.RESULT_OK) {
-                    Log.d(TAG, "Photo captured successfully");
-                    if (photoUri != null) {
-                        savePloggingPhotoToDatabase();
-                    }
+                if (result.getResultCode() == Activity.RESULT_OK) {                    Log.d(TAG, "Photo captured successfully");
+                    // NOTE: Photo documentation saving removed per requirement
+                    // Navigate directly to summary without saving photo
+                    navigateToSummary(completedRecordId);
                 } else {
                     Log.w(TAG, "Photo capture cancelled or failed");
                     // Clean up the temporary file if photo capture failed

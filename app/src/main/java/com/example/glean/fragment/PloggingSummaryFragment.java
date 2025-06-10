@@ -411,82 +411,12 @@ public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallb
         binding.tvDuration.setText(durationStr);
         
         // Set points
-        binding.tvPoints.setText(String.valueOf(record.getPoints()));
-          // Set trash collected
+        binding.tvPoints.setText(String.valueOf(record.getPoints()));        // Set trash collected
         int trashCount = record.getPoints() / 10; // Assuming 10 points per trash item
         binding.tvTrashCollected.setText(String.valueOf(trashCount));
         
-        // Load documentation photo
-        loadPloggingDocumentationPhoto(record.getId());
-    }
-
-    private void loadPloggingDocumentationPhoto(int recordId) {
-        executor.execute(() -> {
-            try {
-                // Get trash items with photos for this record
-                List<TrashEntity> trashItems = db.trashDao().getTrashByRecordIdSync(recordId);
-                TrashEntity bestPhotoTrash = null;
-                
-                // Find the best photo (prioritize recent photos)
-                for (TrashEntity trash : trashItems) {
-                    if (trash.getPhotoPath() != null && !trash.getPhotoPath().isEmpty()) {
-                        File photoFile = new File(trash.getPhotoPath());
-                        if (photoFile.exists()) {
-                            bestPhotoTrash = trash;
-                            break; // Take the first valid photo
-                        }
-                    }
-                }
-                
-                TrashEntity finalPhotoTrash = bestPhotoTrash;
-                requireActivity().runOnUiThread(() -> {
-                    if (finalPhotoTrash != null) {
-                        displayPloggingPhoto(finalPhotoTrash.getPhotoPath());
-                        Log.d(TAG, "Loaded plogging photo: " + finalPhotoTrash.getPhotoPath());
-                    } else {
-                        Log.d(TAG, "No valid photos found for record " + recordId);
-                        // Hide photo card if no photo available
-                        binding.cardPloggingPhoto.setVisibility(View.GONE);
-                    }
-                });
-                
-            } catch (Exception e) {
-                Log.e(TAG, "Error loading plogging photos", e);
-                requireActivity().runOnUiThread(() -> {
-                    binding.cardPloggingPhoto.setVisibility(View.GONE);
-                });
-            }
-        });
-    }
-    
-    private void displayPloggingPhoto(String photoPath) {
-        try {
-            // Load photo using Glide or similar image loading library
-            // For now, using simple bitmap loading
-            android.graphics.BitmapFactory.Options options = new android.graphics.BitmapFactory.Options();
-            options.inSampleSize = 2; // Reduce size to avoid memory issues
-            
-            android.graphics.Bitmap bitmap = android.graphics.BitmapFactory.decodeFile(photoPath, options);
-            
-            if (bitmap != null) {
-                binding.ivPloggingPhoto.setImageBitmap(bitmap);
-                binding.cardPloggingPhoto.setVisibility(View.VISIBLE);
-                
-                // Add click listener to view full photo
-                binding.cardPloggingPhoto.setOnClickListener(v -> {
-                    // You can implement full-screen photo view here
-                    Toast.makeText(requireContext(), "📸 Plogging Documentation", Toast.LENGTH_SHORT).show();
-                });
-                
-            } else {
-                Log.w(TAG, "Failed to decode photo: " + photoPath);
-                binding.cardPloggingPhoto.setVisibility(View.GONE);
-            }
-              } catch (Exception e) {
-            Log.e(TAG, "Error displaying photo: " + photoPath, e);
-            binding.cardPloggingPhoto.setVisibility(View.GONE);
-        }
-    }    private void savePloggingResultToGallery(String completionMessage) {
+        // NOTE: Plogging documentation photo loading removed per requirement
+    }private void savePloggingResultToGallery(String completionMessage) {
         if (currentRecord == null) {
             Toast.makeText(requireContext(), "No record data available", Toast.LENGTH_SHORT).show();
             return;
