@@ -28,7 +28,6 @@ Plogging adalah gabungan aktivitas jogging dan memungut sampah. Nama ini berasal
 
 ## 🌏 Story
 
-
 **GleanGo lahir dari keinginan sederhana: membuat olahraga dan aksi nyata menjaga lingkungan jadi lebih seru dan bermakna.**
   
 Bayangkan kamu jogging pagi, tapi kali ini setiap langkahmu tak hanya menyehatkan, tapi juga membersihkan jalanan dari sampah. 
@@ -39,9 +38,10 @@ Dengan teknologi GPS presisi tinggi, AI untuk klasifikasi sampah, dan sistem gam
 Nama “GleanGo” sendiri mengandung filosofi mendalam:
 - “Glean” berarti memungut sisa, terinspirasi dari lukisan "The Gleaners" karya Jean-François Millet, yang menggambarkan orang-orang sederhana memungut sisa panen sebagai simbol kerja keras dan kepedulian lingkungan.
 - “Go” diambil dari semangat game Pokémon Go — mengajakmu aktif bergerak, mencari, dan mengeksplorasi lingkungan sekitar.
-  <br>
-  <img width="300" src="README/the_gleaners.png" alt="The Gleaners"><br>
-  <a href="https://en.wikipedia.org/wiki/The_Gleaners">[Baca kisah lukisan ini di Wikipedia]</a>
+  <div align="center">
+    <img src="README/the_gleaners.png" alt="The Gleaners"><br>
+    <a href="https://en.wikipedia.org/wiki/The_Gleaners">[Baca kisah lukisan ini di Wikipedia]</a>
+  </div>
 
 Setiap fitur di GleanGo dirancang untuk membuat kontribusimu terasa nyata. Mulai dari tracking rute, pengenalan sampah otomatis, hingga komunitas yang saling mendukung.
 
