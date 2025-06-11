@@ -17,6 +17,7 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import com.bumptech.glide.Glide;
 import com.example.glean.R;
 import com.example.glean.adapter.RankingAdapter;
 import com.example.glean.databinding.FragmentRankingBinding;
@@ -27,6 +28,7 @@ import com.example.glean.model.TrashEntity;
 import com.example.glean.model.UserEntity;
 import de.hdodenhof.circleimageview.CircleImageView;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -351,9 +353,13 @@ public class RankingFragment extends Fragment {
                         displayName = "User Baru";
                     }
                     binding.tvMyUsername.setText(displayName);
-                    binding.tvMyPoints.setText(currentUser.getPoints() + " poin");
-                    binding.tvMyStats.setText(String.format("%.1fkg • %.1fkm • %d badge", 
-                        myStats.totalTrashWeight, myStats.totalDistance, myStats.badgeCount));                    // Apply border color based on position
+                    binding.tvMyPoints.setText(currentUser.getPoints() + " poin");                    binding.tvMyStats.setText(String.format("%.1fkg • %.1fkm • %d badge", 
+                        myStats.totalTrashWeight, myStats.totalDistance, myStats.badgeCount));
+
+                    // Load profile photo
+                    loadUserProfilePhoto(currentUser, binding.ivMyProfileImage);
+
+                    // Apply border color based on position
                     CircleImageView myProfileImage = binding.ivMyProfileImage;
                     CardView myRankingCard = binding.myRankingCard;
                     
@@ -383,8 +389,58 @@ public class RankingFragment extends Fragment {
             } catch (Exception e) {
                 Log.e(TAG, "Error updating my ranking", e);
                 getActivity().runOnUiThread(() -> binding.myRankingCard.setVisibility(View.GONE));
+            }        });
+    }
+
+    /**
+     * Load user profile photo into the ranking container
+     */
+    private void loadUserProfilePhoto(UserEntity user, CircleImageView profileImageView) {
+        try {
+            String profileImagePath = user.getProfileImagePath();
+            
+            if (profileImagePath != null && !profileImagePath.isEmpty()) {
+                // Check if the profile image file exists
+                File imageFile = new File(profileImagePath);
+                if (imageFile.exists()) {
+                    // Load user's custom profile photo
+                    Glide.with(this)
+                            .load(imageFile)
+                            .placeholder(R.drawable.profile_placeholder)
+                            .error(R.drawable.profile_placeholder)
+                            .circleCrop()
+                            .into(profileImageView);
+                    Log.d(TAG, "Loaded custom profile photo for user: " + user.getName());
+                } else {
+                    // File doesn't exist, load default placeholder
+                    loadDefaultProfilePhoto(profileImageView);
+                    Log.w(TAG, "Profile image file not found: " + profileImagePath);
+                }
+            } else {
+                // No profile image set, load default placeholder
+                loadDefaultProfilePhoto(profileImageView);
+                Log.d(TAG, "No profile image set for user: " + user.getName());
             }
-        });
+        } catch (Exception e) {
+            Log.e(TAG, "Error loading profile photo for user: " + user.getName(), e);
+            loadDefaultProfilePhoto(profileImageView);
+        }
+    }
+
+    /**
+     * Load default profile photo placeholder
+     */
+    private void loadDefaultProfilePhoto(CircleImageView profileImageView) {
+        try {
+            Glide.with(this)
+                    .load(R.drawable.profile_placeholder)
+                    .circleCrop()
+                    .into(profileImageView);
+        } catch (Exception e) {
+            Log.e(TAG, "Error loading default profile photo", e);
+            // Fallback to setting drawable directly
+            profileImageView.setImageResource(R.drawable.profile_placeholder);
+        }
     }
     
     @Override
