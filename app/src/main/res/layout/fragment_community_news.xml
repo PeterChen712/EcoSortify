@@ -6,58 +6,6 @@
     android:orientation="vertical"
     android:background="?attr/colorSurface">
 
-    <!-- Filter Chips -->
-    <HorizontalScrollView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:scrollbars="none"
-        android:padding="8dp">
-
-        <com.google.android.material.chip.ChipGroup
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:paddingHorizontal="8dp"
-            app:singleSelection="true">
-
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipAll"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Semua"
-                android:checked="true"
-                style="@style/Widget.MaterialComponents.Chip.Filter" />
-
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipEnvironment"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Lingkungan"
-                style="@style/Widget.MaterialComponents.Chip.Filter" />
-
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipPlogging"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Plogging"
-                style="@style/Widget.MaterialComponents.Chip.Filter" />
-
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipTips"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Tips"
-                style="@style/Widget.MaterialComponents.Chip.Filter" />
-
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipEducation"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Edukasi"
-                style="@style/Widget.MaterialComponents.Chip.Filter" />
-
-        </com.google.android.material.chip.ChipGroup>
-    </HorizontalScrollView>
-
     <!-- Content -->
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipeRefreshLayout"

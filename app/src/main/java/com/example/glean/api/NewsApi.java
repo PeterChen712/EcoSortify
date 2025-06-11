@@ -306,87 +306,13 @@ public class NewsApi {
         
         return result;
     }
-    
-    /**
+      /**
      * Get fallback sample articles when API fails or no internet
-     */    public static List<Article> getSampleArticles() {
-        List<Article> sampleArticles = new ArrayList<>();
-        
-        // Sample environmental articles in Indonesian with valid URLs
-        Article sample1 = new Article(
-            "Jokowi Resmikan Program Daur Ulang Sampah Plastik Terbesar di Asia Tenggara",
-            "Presiden Jokowi meresmikan pusat daur ulang sampah plastik terbesar di Asia Tenggara yang dapat mengolah 500 ton sampah plastik per hari menjadi produk ramah lingkungan.",
-            "https://www.kompas.com/sains/read/2024/12/10/daur-ulang-plastik-indonesia",
-            "Kompas.com",
-            "10 Des 2024"
-        );
-        
-        Article sample2 = new Article(
-            "Surabaya Raih Penghargaan Kota Terbersih ASEAN 2024",
-            "Kota Surabaya berhasil meraih penghargaan sebagai kota terbersih ASEAN 2024 berkat inovasi pengelolaan sampah berbasis masyarakat dan teknologi AI.",
-            "https://www.detik.com/edu/detikpedia/d-7071234/surabaya-kota-terbersih-asean",
-            "Detik.com",
-            "8 Des 2024"
-        );
-        
-        Article sample3 = new Article(
-            "Mahasiswa UGM Ciptakan Plastik Biodegradable dari Limbah Kulit Singkong",
-            "Tim mahasiswa Universitas Gadjah Mada berhasil menciptakan plastik biodegradable dari limbah kulit singkong yang dapat terurai dalam 90 hari.",
-            "https://www.ugm.ac.id/id/berita/23456-mahasiswa-ugm-plastik-biodegradable",
-            "UGM.ac.id",
-            "5 Des 2024"
-        );
-        
-        Article sample4 = new Article(
-            "Program 'Eco Village' di Bali Kurangi Emisi Karbon Hingga 60 Persen",
-            "Desa wisata ramah lingkungan di Bali berhasil mengurangi emisi karbon hingga 60 persen melalui penggunaan energi terbarukan dan pengelolaan sampah organik.",
-            "https://www.antaranews.com/berita/3454321/eco-village-bali-kurangi-emisi",
-            "Antara News",
-            "3 Des 2024"
-        );
-        
-        Article sample5 = new Article(
-            "Bank Sampah Digital Pertama di Indonesia Capai 1 Juta Pengguna",
-            "Platform bank sampah digital yang dikembangkan startup lokal telah mencapai 1 juta pengguna dan berhasil mengolah 2.500 ton sampah.",
-            "https://www.liputan6.com/bisnis/read/5145678/bank-sampah-digital-indonesia",
-            "Liputan6.com",
-            "1 Des 2024"
-        );
-        
-        Article sample6 = new Article(
-            "Hutan Mangrove Jakarta Bertambah 500 Hektar Berkat Program Restorasi",
-            "Program restorasi hutan mangrove di Jakarta berhasil menambah 500 hektar kawasan hijau yang dapat menyerap 1.200 ton CO2 per tahun.",
-            "https://www.tempo.co/read/1832456/restorasi-mangrove-jakarta-2024",
-            "Tempo.co",
-            "28 Nov 2024"
-        );
-        
-        Article sample7 = new Article(
-            "Indonesia Luncurkan Sistem Monitoring Kualitas Air Berbasis IoT",
-            "Kementerian Lingkungan Hidup meluncurkan sistem monitoring kualitas air real-time berbasis IoT untuk 150 sungai di seluruh Indonesia.",
-            "https://www.cnnindonesia.com/teknologi/20241125/monitoring-air-iot",
-            "CNN Indonesia",
-            "25 Nov 2024"
-        );
-        
-        Article sample8 = new Article(
-            "Plogging Marathon Jakarta 2024 Kumpulkan 15 Ton Sampah Plastik",
-            "Acara plogging marathon terbesar di Jakarta berhasil mengumpulkan 15 ton sampah plastik dengan partisipasi 5.000 peserta dari berbagai kalangan.",
-            "https://www.republika.co.id/berita/plogging-marathon-jakarta-2024",
-            "Republika.co.id",
-            "22 Nov 2024"
-        );
-        
-        sampleArticles.add(sample1);
-        sampleArticles.add(sample2);
-        sampleArticles.add(sample3);
-        sampleArticles.add(sample4);
-        sampleArticles.add(sample5);
-        sampleArticles.add(sample6);
-        sampleArticles.add(sample7);
-        sampleArticles.add(sample8);
-        
-        return sampleArticles;
+     * Returns empty list to force proper error handling
+     */
+    public static List<Article> getSampleArticles() {
+        // Return empty list - no dummy data
+        return new ArrayList<>();
     }
     
     /**

@@ -38,7 +38,6 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
     // API and cache components
     private NewsApi newsApi;
     private NewsCacheManager cacheManager;
-    private String currentCategory = "all";
       @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -54,10 +53,8 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
         
         // Debug browser availability
         debugBrowserAvailability();
-        
-        setupRecyclerView();
+          setupRecyclerView();
         setupSwipeRefresh();
-        setupCategories();
         loadNews();
     }
       private void setupRecyclerView() {
@@ -65,52 +62,12 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
         binding.recyclerViewNews.setLayoutManager(new LinearLayoutManager(requireContext()));
         binding.recyclerViewNews.setAdapter(newsAdapter);
     }
-    
-    private void setupSwipeRefresh() {
+      private void setupSwipeRefresh() {
         binding.swipeRefreshLayout.setOnRefreshListener(this::loadNews);
         binding.swipeRefreshLayout.setColorSchemeResources(R.color.primary_color);
     }
-    
-    private void setupCategories() {
-        // Setup category chips
-        binding.chipAll.setOnClickListener(v -> filterByCategory("all"));
-        binding.chipEnvironment.setOnClickListener(v -> filterByCategory("environment"));
-        binding.chipPlogging.setOnClickListener(v -> filterByCategory("plogging"));
-        binding.chipTips.setOnClickListener(v -> filterByCategory("tips"));
-        binding.chipEducation.setOnClickListener(v -> filterByCategory("education"));
-    }
-      private void filterByCategory(String category) {
-        currentCategory = category;
-        
-        // Reset chip states
-        binding.chipAll.setChecked(false);
-        binding.chipEnvironment.setChecked(false);
-        binding.chipPlogging.setChecked(false);
-        binding.chipTips.setChecked(false);
-        binding.chipEducation.setChecked(false);
-        
-        // Set selected chip
-        switch (category) {
-            case "all":
-                binding.chipAll.setChecked(true);
-                break;
-            case "environment":
-                binding.chipEnvironment.setChecked(true);
-                break;
-            case "plogging":
-                binding.chipPlogging.setChecked(true);
-                break;
-            case "tips":
-                binding.chipTips.setChecked(true);
-                break;
-            case "education":
-                binding.chipEducation.setChecked(true);
-                break;
-        }
-        
-        loadNews();
-    }
-      private void loadNews() {
+
+    private void loadNews() {
         binding.swipeRefreshLayout.setRefreshing(true);
         
         // Check network status
@@ -216,14 +173,12 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
             }
         });
     }
-    
-    private void loadSampleArticles() {
-        android.util.Log.d(TAG, "Loading sample articles as final fallback");
+      private void loadSampleArticles() {
+        android.util.Log.d(TAG, "No sample articles available - showing empty state");
         
-        List<Article> sampleArticles = NewsApi.getSampleArticles();
-        List<NewsItem> newsItems = convertArticlesToNewsItems(sampleArticles);
-          displayNewsItems(newsItems);
-        showInfoMessage("Menampilkan artikel contoh");
+        // No dummy data - show empty state with helpful message
+        displayNewsItems(new ArrayList<>());
+        showInfoMessage("Tidak ada koneksi internet. Silakan periksa koneksi dan coba lagi.");
     }
     
     private List<NewsItem> convertArticlesToNewsItems(List<Article> articles) {
@@ -247,20 +202,9 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
         
         return newsItems;
     }
-    
-    private void displayNewsItems(List<NewsItem> newsItems) {
+      private void displayNewsItems(List<NewsItem> newsItems) {
         newsList.clear();
-        
-        // Filter by category if not "all"
-        if (!"all".equals(currentCategory)) {
-            for (NewsItem item : newsItems) {
-                if (currentCategory.equals(item.getCategory())) {
-                    newsList.add(item);
-                }
-            }
-        } else {
-            newsList.addAll(newsItems);
-        }
+        newsList.addAll(newsItems);
         
         // Update UI on main thread
         requireActivity().runOnUiThread(() -> {

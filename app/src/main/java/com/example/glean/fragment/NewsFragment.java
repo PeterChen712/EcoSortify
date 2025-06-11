@@ -38,6 +38,7 @@ import java.util.concurrent.Executors;
 
 public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClickListener, NewsAdapter.OnNewsItemLongClickListener {
     
+    private static final String TAG = "NewsFragment";
     private FragmentNewsBinding binding;
     private NewsAdapter newsAdapter;
     private List<NewsItem> newsList;
@@ -368,42 +369,16 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
         if (newsList.isEmpty()) {
             refreshNews();
         }
-    }
-
-    /**
-     * Load sample environmental news articles when API fails or no internet
+    }    /**
+     * Load sample articles - now shows empty state with message
      */
     private void loadSampleNews() {
-        executor.execute(() -> {
-            try {
-                List<Article> sampleArticles = NewsApi.getSampleArticles();
-                List<NewsItem> sampleNewsItems = new ArrayList<>();
-                
-                for (Article article : sampleArticles) {
-                    NewsItem newsItem = article.toNewsItem();
-                    newsItem.setReadingTimeMinutes(calculateReadingTime(newsItem));
-                    sampleNewsItems.add(newsItem);
-                }
-                
-                requireActivity().runOnUiThread(() -> {
-                    if (!sampleNewsItems.isEmpty()) {
-                        newsList.clear();
-                        newsList.addAll(sampleNewsItems);
-                        newsAdapter.updateNewsList(sampleNewsItems);
-                        updateUnreadCounter();
-                        showEmptyState(false);
-                        showMessage(getString(R.string.news_showing_sample_offline), false);
-                    } else {
-                        showEmptyState(true);
-                    }
-                });
-                
-            } catch (Exception e) {
-                requireActivity().runOnUiThread(() -> {
-                    showEmptyState(true);
-                    showMessage(getString(R.string.news_error_loading_sample, e.getMessage()), true);
-                });
-            }
+        android.util.Log.d(TAG, "No sample articles available - showing empty state");
+        
+        // No dummy data - show empty state with helpful message
+        requireActivity().runOnUiThread(() -> {
+            showEmptyState(true);
+            showMessage("Tidak ada koneksi internet. Silakan periksa koneksi dan coba lagi.", true);
         });
     }
       /**
