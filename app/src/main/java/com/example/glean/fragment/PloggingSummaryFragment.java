@@ -36,9 +36,7 @@ import com.example.glean.db.AppDatabase;
 import com.example.glean.model.LocationPointEntity;
 import com.example.glean.model.RecordEntity;
 import com.example.glean.model.TrashEntity;
-import com.example.glean.model.PostEntity;
 import com.example.glean.model.UserEntity;
-import com.example.glean.repository.CommunityRepository;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -63,14 +61,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallback {    private static final String TAG = "PloggingSummaryFragment";
-    
-    private FragmentPloggingSummaryBinding binding;
+      private FragmentPloggingSummaryBinding binding;
     private AppDatabase db;
     private ExecutorService executor;
     private int recordId;
     private GoogleMap mMap;
     
-    private CommunityRepository repository;
     private int currentUserId;
     private RecordEntity currentRecord;
     private Location lastKnownLocation;
@@ -79,7 +75,6 @@ public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallb
         super.onCreate(savedInstanceState);
         db = AppDatabase.getInstance(requireContext());
         executor = Executors.newSingleThreadExecutor();
-        repository = new CommunityRepository(requireContext());
         
         // Get current user ID from SharedPreferences
         SharedPreferences prefs = requireContext().getSharedPreferences("user_prefs", requireContext().MODE_PRIVATE);
@@ -447,248 +442,10 @@ public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallb
         shareIntent.putExtra(Intent.EXTRA_SUBJECT, "My Plogging Achievement");
         
         startActivity(Intent.createChooser(shareIntent, "Share your plogging achievement"));
-    }
-
-    private void shareToCommunitiy() {
-        if (currentUserId == -1) {
-            showLoginPrompt();
-            return;
-        }
-
-        if (currentRecord == null) {
-            Toast.makeText(requireContext(), "No record data available", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        // Get user data from local database
-        executor.execute(() -> {
-            UserEntity user = db.userDao().getUserByIdSync(currentUserId);
-            if (user == null) {
-                requireActivity().runOnUiThread(() -> {
-                    Toast.makeText(requireContext(), "User not found", Toast.LENGTH_SHORT).show();
-                });
-                return;
-            }
-
-            String content = createPloggingPostContent(currentRecord);
-            
-            PostEntity post = new PostEntity();
-            post.setUserId(currentUserId);
-            post.setAuthorName(user.getName());
-            post.setContent(content);
-            post.setCategory("plogging");
-            post.setCreatedAt(System.currentTimeMillis());
-            
-            // Add metadata as JSON string
-            String metadata = String.format(
-                    "{\"distance_km\":%.2f,\"duration_minutes\":%d,\"trash_count\":%d,\"points_earned\":%d,\"record_id\":%d}",
-                    currentRecord.getDistance() / 1000f,
-                    currentRecord.getDuration() / 60000,
-                    currentRecord.getPoints() / 10,
-                    currentRecord.getPoints(),
-                    currentRecord.getId()
-            );
-            post.setMetadata(metadata);
-            
-            requireActivity().runOnUiThread(() -> {
-                // Show sharing dialog
-                showSharingDialog(post);
-            });
-        });
-    }    private void showSharingDialog(PostEntity post) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
-        View dialogView = LayoutInflater.from(requireContext())
-                .inflate(R.layout.dialog_share_community, null);
-        
-        EditText etContent = dialogView.findViewById(R.id.etContent);
-        ImageView ivRouteMap = dialogView.findViewById(R.id.ivRouteMap);
-        
-        // Don't auto-populate content - let user write their own caption
-        etContent.setText("");
-        etContent.setHint("Tulis caption untuk share ke komunitas...");
-        
-        // Variable to store the map bitmap for saving
-        final Bitmap[] mapBitmapForSharing = {null};
-        
-        // Load route map image (same as displayed in summary)
-        if (mMap != null) {
-            try {
-                // Create a screenshot-style bitmap of the current map view
-                mMap.snapshot(bitmap -> {
-                    if (bitmap != null) {
-                        ivRouteMap.setImageBitmap(bitmap);
-                        // Store the bitmap for later saving when Share is pressed
-                        mapBitmapForSharing[0] = bitmap;
-                        Log.d(TAG, "✅ Map snapshot captured successfully for sharing dialog");
-                    } else {
-                        // Fallback: use a placeholder or hide the image
-                        ivRouteMap.setImageResource(R.drawable.ic_map);
-                        Log.w(TAG, "⚠️ Map snapshot failed, using placeholder");
-                    }
-                });
-            } catch (Exception e) {
-                Log.e(TAG, "Error loading route map for sharing", e);
-                ivRouteMap.setImageResource(R.drawable.ic_map);
-            }
-        } else {
-            // No map available, use placeholder
-            ivRouteMap.setImageResource(R.drawable.ic_map);
-            Log.w(TAG, "⚠️ No map available for sharing");
-        }
-        
-        AlertDialog dialog = builder.setView(dialogView)
-                .setTitle("📤 Share ke Komunitas")
-                .setPositiveButton("Share", (dialogInterface, which) -> {
-                    String userCaption = etContent.getText().toString().trim();
-                    
-                    // Use user's custom caption or fallback to generated content
-                    if (!userCaption.isEmpty()) {
-                        post.setContent(userCaption);
-                    } else {
-                        // Keep the original generated content if user didn't write anything
-                        // post.setContent() already set from previous call
-                    }
-                    
-                    // Always include location for plogging posts
-                    if (lastKnownLocation != null) {
-                        post.setLatitude(lastKnownLocation.getLatitude());
-                        post.setLongitude(lastKnownLocation.getLongitude());
-                        post.setLocation("Lokasi Plogging");
-                    }
-                    
-                    // Save map image and share with photo
-                    if (mapBitmapForSharing[0] != null) {
-                        Log.d(TAG, "🗺️ Saving map image for community post...");
-                        saveMapImageAndShare(post, mapBitmapForSharing[0]);
-                    } else {
-                        Log.w(TAG, "⚠️ No map image to save, sharing without photo");
-                        // Share without photo selection (simplified)
-                        sharePostToLocal(post, false);
-                    }
-                })
-                .setNegativeButton("Batal", null)
-                .create();
-        
-        dialog.show();
-    }
-
-    private void sharePostToLocal(PostEntity post, boolean includePhoto) {
-        binding.progressBar.setVisibility(View.VISIBLE);
-        
-        if (includePhoto && currentRecord != null) {
-            // Find best photo from trash collection
-            executor.execute(() -> {
-                List<TrashEntity> trashItems = db.trashDao().getTrashByRecordIdSync(currentRecord.getId());
-                TrashEntity photoTrash = null;
-                
-                for (TrashEntity trash : trashItems) {
-                    if (trash.getPhotoPath() != null && !trash.getPhotoPath().isEmpty()) {
-                        photoTrash = trash;
-                        break;
-                    }
-                }
-                
-                if (photoTrash != null) {
-                    String photoPath = photoTrash.getPhotoPath();
-                    requireActivity().runOnUiThread(() -> {
-                        uploadPhotoAndShare(post, photoPath);
-                    });
-                } else {
-                    requireActivity().runOnUiThread(() -> {
-                        sharePostWithoutPhoto(post);
-                    });
-                }
-            });
-        } else {
-            sharePostWithoutPhoto(post);
-        }
-    }
-
-    private void uploadPhotoAndShare(PostEntity post, String photoPath) {
-        // For local database, we store the local photo path directly
-        post.setImageUrl(photoPath);
-        sharePostWithoutPhoto(post);
-    }
-
-    /**
-     * Save the captured map bitmap to a file and share the post with the map image
-     */
-    private void saveMapImageAndShare(PostEntity post, Bitmap mapBitmap) {
-        if (mapBitmap == null) {
-            Log.w(TAG, "⚠️ Map bitmap is null, sharing without photo");
-            sharePostToLocal(post, false);
-            return;
-        }
-
-        Log.d(TAG, "💾 Saving map bitmap to file for community post...");
-        
-        // Execute file saving in background thread
-        executor.execute(() -> {
-            try {
-                // Create directory for map images if it doesn't exist
-                File mapImagesDir = new File(requireContext().getFilesDir(), "map_images");
-                if (!mapImagesDir.exists()) {
-                    boolean created = mapImagesDir.mkdirs();
-                    Log.d(TAG, "📁 Map images directory created: " + created);
-                }
-                
-                // Create unique filename with timestamp
-                String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
-                String fileName = "map_route_" + timeStamp + ".jpg";
-                File mapImageFile = new File(mapImagesDir, fileName);
-                
-                // Save bitmap to file
-                try (FileOutputStream outputStream = new FileOutputStream(mapImageFile)) {
-                    boolean compressed = mapBitmap.compress(Bitmap.CompressFormat.JPEG, 85, outputStream);
-                    outputStream.flush();
-                    
-                    if (compressed) {
-                        String savedImagePath = mapImageFile.getAbsolutePath();
-                        Log.d(TAG, "✅ Map image saved successfully: " + savedImagePath);
-                        
-                        // Update post with the saved image path on UI thread
-                        requireActivity().runOnUiThread(() -> {
-                            post.setImageUrl(savedImagePath);
-                            sharePostWithoutPhoto(post);
-                        });
-                    } else {
-                        Log.e(TAG, "❌ Failed to compress map bitmap");
-                        requireActivity().runOnUiThread(() -> {
-                            sharePostToLocal(post, false);
-                        });
-                    }
-                } catch (Exception fileException) {
-                    Log.e(TAG, "❌ Error saving map image to file", fileException);
-                    requireActivity().runOnUiThread(() -> {
-                        sharePostToLocal(post, false);
-                    });
-                }
-                
-            } catch (Exception e) {
-                Log.e(TAG, "❌ Error in saveMapImageAndShare", e);
-                requireActivity().runOnUiThread(() -> {
-                    sharePostToLocal(post, false);
-                });
-            }
-        });
-    }    private void sharePostWithoutPhoto(PostEntity post) {
-        executor.execute(() -> {
-            try {
-                repository.insertPost(post, insertedPost -> {
-                    requireActivity().runOnUiThread(() -> {
-                        binding.progressBar.setVisibility(View.GONE);
-                        Toast.makeText(requireContext(), "Shared to community successfully! 🎉", 
-                                       Toast.LENGTH_LONG).show();
-                    });
-                });
-            } catch (Exception e) {
-                requireActivity().runOnUiThread(() -> {
-                    binding.progressBar.setVisibility(View.GONE);
-                    Toast.makeText(requireContext(), "Failed to share: " + e.getMessage(),
-                                   Toast.LENGTH_SHORT).show();
-                });
-            }
-        });
+    }    private void shareToCommunitiy() {
+        // Simple success message instead of complex sharing
+        Toast.makeText(requireContext(), "Great plogging session! Keep up the good work! 🎉", 
+                      Toast.LENGTH_LONG).show();
     }
 
     private void savePloggingResultToGallery() {

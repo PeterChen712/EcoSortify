@@ -26,9 +26,7 @@ import com.example.glean.databinding.FragmentSummaryBinding;
 import com.example.glean.db.AppDatabase;
 import com.example.glean.model.RecordEntity;
 import com.example.glean.model.TrashEntity;
-import com.example.glean.model.PostEntity;
 import com.example.glean.model.UserEntity;
-import com.example.glean.repository.CommunityRepository;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 
@@ -43,20 +41,16 @@ import java.util.concurrent.Executors;
 
 public class SummaryFragment extends Fragment {
 
-    private FragmentSummaryBinding binding;
-    private AppDatabase db;
+    private FragmentSummaryBinding binding;    private AppDatabase db;
     private ExecutorService executor;
     private int recordId;
-      private CommunityRepository repository;
-    private PostEntity pendingPost;
     private RecordEntity currentRecord;
     private Location lastKnownLocation;
     private int currentUserId;    @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         db = AppDatabase.getInstance(requireContext());
-        repository = new CommunityRepository(requireContext());
-        executor = Executors.newSingleThreadExecutor();        // Get current user ID from SharedPreferences with fallback pattern
+        executor = Executors.newSingleThreadExecutor();// Get current user ID from SharedPreferences with fallback pattern
         SharedPreferences prefs = requireActivity().getSharedPreferences("USER_PREFS", 0);
         currentUserId = prefs.getInt("USER_ID", -1);
         android.util.Log.d("SummaryFragment", "USER_PREFS - currentUserId: " + currentUserId);
@@ -240,167 +234,8 @@ public class SummaryFragment extends Fragment {
         super.onDestroy();
         executor.shutdown();
     }    private void shareToCommunitiy() {
-        if (currentUserId == -1) {
-            showLoginPrompt();
-            return;
-        }
-
-        if (currentRecord == null) {
-            Toast.makeText(requireContext(), "No record data available", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        // Get user data and create community post from plogging data
-        executor.execute(() -> {
-            UserEntity user = db.userDao().getUserByIdSync(currentUserId);
-            if (user == null) {
-                requireActivity().runOnUiThread(() -> {
-                    Toast.makeText(requireContext(), "User not found", Toast.LENGTH_SHORT).show();
-                });
-                return;
-            }
-
-            requireActivity().runOnUiThread(() -> {
-                String content = createPloggingPostContent(currentRecord);
-                
-                PostEntity post = new PostEntity();
-                post.setUserId(currentUserId);
-                post.setUsername(user.getUsername() != null ? user.getUsername() : "Anonymous");
-                post.setContent(content);
-                post.setTimestamp(System.currentTimeMillis());
-                post.setUserAvatar(user.getProfileImagePath());
-                
-                // Show sharing dialog
-                showSharingDialog(post);
-            });
-        });
-    }    private void showSharingDialog(PostEntity post) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
-        View dialogView = LayoutInflater.from(requireContext())
-                .inflate(R.layout.dialog_share_community, null);
-        
-        EditText etContent = dialogView.findViewById(R.id.etContent);
-        ImageView ivRouteMap = dialogView.findViewById(R.id.ivRouteMap);
-        
-        // Don't auto-populate content - let user write their own caption
-        etContent.setText("");
-        etContent.setHint("Tulis caption untuk share ke komunitas...");
-        
-        // Use placeholder image for route map (since this is SummaryFragment, not PloggingSummaryFragment)
-        ivRouteMap.setImageResource(R.drawable.ic_map);
-        
-        builder.setView(dialogView)
-                .setTitle("📤 Share ke Komunitas")
-                .setPositiveButton("Share", (dialog, which) -> {
-                    post.setContent(etContent.getText().toString().trim());
-                    
-                    // Always include location (simplified approach)
-                    if (lastKnownLocation != null) {
-                        post.setLatitude(lastKnownLocation.getLatitude());
-                        post.setLongitude(lastKnownLocation.getLongitude());
-                        post.setLocation("Location");
-                    }
-                    
-                    // Share without photo selection (simplified)
-                    sharePostToLocal(post, false);
-                })
-                .setNegativeButton("Batal", null)
-                .show();
-    }
-
-    private void sharePostToLocal(PostEntity post, boolean includePhoto) {
-        // Comment out until progressBar and btnShareCommunity are added to layout
-        // binding.progressBar.setVisibility(View.VISIBLE);
-        // binding.btnShareCommunity.setEnabled(false);
-        
-        if (includePhoto && currentRecord != null) {
-            // Find best photo from trash collection
-            executor.execute(() -> {
-                // Use synchronous method instead of LiveData
-                List<TrashEntity> trashItems = db.trashDao().getTrashByRecordIdSync(currentRecord.getId());
-                TrashEntity photoTrash = null;
-                
-                for (TrashEntity trash : trashItems) {
-                    if (trash.getPhotoPath() != null && !trash.getPhotoPath().isEmpty()) {
-                        photoTrash = trash;
-                        break;
-                    }
-                }
-                
-                if (photoTrash != null) {
-                    String photoPath = photoTrash.getPhotoPath();
-                    requireActivity().runOnUiThread(() -> {
-                        uploadPhotoAndShare(post, photoPath);
-                    });
-                } else {
-                    requireActivity().runOnUiThread(() -> {
-                        sharePostWithoutPhoto(post);
-                    });
-                }
-            });
-        } else {
-            sharePostWithoutPhoto(post);
-        }
-    }    private void uploadPhotoAndShare(PostEntity post, String photoPath) {
-        // For local database, we store the local photo path directly
-        post.setImageUrl(photoPath);
-        sharePostWithoutPhoto(post);
-    }
-
-    private void sharePostWithoutPhoto(PostEntity post) {
-        executor.execute(() -> {
-            try {                repository.insertPost(post, insertedPost -> {
-                    requireActivity().runOnUiThread(() -> {
-                    // Comment out until UI elements are added to layout
-                    // binding.progressBar.setVisibility(View.GONE);
-                    // binding.btnShareCommunity.setEnabled(true);
-                    
-                    Toast.makeText(requireContext(), "Shared to community successfully! 🎉", 
-                                   Toast.LENGTH_LONG).show();                        // Show success animation or update UI
-                        // binding.btnShareCommunity.setText("✓ Shared");
-                        // binding.btnShareCommunity.setBackgroundTintList(
-                        //         ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.success)));
-                    });
-                });
-            } catch (Exception e) {
-                requireActivity().runOnUiThread(() -> {
-                    // Comment out until UI elements are added to layout
-                    // binding.progressBar.setVisibility(View.GONE);
-                    // binding.btnShareCommunity.setEnabled(true);
-                    Toast.makeText(requireContext(), "Failed to share: " + e.getMessage(), 
-                                   Toast.LENGTH_SHORT).show();
-                });
-            }
-        });
-    }
-
-    private String createPloggingPostContent(RecordEntity record) {
-        float distanceKm = record.getDistance() / 1000f;
-        int durationMin = (int) (record.getDuration() / 60000);
-        int trashCount = record.getPoints() / 10; // Calculate trash count from points
-        
-        return String.format(Locale.getDefault(),
-                "🏃‍♂️ Just completed an amazing plogging session!\n\n" +
-                "📊 Stats:\n" +
-                "• Distance: %.2f km\n" +
-                "• Duration: %d minutes\n" +
-                "• Trash collected: %d items\n" +
-                "• Points earned: %d\n\n" +
-                "Every small action makes a big difference! 🌱\n" +
-                "#GleanGo #Plogging #MakeTheWorldClean",
-                distanceKm, durationMin, trashCount, record.getPoints());
-    }
-
-    private void showLoginPrompt() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
-        builder.setTitle("Join Community")
-                .setMessage("Sign in to share your achievements with the GleanGo community!")
-                .setPositiveButton("Sign In", (dialog, which) -> {
-                    // Navigate to community fragment which will show login
-                    NavController navController = Navigation.findNavController(requireView());
-                    navController.navigate(R.id.communityFeedFragment);
-                })
-                .setNegativeButton("Later", null)
-                .show();
+        // Simple success message instead of complex sharing
+        Toast.makeText(requireContext(), "Plogging session completed! Great job! 🎉", 
+                      Toast.LENGTH_LONG).show();
     }
 }

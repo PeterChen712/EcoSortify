@@ -10,14 +10,22 @@ import androidx.appcompat.app.AppCompatDelegate;
 import com.example.glean.helper.NotificationHelper;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
+import com.google.firebase.FirebaseApp;
 
 public class GleanApplication extends Application {
     
     private static final String TAG = "GleanApplication";
-    
-    @Override
+      @Override
     public void onCreate() {
         super.onCreate();
+        
+        // Initialize Firebase
+        try {
+            FirebaseApp.initializeApp(this);
+            Log.d(TAG, "Firebase initialized successfully");
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to initialize Firebase", e);
+        }
         
         // Set up uncaught exception handler
         Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {

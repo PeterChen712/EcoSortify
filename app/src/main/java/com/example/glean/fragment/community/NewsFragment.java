@@ -17,7 +17,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.example.glean.R;
 import com.example.glean.adapter.NewsAdapter;
 import com.example.glean.api.NewsApi;
-import com.example.glean.databinding.FragmentCommunityNewsBinding;
+import com.example.glean.databinding.FragmentNewsBinding;
 import com.example.glean.helper.NetworkHelper;
 import com.example.glean.helper.NewsCacheManager;
 import com.example.glean.helper.NewsValidator;
@@ -31,7 +31,7 @@ import java.util.List;
 public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClickListener {
     
     private static final String TAG = "NewsFragment";
-    private FragmentCommunityNewsBinding binding;
+    private FragmentNewsBinding binding;
     private NewsAdapter newsAdapter;
     private List<NewsItem> newsList = new ArrayList<>();
     
@@ -41,7 +41,7 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
       @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        binding = FragmentCommunityNewsBinding.inflate(inflater, container, false);
+        binding = FragmentNewsBinding.inflate(inflater, container, false);
         return binding.getRoot();
     }    @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
@@ -213,10 +213,10 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
             
             // Show/hide empty state
             if (newsList.isEmpty()) {
-                binding.emptyStateLayout.setVisibility(View.VISIBLE);
+                binding.layoutEmptyState.setVisibility(View.VISIBLE);
                 binding.recyclerViewNews.setVisibility(View.GONE);
             } else {
-                binding.emptyStateLayout.setVisibility(View.GONE);
+                binding.layoutEmptyState.setVisibility(View.GONE);
                 binding.recyclerViewNews.setVisibility(View.VISIBLE);
             }
         });

@@ -46,19 +46,12 @@
     <string name="logout_title">Logout</string>
     <string name="logout_message">Yakin mau logout?</string>
     <string name="logout">Logout</string>
-    
-    <!-- CustomizeProfile Activity -->
+      <!-- CustomizeProfile Activity -->
     <string name="badges_tab">Lencana</string>
     <string name="backgrounds_tab">Background</string>
     <string name="user_not_found_error">Error: User gak ditemukan</string>
     <string name="unsaved_changes_title">Perubahan Belum Disimpan</string>
     <string name="unsaved_changes_message">Ada perubahan yang belum disimpan. Mau disimpan?</string>
-    
-    <!-- Event Adapter -->
-    <string name="register_event">DAFTAR EVENT</string>
-    <string name="join_challenge">IKUT CHALLENGE</string>
-    <string name="join_contest">IKUT KONTES</string>
-    <string name="plogging_session">Sesi Plogging</string>
     
     <!-- Home Fragment -->
     <string name="eco_master">Eco Master</string>
@@ -154,9 +147,9 @@
     <string name="trash_type_metal">Logam</string>
     <string name="trash_type_organic">Organik</string>
     <string name="trash_type_electronic">Elektronik</string>
-    <string name="trash_type_hazardous">Berbahaya</string>
-    <string name="plogging_stopped">🛑 Plogging dihentikan. Ketuk \"Mulai Plogging\" untuk melanjutkan atau \"Selesai\" untuk menyelesaikan.</string>
+    <string name="trash_type_hazardous">Berbahaya</string>    <string name="plogging_stopped">🛑 Plogging dihentikan. Ketuk \"Mulai Plogging\" untuk melanjutkan atau \"Selesai\" untuk menyelesaikan.</string>
     <string name="finish_session">Selesai Sesi</string>
+    <string name="plogging_session">Sesi Plogging</string>
     
     <!-- Additional UI strings that were missing -->
     <string name="user_new_placeholder">User Baru</string>

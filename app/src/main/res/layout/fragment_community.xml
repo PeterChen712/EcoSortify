@@ -4,7 +4,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="?attr/colorSurface">    <!-- Header with Fixed Height -->
+    android:background="?attr/colorSurface">
+
+    <!-- Header with Fixed Height -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="56dp"
@@ -28,27 +30,26 @@
             android:layout_weight="1"
             android:text="Komunitas"
             android:textColor="?attr/colorOnPrimary"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:gravity="center_vertical" />
+            android:textSize="18sp"
+            android:textStyle="bold" />
 
-    </LinearLayout>    <!-- Tab Layout -->
+    </LinearLayout>
+
+    <!-- Tab Layout -->
     <com.google.android.material.tabs.TabLayout
-        android:id="@+id/tabLayout"
+        android:id="@+id/tab_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="?attr/colorSurface"
         app:tabMode="fixed"
         app:tabGravity="fill"
-        app:tabSelectedTextColor="?attr/colorPrimary"
-        app:tabTextColor="?attr/colorOnSurfaceVariant"
         app:tabIndicatorColor="?attr/colorPrimary"
-        app:tabIndicatorHeight="3dp"
-        app:tabTextAppearance="@style/TabTextStyle" />
+        app:tabSelectedTextColor="?attr/colorPrimary"
+        app:tabTextColor="?attr/colorOnSurfaceVariant" />
 
-    <!-- ViewPager2 for tab content -->
+    <!-- ViewPager2 for Fragments -->
     <androidx.viewpager2.widget.ViewPager2
-        android:id="@+id/viewPager"
+        android:id="@+id/view_pager"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1" />

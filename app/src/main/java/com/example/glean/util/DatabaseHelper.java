@@ -37,17 +37,14 @@ public class DatabaseHelper {
     
     /**
      * Get current database statistics
-     */
-    public static void logDatabaseStats(Context context) {
+     */    public static void logDatabaseStats(Context context) {
         AppDatabase database = AppDatabase.getInstance(context);
         
         new Thread(() -> {
             int userCount = database.userDao().getUserCount();
-            int postCount = database.postDao().getPostCount();
             
             Log.d(TAG, "📊 Database Stats:");
             Log.d(TAG, "   Users: " + userCount);
-            Log.d(TAG, "   Posts: " + postCount);
         }).start();
     }
 }

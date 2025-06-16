@@ -51,6 +51,7 @@ import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 
 import com.example.glean.R;
+import com.example.glean.auth.AuthGuard;
 import com.example.glean.databinding.FragmentPloggingBinding;
 import com.example.glean.db.AppDatabase;
 import com.example.glean.db.DaoTrash;
@@ -286,6 +287,29 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
             }
         }
     }    private void toggleTracking() {
+        // First check authentication for plogging
+        if (!AuthGuard.requireAuthForPlogging(requireContext(), this, new AuthGuard.AuthRequiredCallback() {
+            @Override
+            public void onAuthConfirmed() {
+                // User is authenticated, proceed with tracking
+                proceedWithTracking();
+            }
+
+            @Override
+            public void onAuthCancelled() {
+                // User cancelled authentication, don't start tracking
+                // Optional: Show a message
+                if (isAdded()) {
+                    Toast.makeText(requireContext(), "Authentication required for plogging", Toast.LENGTH_SHORT).show();
+                }
+            }
+        })) {
+            // User is not authenticated, dialog shown, return
+            return;
+        }
+    }
+    
+    private void proceedWithTracking() {
         // If network is not available, show network options
         if (!isNetworkAvailable) {
             showNetworkOptionsDialog();
@@ -712,6 +736,27 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
             }
         }
     }    private void navigateToTrashCollection() {
+        // Check authentication first
+        if (!AuthGuard.requireAuthForPlogging(requireContext(), this, new AuthGuard.AuthRequiredCallback() {
+            @Override
+            public void onAuthConfirmed() {
+                // User is authenticated, proceed with trash collection
+                proceedWithTrashCollection();
+            }
+
+            @Override
+            public void onAuthCancelled() {
+                // User cancelled authentication
+                if (isAdded()) {
+                    Toast.makeText(requireContext(), "Authentication required for trash collection", Toast.LENGTH_SHORT).show();
+                }
+            }
+        })) {
+            return;
+        }
+    }
+    
+    private void proceedWithTrashCollection() {
         if (isTracking && currentRecordId != -1) {
             try {
                 Log.d("PloggingFragment", "=== NAVIGATION TO TRASH COLLECTION DEBUG ===");
