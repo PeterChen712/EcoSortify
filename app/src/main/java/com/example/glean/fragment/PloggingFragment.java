@@ -1391,38 +1391,11 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
             Log.d(TAG, "PloggingFragment destroyed and cleaned up");
         } catch (Exception e) {
             Log.e(TAG, "Error in onDestroy", e);
-        }
-    }private void updateUIForNetworkState(boolean networkAvailable) {
-        if (binding == null) return;        // Update network status indicator
-        if (binding.networkStatusIndicator != null) {
-            if (networkAvailable) {
-                binding.networkStatusIndicator.setVisibility(View.GONE);
-            } else {
-                binding.networkStatusIndicator.setVisibility(View.VISIBLE);
-                binding.tvNetworkStatus.setText(getString(R.string.no_internet));
-                binding.networkStatusDot.setBackgroundResource(R.drawable.network_dot_disconnected);
-            }
-        }
+        }    }    private void updateUIForNetworkState(boolean networkAvailable) {
+        if (binding == null) return;
 
-        // Legacy support for old network status view
-        if (binding.tvNetworkStatus != null) {
-            if (networkAvailable) {
-                binding.tvNetworkStatus.setText(getString(R.string.connected));
-                binding.tvNetworkStatus.setTextColor(getResources().getColor(android.R.color.holo_green_dark));
-                binding.tvNetworkStatus.setVisibility(View.VISIBLE);
-
-                binding.tvNetworkStatus.postDelayed(() -> {
-                    if (binding != null && binding.tvNetworkStatus != null) {
-                        binding.tvNetworkStatus.setVisibility(View.GONE);
-                    }
-                }, 3000);
-            } else {
-                binding.tvNetworkStatus.setText(getString(R.string.no_internet));
-                binding.tvNetworkStatus.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
-                binding.tvNetworkStatus.setVisibility(View.VISIBLE);
-            }
-        }
-    }    private void enablePloggingFeatures() {
+        // Legacy support for old network status view removed - tvNetworkStatus not in layout
+    }private void enablePloggingFeatures() {
         // Only enable plogging if both network and GPS are available
         isPloggingEnabled = isNetworkAvailable && isGpsEnabled;
 
@@ -1636,7 +1609,7 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         }
         
         if (getContext() == null || !isAdded()) return;
-          gpsDialog = new MaterialAlertDialogBuilder(requireContext())
+           gpsDialog = new MaterialAlertDialogBuilder(requireContext())
                 .setTitle(getString(R.string.enable_location_title))
                 .setMessage(getString(R.string.enable_location_message))
                 .setPositiveButton(getString(R.string.open_settings), (dialog, which) -> {
@@ -2093,10 +2066,7 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         
         // Notification banner removed - no action needed
         
-        // Hide network warning indicator
-        if (binding != null && binding.networkStatusIndicator != null) {
-            binding.networkStatusIndicator.setVisibility(View.GONE);
-        }
+        // Hide network warning indicator - removed networkStatusIndicator reference
     }
     
     private void enableLimitedPloggingFeatures() {
