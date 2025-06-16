@@ -38,14 +38,12 @@ public class EksplorasiFragment extends Fragment {
         setupViewPager();
     }    private void setupViewPager() {
         sectionAdapter = new EksplorasiSectionAdapter(this);
-        binding.viewPager.setAdapter(sectionAdapter);
-
-        // Setup tabs
+        binding.viewPager.setAdapter(sectionAdapter);        // Setup tabs
         new TabLayoutMediator(binding.tabLayout, binding.viewPager,
                 (tab, position) -> {
                     switch (position) {
                         case 0:
-                            tab.setText("News");
+                            tab.setText("Berita");
                             tab.setIcon(R.drawable.ic_news);
                             break;
                         case 1:
@@ -53,7 +51,7 @@ public class EksplorasiFragment extends Fragment {
                             tab.setIcon(R.drawable.ic_chat);
                             break;
                         case 2:
-                            tab.setText("Klasifikasi");
+                            tab.setText("Sampah");
                             tab.setIcon(R.drawable.ic_classification);
                             break;
                     }

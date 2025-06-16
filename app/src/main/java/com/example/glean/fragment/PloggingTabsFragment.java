@@ -39,9 +39,7 @@ public class PloggingTabsFragment extends Fragment {
         setupViewPager();
     }    private void setupViewPager() {
         sectionAdapter = new PloggingSectionAdapter(this);
-        binding.viewPager.setAdapter(sectionAdapter);
-
-        // Setup tabs
+        binding.viewPager.setAdapter(sectionAdapter);        // Setup tabs
         new TabLayoutMediator(binding.tabLayout, binding.viewPager,
                 (tab, position) -> {
                     switch (position) {
@@ -50,7 +48,7 @@ public class PloggingTabsFragment extends Fragment {
                             tab.setIcon(R.drawable.ic_plogging);
                             break;
                         case 1:
-                            tab.setText("Statistik");
+                            tab.setText("Stats");
                             tab.setIcon(R.drawable.ic_stats);
                             break;
                         case 2:

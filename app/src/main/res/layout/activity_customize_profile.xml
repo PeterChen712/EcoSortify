@@ -55,21 +55,28 @@
             android:padding="8dp"
             android:contentDescription="Save Changes" />
 
-    </LinearLayout>
-
-    <!-- Tab Layout -->
+    </LinearLayout>    <!-- Tab Layout -->
     <com.google.android.material.tabs.TabLayout
         android:id="@+id/tabLayout"
+        style="@style/Widget.App.TabLayout"
         android:layout_width="match_parent"
-        android:layout_height="48dp"
+        android:layout_height="72dp"
         android:background="@color/white"
-        app:tabMode="fixed"
+        android:elevation="4dp"
         app:tabGravity="fill"
         app:tabIndicatorColor="@color/primary_color"
-        app:tabSelectedTextColor="@color/primary_color"
-        app:tabTextColor="@color/text_secondary"
         app:tabIndicatorHeight="3dp"
-        android:elevation="2dp" />
+        app:tabInlineLabel="false"
+        app:tabMinWidth="64dp"
+        app:tabMode="fixed"
+        app:tabPaddingBottom="8dp"
+        app:tabPaddingEnd="8dp"
+        app:tabPaddingStart="8dp"
+        app:tabPaddingTop="8dp"
+        app:tabRippleColor="@color/primary_color_light"
+        app:tabSelectedTextColor="@color/primary_color"
+        app:tabTextAppearance="@style/TextAppearance.App.Tab"
+        app:tabTextColor="@color/text_secondary" />
 
     <!-- ViewPager2 for Tab Content -->
     <androidx.viewpager2.widget.ViewPager2
