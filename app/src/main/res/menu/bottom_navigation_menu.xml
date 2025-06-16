@@ -6,17 +6,19 @@
         android:title="Beranda" />
 
     <item
-        android:id="@+id/ploggingFragment"
+        android:id="@+id/ploggingTabsFragment"
         android:icon="@drawable/ic_plogging"
         android:title="Plogging" />
 
     <item
-        android:id="@+id/statsFragment"
-        android:icon="@drawable/ic_stats"
-        android:title="Statistik" />    <item
-        android:id="@+id/communityFragment"
-        android:icon="@drawable/ic_community"
-        android:title="Komunitas" />
+        android:id="@+id/eksplorasiFragment"
+        android:icon="@drawable/ic_explore"
+        android:title="Eksplorasi" />
+
+    <item
+        android:id="@+id/gameFragment"
+        android:icon="@drawable/ic_game"
+        android:title="Game" />
 
     <item
         android:id="@+id/profileFragment"

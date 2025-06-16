@@ -57,19 +57,19 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception e) {
             // Navigation failed, continue silently
         }
-        
-        binding.bottomNavigation.setOnItemSelectedListener(item -> {
+          binding.bottomNavigation.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
             if (itemId == R.id.homeFragment) {
                 navController.navigate(R.id.homeFragment);
                 return true;
-            } else if (itemId == R.id.ploggingFragment) {
-                navController.navigate(R.id.ploggingFragment);
+            } else if (itemId == R.id.ploggingTabsFragment) {
+                navController.navigate(R.id.ploggingTabsFragment);
                 return true;
-            } else if (itemId == R.id.statsFragment) {
-                navController.navigate(R.id.statsFragment);
-                return true;            } else if (itemId == R.id.communityFragment) {
-                navController.navigate(R.id.communityFragment);
+            } else if (itemId == R.id.eksplorasiFragment) {
+                navController.navigate(R.id.eksplorasiFragment);
+                return true;
+            } else if (itemId == R.id.gameFragment) {
+                navController.navigate(R.id.gameFragment);
                 return true;
             } else if (itemId == R.id.profileFragment) {
                 navController.navigate(R.id.profileFragment);
@@ -79,25 +79,23 @@ public class MainActivity extends AppCompatActivity {
         });
 
         handleIntentExtras();
-    }
-
-    public void navigateToPlgging() {
+    }    public void navigateToPlgging() {
         if (navController != null) {
             try {
-                navController.navigate(R.id.ploggingFragment);
+                navController.navigate(R.id.ploggingTabsFragment);
             } catch (Exception e) {
-                navController.navigate(R.id.action_homeFragment_to_ploggingFragment);
+                navController.navigate(R.id.action_homeFragment_to_ploggingTabsFragment);
             }
         }
     }
 
     public void navigateToStats() {
         if (navController != null) {
-            navController.navigate(R.id.statsFragment);
+            navController.navigate(R.id.ploggingTabsFragment);
         }
     }    public void navigateToCommunity() {
         if (navController != null) {
-            navController.navigate(R.id.communityFragment);
+            navController.navigate(R.id.eksplorasiFragment);
         }
     }
 
@@ -112,11 +110,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void handleIntentExtras() {
-        Intent intent = getIntent();
-        if (intent != null && intent.hasExtra("OPEN_FRAGMENT")) {
+        Intent intent = getIntent();        if (intent != null && intent.hasExtra("OPEN_FRAGMENT")) {
             String fragmentToOpen = intent.getStringExtra("OPEN_FRAGMENT");
             if ("stats".equals(fragmentToOpen) && navController != null) {
-                navController.navigate(R.id.statsFragment);
+                navController.navigate(R.id.ploggingTabsFragment);
             }
         }
     }

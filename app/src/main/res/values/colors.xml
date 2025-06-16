@@ -1,12 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>    <!-- Primary brand color -->
     <color name="primary">#4CAF50</color>
+    <color name="primary_color">#4CAF50</color>
+    <color name="primary_color_light">#E8F5E8</color>
     <color name="primary_dark">#388E3C</color>
     <color name="primary_darker">#2E7D32</color>
     <color name="accent">#8BC34A</color>
     <color name="accent_dark">#689F38</color>
     <color name="accent_darker">#558B2F</color>
-      <!-- Additional colors for the app -->
+      
+    <!-- Additional colors for the app -->
+    <color name="background_color">#F5F5F5</color>
+    <color name="border_color">#E0E0E0</color>
     <color name="background_light">#F5F5F5</color>
     <color name="background_dark">#FFFFFF</color>
     <color name="surface_dark">#FFFFFF</color>
@@ -51,11 +56,9 @@
     
     <!-- Additional missing colors -->
     <color name="background">#F5F5F5</color>
-    <color name="secondary">#03DAC6</color>
-    <color name="colorPrimary">#4CAF50</color>
+    <color name="secondary">#03DAC6</color>    <color name="colorPrimary">#4CAF50</color>
     
     <!-- Common aliases for consistency -->
-    <color name="primary_color">#4CAF50</color>
     <color name="accent_color">#8BC34A</color>
     <color name="surface">#FFFFFF</color>
     <color name="surface_color">#FFFFFF</color>
@@ -93,10 +96,8 @@
     <color name="success_green">#10B981</color>
     <color name="warning_yellow">#F59E0B</color>
     <color name="error_red">#EF4444</color>
-    
-    <!-- Missing colors for HomeFragment -->    <color name="light_green">#E8F5E8</color>
+      <!-- Missing colors for HomeFragment -->    <color name="light_green">#E8F5E8</color>
     <!-- Additional colors for Community feature -->
-    <color name="background_color">#F5F5F5</color>
     <color name="success_color">#4CAF50</color>
     <color name="background_secondary">#EEEEEE</color>
     

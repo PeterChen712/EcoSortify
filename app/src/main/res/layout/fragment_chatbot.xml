@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout 
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_color"
+    tools:context=".fragment.ChatbotFragment">    <!-- Description -->
+    <TextView
+        android:id="@+id/tvChatbotDescription"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="16dp"        android:layout_marginEnd="24dp"
+        android:fontFamily="sans-serif"
+        android:gravity="center"
+        android:text="Tanya apa saja tentang sampah, plogging, daur ulang, dan pelestarian lingkungan!"
+        android:textColor="@color/text_secondary"
+        android:textSize="14sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Chat Area -->
+    <ScrollView
+        android:id="@+id/chatScrollView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
+        android:background="@drawable/bg_rounded"
+        android:padding="16dp"
+        app:layout_constraintBottom_toTopOf="@+id/exampleQuestionsLayout"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tvChatbotDescription">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Welcome Message -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"                android:background="@drawable/bg_message_bot"
+                android:fontFamily="sans-serif"
+                android:padding="12dp"
+                android:text="Halo! Saya EcoBot, asisten AI untuk membantu Anda belajar tentang lingkungan. Silakan tanya apa saja! 🌱"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp" />
+
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Example Questions -->
+    <LinearLayout
+        android:id="@+id/exampleQuestionsLayout"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toTopOf="@+id/inputLayout"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"            android:layout_marginBottom="8dp"
+            android:fontFamily="sans-serif-medium"
+            android:text="Contoh pertanyaan:"
+            android:textColor="@color/text_primary"
+            android:textSize="12sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnExample1"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="36dp"
+            android:layout_marginBottom="4dp"
+            android:fontFamily="sans-serif"
+            android:text="Bagaimana cara memilah sampah yang benar?"
+            android:textAllCaps="false"
+            android:textColor="@color/primary_color"
+            android:textSize="12sp"
+            app:strokeColor="@color/primary_color" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnExample2"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="36dp"
+            android:layout_marginBottom="4dp"
+            android:fontFamily="sans-serif"
+            android:text="Apa manfaat plogging untuk lingkungan?"
+            android:textAllCaps="false"
+            android:textColor="@color/primary_color"
+            android:textSize="12sp"
+            app:strokeColor="@color/primary_color" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnExample3"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="36dp"
+            android:fontFamily="sans-serif"
+            android:text="Berapa lama sampah plastik terurai di alam?"
+            android:textAllCaps="false"
+            android:textColor="@color/primary_color"
+            android:textSize="12sp"
+            app:strokeColor="@color/primary_color" />
+
+    </LinearLayout>
+
+    <!-- Input Layout -->
+    <LinearLayout
+        android:id="@+id/inputLayout"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etMessage"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@drawable/bg_rounded"
+            android:fontFamily="sans-serif"
+            android:hint="Ketik pertanyaan Anda..."
+            android:maxLines="3"
+            android:padding="12dp"
+            android:textColor="@color/text_primary"
+            android:textColorHint="@color/text_secondary"
+            android:textSize="14sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSendMessage"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="8dp"
+            android:backgroundTint="@color/primary_color"
+            android:insetLeft="0dp"
+            android:insetTop="0dp"
+            android:insetRight="0dp"
+            android:insetBottom="0dp"
+            android:text="📤"
+            android:textSize="16sp"
+            app:cornerRadius="24dp" />
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
