@@ -40,6 +40,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.PopupMenu;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -187,20 +188,19 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
     }
 
     @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);        initializeNoInternetViews();
-        initializeNotificationBanner();
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {        super.onViewCreated(view, savedInstanceState);        initializeNoInternetViews();
+        // Removed notification banner initialization
 
         SupportMapFragment mapFragment = (SupportMapFragment) getChildFragmentManager()
                 .findFragmentById(R.id.map);
         if (mapFragment != null) {
             mapFragment.getMapAsync(this);
         }restoreTrackingSession();        updateUIForTrackingState(isTracking);
-        updateUIForNetworkState(isNetworkAvailable);          // Set up button click listeners for new UI structure
-        binding.btnStartStop.setOnClickListener(v -> toggleTracking());
+        updateUIForNetworkState(isNetworkAvailable);          // Set up button click listeners for new UI structure        binding.btnStartStop.setOnClickListener(v -> toggleTracking());
         binding.btnCollectTrash.setOnClickListener(v -> navigateToTrashCollection());
         binding.btnFinish.setOnClickListener(v -> finishPlogging());
         binding.btnHelp.setOnClickListener(v -> showHelpDialog());
+        binding.btnMenu.setOnClickListener(v -> showMenuPopup(v));
 
         checkNetworkStatus();
         checkGpsStatus();
@@ -1452,7 +1452,8 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
             updateUIForTrackingState(isTracking);
         }
     }    private void showNetworkStatusMessage(String message, boolean isError) {
-        showNotificationBanner(message, isError);
+        // Notification banner removed - status shown in bottom button only
+        Log.d("PloggingFragment", "Network status: " + message);
     }
 
     private void showOfflineModeDialog() {
@@ -1655,9 +1656,9 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
             gpsDialog.dismiss();
             gpsDialog = null;
         }
-    }
-      private void showGpsStatusMessage(String message, boolean isError) {
-        showNotificationBanner(message, isError);
+    }      private void showGpsStatusMessage(String message, boolean isError) {
+        // Notification banner removed - status shown in bottom button only
+        Log.d("PloggingFragment", "GPS status: " + message);
     }
     
     private void showNetworkOptionsDialog() {
@@ -2088,11 +2089,9 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
     }private void hideNetworkWarning() {
         if (networkDialog != null && networkDialog.isShowing()) {
             networkDialog.dismiss();
-            networkDialog = null;
-        }
+            networkDialog = null;        }
         
-        // Hide notification banner
-        hideNotificationBanner();
+        // Notification banner removed - no action needed
         
         // Hide network warning indicator
         if (binding != null && binding.networkStatusIndicator != null) {
@@ -2201,56 +2200,42 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                     "• Pastikan GPS aktif\n" +
                     "• Koneksi internet stabil biar aplikasi lancar\n" +
                     "• Jangan lupa foto waktu ambil sampah, ya!\n\n" +
-                    "Bareng-bareng kita bisa bikin lingkungan lebih baik! 🌍")
-                .setPositiveButton("Got it!", (dialog, which) -> dialog.dismiss())
+                    "Bareng-bareng kita bisa bikin lingkungan lebih baik! 🌍")                .setPositiveButton("Got it!", (dialog, which) -> dialog.dismiss())
                 .setIcon(R.drawable.ic_help)
                 .show();    }
 
-    // Notification Banner Methods
-    private void initializeNotificationBanner() {
-        if (binding == null) return;
-
-        // Setup close button click listener
-        if (binding.notificationClose != null) {
-            binding.notificationClose.setOnClickListener(v -> hideNotificationBanner());
+    private void showMenuPopup(View anchor) {
+        PopupMenu popup = new PopupMenu(requireContext(), anchor);
+        popup.getMenuInflater().inflate(R.menu.plogging_menu, popup.getMenu());
+        
+        popup.setOnMenuItemClickListener(item -> {
+            int itemId = item.getItemId();
+            if (itemId == R.id.menu_stats) {
+                navigateToStats();
+                return true;
+            } else if (itemId == R.id.menu_ranking) {
+                navigateToRanking();
+                return true;
+            }
+            return false;
+        });
+        
+        popup.show();
+    }    private void navigateToStats() {
+        // Navigate to Stats fragment
+        if (getActivity() != null) {
+            Navigation.findNavController(requireView()).navigate(R.id.statsFragment);
+        }
+    }    private void navigateToRanking() {
+        // Navigate to dedicated Ranking fragment
+        if (getActivity() != null) {
+            Navigation.findNavController(requireView()).navigate(R.id.rankingFragment);
         }
     }
 
-    private void showNotificationBanner(String message, boolean isError) {
-        if (binding == null || binding.notificationBanner == null) return;
+    // Notification Banner Methods    // Notification banner methods removed - using bottom status indicator instead
 
-        requireActivity().runOnUiThread(() -> {
-            // Set message
-            binding.notificationMessage.setText(message);
-            
-            // Set colors and icon based on type
-            if (isError) {
-                binding.notificationBanner.setCardBackgroundColor(getResources().getColor(android.R.color.holo_red_dark));
-                binding.notificationIcon.setImageResource(R.drawable.ic_close);
-            } else {
-                binding.notificationBanner.setCardBackgroundColor(getResources().getColor(R.color.environmental_green));
-                binding.notificationIcon.setImageResource(R.drawable.ic_check);
-            }
-            
-            // Show the banner
-            binding.notificationBanner.setVisibility(View.VISIBLE);
-            
-            // Auto-hide after delay for non-error messages
-            if (!isError) {
-                binding.notificationBanner.postDelayed(() -> {
-                    hideNotificationBanner();
-                }, 5000); // 5 seconds
-            }
-        });
-    }
-
-    private void hideNotificationBanner() {
-        if (binding == null || binding.notificationBanner == null) return;
-        
-        requireActivity().runOnUiThread(() -> {
-            binding.notificationBanner.setVisibility(View.GONE);
-        });
-    }    private void autoFinishDueToNetworkLoss() {
+    private void autoFinishDueToNetworkLoss() {
         if (hasActiveSession()) {
             showNetworkStatusMessage("⏰ Sesi otomatis selesai karena kehilangan internet yang lama", true);
             finishPloggingConfirmed();

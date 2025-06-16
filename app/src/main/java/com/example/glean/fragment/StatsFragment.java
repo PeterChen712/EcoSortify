@@ -16,6 +16,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.cardview.widget.CardView;
 import androidx.fragment.app.Fragment;
+import androidx.navigation.Navigation;
 
 import com.example.glean.R;
 import com.example.glean.databinding.FragmentStatsBinding;
@@ -72,6 +73,8 @@ public class StatsFragment extends Fragment {    private FragmentStatsBinding bi
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         
+        setupBackButton();
+        
         // Setup navigation for history button
         binding.btnViewHistory.setOnClickListener(v -> {
             // Navigate to History activity or fragment
@@ -85,9 +88,16 @@ public class StatsFragment extends Fragment {    private FragmentStatsBinding bi
                     android.widget.Toast.LENGTH_SHORT).show();
             }
         });
-        
-        // Load data
+          // Load data
         loadData();
+    }
+
+    private void setupBackButton() {
+        binding.btnBack.setOnClickListener(v -> {
+            if (getActivity() != null) {
+                Navigation.findNavController(v).popBackStack();
+            }
+        });
     }
 
     private void loadData() {

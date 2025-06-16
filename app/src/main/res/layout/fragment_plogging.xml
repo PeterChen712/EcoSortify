@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -39,9 +40,7 @@
                 android:textColor="@color/white"
                 android:textSize="20sp"
                 android:textStyle="bold"
-                android:gravity="center_vertical" />
-
-            <!-- Help Button -->
+                android:gravity="center_vertical" />            <!-- Help Button -->
             <ImageButton
                 android:id="@+id/btn_help"
                 android:layout_width="48dp"
@@ -50,7 +49,19 @@
                 android:contentDescription="Help"
                 android:src="@drawable/ic_help"
                 app:tint="@color/white"
-                android:padding="12dp" />        </LinearLayout>
+                android:padding="12dp" />
+
+            <!-- Hamburger Menu Button -->
+            <ImageButton
+                android:id="@+id/btn_menu"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Menu"
+                android:src="@drawable/ic_menu"
+                app:tint="@color/white"
+                android:padding="12dp" />
+        </LinearLayout>
 
         <fragment
             android:id="@+id/map"
@@ -75,7 +86,8 @@
                 android:orientation="vertical"
                 android:padding="20dp">
 
-                <!-- Stats Section with Enhanced Design -->                <LinearLayout
+                <!-- Stats Section with Enhanced Design -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
@@ -144,7 +156,8 @@
                             android:layout_height="match_parent"
                             android:gravity="center"
                             android:orientation="vertical"
-                            android:padding="12dp">                            <ImageView
+                            android:padding="12dp">
+                            <ImageView
                                 android:layout_width="28dp"
                                 android:layout_height="28dp"
                                 android:layout_marginBottom="8dp"
@@ -291,70 +304,9 @@
                 </LinearLayout>
 
             </LinearLayout>
-
         </com.google.android.material.card.MaterialCardView>
 
     </LinearLayout>
-
-    <!-- Notification Banner Overlay (positioned above map) -->
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/notification_banner"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        app:cardCornerRadius="8dp"
-        app:cardElevation="12dp"
-        android:backgroundTint="@color/environmental_green"
-        android:visibility="gone"
-        android:animateLayoutChanges="true"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintWidth_max="400dp"
-        android:layout_marginTop="72dp">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="12dp"
-            android:gravity="center_vertical">
-
-            <!-- Icon -->
-            <ImageView
-                android:id="@+id/notification_icon"
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:layout_marginEnd="10dp"
-                android:src="@drawable/ic_check"
-                app:tint="@android:color/white" />
-
-            <!-- Message -->
-            <TextView
-                android:id="@+id/notification_message"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Notifikasi"
-                android:textColor="@android:color/white"
-                android:textSize="12sp"
-                android:textStyle="normal"
-                android:gravity="center_vertical" />
-
-            <!-- Close Button -->
-            <ImageButton
-                android:id="@+id/notification_close"
-                android:layout_width="28dp"
-                android:layout_height="28dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@drawable/ic_close"
-                app:tint="@android:color/white"
-                android:contentDescription="Tutup notifikasi"
-                android:padding="4dp" />
-
-        </LinearLayout>
-
-    </com.google.android.material.card.MaterialCardView>
 
     <!-- Enhanced No Internet Overlay -->
     <FrameLayout

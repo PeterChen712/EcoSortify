@@ -4,24 +4,42 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="?attr/colorSurface"><!-- Filter Header -->
+    android:background="@color/background_light">    <!-- Header with Fixed Height -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="16dp"
+        android:layout_height="56dp"
+        android:background="@color/primary_color"
         android:gravity="center_vertical"
-        android:background="?attr/colorSurface">
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp">
 
+        <!-- Back Arrow Button -->
+        <ImageButton
+            android:id="@+id/btn_back"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Back"
+            android:src="@drawable/ic_arrow_back"
+            app:tint="@color/white"
+            android:padding="12dp"
+            android:layout_marginEnd="8dp" />
+
+
+        <!-- Title Text -->
         <TextView
-            android:layout_width="match_parent"
+            android:id="@+id/tv_header_title"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Peringkat Global"
-            android:textSize="18sp"
+            android:layout_weight="1"
+            android:text="Ranking"
+            android:textColor="@color/white"
+            android:textSize="20sp"
             android:textStyle="bold"
-            android:textColor="?attr/colorOnSurface" />
+            android:gravity="center_vertical" />
 
-    </LinearLayout>    <!-- My Ranking Card -->
+    </LinearLayout><!-- My Ranking Card -->
     <androidx.cardview.widget.CardView
         android:id="@+id/myRankingCard"
         android:layout_width="match_parent"

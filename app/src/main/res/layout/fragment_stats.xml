@@ -5,9 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/background_light">
-
-    <!-- Header with Fixed Height -->
+    android:background="@color/background_light">    <!-- Header with Fixed Height -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="56dp"
@@ -15,13 +13,19 @@
         android:paddingStart="16dp"
         android:paddingEnd="16dp"
         android:background="@color/primary_color"
-        android:gravity="center_vertical">        <ImageView
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@drawable/ic_bar_chart"
-            android:layout_marginEnd="12dp"
+        android:gravity="center_vertical">
+
+        <!-- Back Arrow Button -->
+        <ImageButton
+            android:id="@+id/btn_back"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Back"
+            android:src="@drawable/ic_arrow_back"
             app:tint="@color/white"
-            android:contentDescription="Statistics Icon" />
+            android:padding="12dp"
+            android:layout_marginEnd="8dp" />
 
         <TextView
             android:layout_width="0dp"

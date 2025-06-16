@@ -116,20 +116,26 @@
         android:id="@+id/createPostFragment"
         android:name="com.example.glean.fragment.CreatePostFragment"
         android:label="Create Post"
-        tools:layout="@layout/fragment_create_post" />
-      <!-- Enhanced Community Fragment with 5 tabs -->
+        tools:layout="@layout/fragment_create_post" />    <!-- Enhanced Community Fragment with 5 tabs -->
     <fragment
         android:id="@+id/communityFragment"
         android:name="com.example.glean.fragment.CommunityFragment"
         android:label="Community"
         tools:layout="@layout/fragment_community" />
 
-    <!-- New Plogging Tabs Fragment -->
+    <!-- Ranking Fragment -->
+    <fragment
+        android:id="@+id/rankingFragment"
+        android:name="com.example.glean.fragment.RankingFragment"
+        android:label="Ranking"
+        tools:layout="@layout/fragment_ranking" />
+
+    <!-- Plogging Fragment (directly use existing one) -->
     <fragment
         android:id="@+id/ploggingTabsFragment"
-        android:name="com.example.glean.fragment.PloggingTabsFragment"
+        android:name="com.example.glean.fragment.PloggingFragment"
         android:label="Plogging"
-        tools:layout="@layout/fragment_plogging_tabs" />
+        tools:layout="@layout/fragment_plogging" />
 
     <!-- New Eksplorasi Fragment -->
     <fragment
