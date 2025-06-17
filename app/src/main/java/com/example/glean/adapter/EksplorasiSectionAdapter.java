@@ -10,7 +10,7 @@ import com.example.glean.fragment.KlasifikasiFragment;
 
 /**
  * Adapter untuk mengelola tabs di menu Eksplorasi
- * Berisi: News, Chatbot AI, dan Klasifikasi Sampah
+ * Berisi: News, EcoBot, dan Klasifikasi Sampah
  */
 public class EksplorasiSectionAdapter extends FragmentStateAdapter {
 
@@ -31,10 +31,8 @@ public class EksplorasiSectionAdapter extends FragmentStateAdapter {
             default:
                 return new NewsFragment();
         }
-    }
-
-    @Override
+    }    @Override
     public int getItemCount() {
-        return 3; // News, Chatbot AI, Klasifikasi
+        return 3; // News, EcoBot, Klasifikasi
     }
 }

@@ -25,10 +25,17 @@
             android:id="@+id/action_homeFragment_to_ploggingTabsFragment"
             app:destination="@id/ploggingTabsFragment" />        <action
             android:id="@+id/action_homeFragment_to_eksplorasiFragment"
-            app:destination="@id/eksplorasiFragment" />
-        <action
+            app:destination="@id/eksplorasiFragment" />        <action
             android:id="@+id/action_homeFragment_to_aboutFragment"
-            app:destination="@id/aboutFragment" />
+            app:destination="@id/aboutFragment" />        <action
+            android:id="@+id/action_homeFragment_to_aiChatFragment"
+            app:destination="@id/aiChatFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_classifyFragment"
+            app:destination="@id/classifyFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_gameFragment"
+            app:destination="@id/gameFragment" />
     </fragment><fragment
         android:id="@+id/ploggingFragment"
         android:name="com.example.glean.fragment.PloggingFragment"
@@ -276,11 +283,27 @@
         android:id="@+id/trashDetailFragment"
         android:name="com.example.glean.fragment.TrashDetailFragment"
         android:label="Trash Detail"
-        tools:layout="@layout/fragment_trash_detail">
-        <argument
+        tools:layout="@layout/fragment_trash_detail">        <argument
             android:name="TRASH_ID"
             app:argType="integer"
             android:defaultValue="-1" />
-    </fragment>
+    </fragment>    <!-- EcoBot Fragment -->
+    <fragment
+        android:id="@+id/aiChatFragment"
+        android:name="com.example.glean.fragment.AiChatFragment"
+        android:label="EcoBot Chat"
+        tools:layout="@layout/fragment_ai_chat" />    <!-- Classify Fragment -->
+    <fragment
+        android:id="@+id/classifyFragment"
+        android:name="com.example.glean.fragment.ClassifyFragment"
+        android:label="Klasifikasi Sampah"
+        tools:layout="@layout/fragment_classify" />
+
+    <!-- Game Fragment -->
+    <fragment
+        android:id="@+id/gameFragment"
+        android:name="com.example.glean.fragment.GameFragment"
+        android:label="Game Edukasi"
+        tools:layout="@layout/fragment_game" />
 
 </navigation>

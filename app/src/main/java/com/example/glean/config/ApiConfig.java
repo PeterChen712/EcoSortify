@@ -7,6 +7,11 @@ import com.example.glean.BuildConfig;
  */
 public class ApiConfig {
     
+    // Gemini API Configuration
+    private static final String GEMINI_API_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/";
+    private static final String GEMINI_PRO_MODEL = "gemini-1.5-flash";
+    private static final String GEMINI_PRO_VISION_MODEL = "gemini-1.5-flash";
+    
     // NewsAPI.org Configuration
     private static final String NEWS_API_BASE_URL = "https://newsapi.org/v2/";
     private static final String NEWS_API_EVERYTHING_ENDPOINT = "everything";
@@ -14,12 +19,20 @@ public class ApiConfig {
     
     // Maps API Key
     public static String getMapsApiKey() {
-        return BuildConfig.MAPS_API_KEY;
-    }
+        return BuildConfig.MAPS_API_KEY;    }
     
     // Gemini API Key
     public static String getGeminiApiKey() {
         return BuildConfig.GEMINI_API_KEY;
+    }
+    
+    // Gemini API Endpoints
+    public static String getGeminiProEndpoint() {
+        return GEMINI_API_BASE_URL + GEMINI_PRO_MODEL + ":generateContent?key=" + getGeminiApiKey();
+    }
+    
+    public static String getGeminiProVisionEndpoint() {
+        return GEMINI_API_BASE_URL + GEMINI_PRO_VISION_MODEL + ":generateContent?key=" + getGeminiApiKey();
     }
     
     // News API Key

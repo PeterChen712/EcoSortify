@@ -99,13 +99,18 @@ dependencies {
     
     // Permission handling
     implementation 'pub.devrel:easypermissions:3.0.0'
-    
-    // Gemini API - ONLY AI Classification Solution
+      // Gemini API - ONLY AI Classification Solution
     implementation 'com.google.ai.client.generativeai:generativeai:0.7.0'
     
     // Google Guava (needed for Gemini AI)
     implementation 'com.google.guava:guava:32.1.3-android'
-      // Image processing
+    
+    // TensorFlow Lite for local ML classification
+    implementation 'org.tensorflow:tensorflow-lite:2.14.0'
+    implementation 'org.tensorflow:tensorflow-lite-support:0.4.4'
+    implementation 'org.tensorflow:tensorflow-lite-metadata:0.4.4'
+    
+    // Image processing
     implementation 'androidx.exifinterface:exifinterface:1.3.6'
     
     // Firebase

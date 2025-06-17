@@ -1,0 +1,14 @@
+paper
+cardboard
+plastic
+metal
+trash
+battery
+shoes
+clothes
+green-glass
+brown-glass
+white-glass
+biological
+electronic
+hazardous

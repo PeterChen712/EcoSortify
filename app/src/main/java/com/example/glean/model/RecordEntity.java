@@ -1,6 +1,7 @@
 package com.example.glean.model;
 
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 import androidx.room.ForeignKey;
 import androidx.room.Index;
@@ -40,6 +41,7 @@ public class RecordEntity {
         this.isUploaded = false;
     }
 
+    @Ignore
     public RecordEntity(int userId, float distance, long duration, int points) {
         this();
         this.userId = userId;

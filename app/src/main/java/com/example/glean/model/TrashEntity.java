@@ -1,6 +1,7 @@
 package com.example.glean.model;
 
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 @Entity(tableName = "trash")
@@ -24,7 +25,7 @@ public class TrashEntity {
     public TrashEntity() {
         this.mlLabel = "";
         this.confidence = 0.0f;
-    }
+    }    @Ignore
     public TrashEntity(int userId, int recordId, String trashType, String imagePath, 
                       double latitude, double longitude, long timestamp, String description) {
         this.userId = userId;

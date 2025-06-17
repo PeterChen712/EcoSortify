@@ -131,4 +131,8 @@
     <color name="auth_secondary_text">#757575</color>
     <color name="auth_accent">#4CAF50</color>
 
+    <!-- Warning notification colors -->    <color name="warning_background">#FFF3CD</color>
+    <color name="warning_border">#FFE0A6</color>
+    <color name="warning_text">#856404</color>    <!-- Additional chat colors -->
+    <color name="text_hint">#9E9E9E</color>
 </resources>

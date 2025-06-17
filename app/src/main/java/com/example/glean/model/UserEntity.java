@@ -1,6 +1,7 @@
 package com.example.glean.model;
 
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 @Entity(tableName = "users")
@@ -26,8 +27,8 @@ public class UserEntity {
         this.decorations = "";
         this.activeDecoration = "";
     }
-    
-    // Constructor with required fields
+      // Constructor with required fields
+    @Ignore
     public UserEntity(String email, String password) {
         this.email = email;
         this.password = password;
@@ -36,8 +37,8 @@ public class UserEntity {
         this.decorations = "";
         this.activeDecoration = "";
     }
-    
-    // Constructor with email, password, and username
+      // Constructor with email, password, and username
+    @Ignore
     public UserEntity(String email, String password, String username) {
         this.email = email;
         this.password = password;

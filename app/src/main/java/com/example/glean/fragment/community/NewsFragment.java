@@ -19,6 +19,8 @@ import com.example.glean.adapter.NewsAdapter;
 import com.example.glean.api.NewsApi;
 import com.example.glean.databinding.FragmentNewsBinding;
 import com.example.glean.helper.NetworkHelper;
+import com.example.glean.helper.NetworkNotificationHelper;
+import com.example.glean.helper.NetworkConnectionListener;
 import com.example.glean.helper.NewsCacheManager;
 import com.example.glean.helper.NewsValidator;
 import com.example.glean.helper.UrlValidator;
@@ -29,11 +31,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClickListener {
-    
-    private static final String TAG = "NewsFragment";
+      private static final String TAG = "NewsFragment";
     private FragmentNewsBinding binding;
     private NewsAdapter newsAdapter;
     private List<NewsItem> newsList = new ArrayList<>();
+    private NetworkNotificationHelper networkNotification;
+    private NetworkConnectionListener networkListener;
     
     // API and cache components
     private NewsApi newsApi;
@@ -50,11 +53,16 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
         // Initialize API and cache components
         newsApi = new NewsApi();
         cacheManager = new NewsCacheManager(requireContext());
+          // Initialize network notification - TODO: Implement when helper is ready
+        // initializeNetworkNotification();
         
         // Debug browser availability
         debugBrowserAvailability();
-          setupRecyclerView();
+        
+        setupRecyclerView();
         setupSwipeRefresh();
+        // TODO: Implement network monitoring when helper is ready
+        // startNetworkMonitoring();
         loadNews();
     }
       private void setupRecyclerView() {
@@ -63,26 +71,40 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
         binding.recyclerViewNews.setAdapter(newsAdapter);
     }
       private void setupSwipeRefresh() {
-        binding.swipeRefreshLayout.setOnRefreshListener(this::loadNews);
-        binding.swipeRefreshLayout.setColorSchemeResources(R.color.primary_color);
-    }
-
-    private void loadNews() {
-        binding.swipeRefreshLayout.setRefreshing(true);
+        binding.swipeRefreshLayout.setOnRefreshListener(() -> {
+            // Check network before allowing refresh
+            NetworkHelper.NetworkStatus networkStatus = NetworkHelper.getNetworkStatus(requireContext());
+            
+            if (!networkStatus.isAvailable()) {
+                binding.swipeRefreshLayout.setRefreshing(false);
+                showOfflineMessage();
+                return;
+            }
+            
+            // Network available - proceed with refresh
+            loadNews();
+        });
         
-        // Check network status
+        binding.swipeRefreshLayout.setColorSchemeResources(
+                R.color.environmental_green,
+                R.color.primary_color,
+                R.color.accent_color
+        );
+    }    private void loadNews() {
+        // Check network status - News MUST be online only
         NetworkHelper.NetworkStatus networkStatus = NetworkHelper.getNetworkStatus(requireContext());
         
-        if (networkStatus.isAvailable() && networkStatus.shouldFetch()) {
-            // Network available - fetch from API with validation
-            loadNewsFromApi();
-        } else if (networkStatus.isAvailable()) {
-            // Limited network - try quick validation
-            loadNewsWithQuickValidation();
-        } else {
-            // No network - load from cache
-            loadNewsFromCache();
+        if (!networkStatus.isAvailable()) {
+            // No network - show offline message and empty state
+            binding.swipeRefreshLayout.setRefreshing(false);
+            showOfflineMessage();
+            displayNewsItems(new ArrayList<>());
+            return;
         }
+        
+        // Network available - show loading and fetch from API
+        binding.swipeRefreshLayout.setRefreshing(true);
+        loadNewsFromApi();
     }
     
     private void loadNewsFromApi() {
@@ -238,7 +260,14 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
         requireActivity().runOnUiThread(() -> {
             Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
         });
-    }@Override
+    }
+    
+    // Add method to show offline message
+    private void showOfflineMessage() {
+        showErrorMessage("📶 Fitur berita hanya dapat diakses saat online. Silakan periksa koneksi internet Anda.");
+    }
+    
+    @Override
     public void onNewsItemClick(NewsItem news) {
         // Validate news data before navigation
         if (news == null) {

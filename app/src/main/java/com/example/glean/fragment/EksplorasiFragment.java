@@ -45,9 +45,8 @@ public class EksplorasiFragment extends Fragment {
                         case 0:
                             tab.setText("Berita");
                             tab.setIcon(R.drawable.ic_news);
-                            break;
-                        case 1:
-                            tab.setText("AI Chat");
+                            break;                        case 1:
+                            tab.setText("EcoBot");
                             tab.setIcon(R.drawable.ic_chat);
                             break;
                         case 2:
@@ -72,9 +71,8 @@ public class EksplorasiFragment extends Fragment {
         switch (position) {
             case 0:
                 binding.tvEksplorasiHeader.setText("Berita");
-                break;
-            case 1:
-                binding.tvEksplorasiHeader.setText("AI Assistant");
+                break;            case 1:
+                binding.tvEksplorasiHeader.setText("EcoBot");
                 break;
             case 2:
                 binding.tvEksplorasiHeader.setText("Klasifikasi");

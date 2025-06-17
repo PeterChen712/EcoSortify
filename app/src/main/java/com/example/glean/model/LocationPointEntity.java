@@ -2,6 +2,7 @@ package com.example.glean.model;
 
 import androidx.room.Entity;
 import androidx.room.ForeignKey;
+import androidx.room.Ignore;
 import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
@@ -28,6 +29,7 @@ public class LocationPointEntity {
     public LocationPointEntity() {
     }
     
+    @Ignore
     public LocationPointEntity(int recordId, double latitude, double longitude, double altitude, long timestamp, float distanceFromLast) {
         this.recordId = recordId;
         this.latitude = latitude;

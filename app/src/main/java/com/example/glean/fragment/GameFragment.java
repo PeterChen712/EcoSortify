@@ -4,55 +4,150 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
+import android.widget.FrameLayout;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.example.glean.R;
-import com.example.glean.databinding.FragmentGameBinding;
+import com.example.glean.game.GameEngine;
+// import com.example.glean.model.GameScore; // TODO: Create GameScore model
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
-/**
- * Fragment untuk menampilkan game edukasi bertema sampah dan lingkungan
- */
-public class GameFragment extends Fragment {
+public class GameFragment extends Fragment implements GameEngine.GameCallback {
 
-    private FragmentGameBinding binding;
+    private FrameLayout gameContainer;
+    private TextView highScoreText;
+    private MaterialButton playButton;
+    private MaterialButton pauseButton;
+    private MaterialButton helpButton;
+    
+    private GameEngine gameEngine;
+    private boolean gameStarted = false;
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        binding = FragmentGameBinding.inflate(inflater, container, false);
-        return binding.getRoot();
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
+                             @Nullable Bundle savedInstanceState) {
+        return inflater.inflate(R.layout.fragment_game, container, false);
     }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         
-        setupGameMenu();
-    }    private void setupGameMenu() {
-        // Setup header title
-        binding.tvGameTitle.setText("Game Edukasi");
+        // Find views
+        gameContainer = view.findViewById(R.id.game_container);
+        highScoreText = view.findViewById(R.id.high_score_text);
+        playButton = view.findViewById(R.id.play_button);
+        pauseButton = view.findViewById(R.id.pause_button);
+        helpButton = view.findViewById(R.id.help_button);
         
-        // Setup info button
-        binding.btnGameInfo.setOnClickListener(v -> {
-            Toast.makeText(requireContext(), "Info: Game edukasi untuk belajar tentang lingkungan! 🎮", Toast.LENGTH_LONG).show();
+        // Set up buttons
+        playButton.setOnClickListener(v -> startGame());
+        pauseButton.setOnClickListener(v -> pauseGame());
+        helpButton.setOnClickListener(v -> showGameHelp());
+        
+        // Hide pause button initially
+        pauseButton.setVisibility(View.GONE);
+    }
+
+    private void startGame() {
+        if (gameEngine == null) {
+            // Create new game engine
+            gameEngine = new GameEngine(requireContext(), this);
+            gameContainer.addView(gameEngine);
+        }
+        
+        if (!gameStarted) {
+            // Show pause button, hide play button
+            playButton.setVisibility(View.GONE);
+            pauseButton.setVisibility(View.VISIBLE);
+            
+            // Start the game
+            gameEngine.startGame();
+            gameStarted = true;
+        } else {
+            // Resume the game if it was paused
+            gameEngine.startGame();
+            pauseButton.setText("Jeda");
+            pauseButton.setIcon(requireContext().getDrawable(R.drawable.ic_pause_24));
+        }
+    }
+
+    private void pauseGame() {
+        if (gameEngine != null && gameStarted) {
+            gameEngine.pauseGame();
+            pauseButton.setText("Lanjut");
+            pauseButton.setIcon(requireContext().getDrawable(R.drawable.ic_play_24));
+        }
+    }
+
+    private void showGameHelp() {
+        new MaterialAlertDialogBuilder(requireContext())                .setTitle("Bantuan Game")
+                .setMessage("Seret sampah ke tempat sampah yang sesuai:\n\n🟢 ORGANIK: Makanan, daun\n🔵 ANORGANIK: Plastik, kertas\n🔴 B3: Baterai, obat")
+                .setPositiveButton(R.string.ok, null)
+                .show();
+    }
+
+    @Override
+    public void onGameOver(int score, int highScore) {
+        requireActivity().runOnUiThread(() -> {
+            // Update high score text
+            updateHighScoreText(highScore);
+            
+            // Show play button, hide pause button
+            playButton.setVisibility(View.VISIBLE);
+            pauseButton.setVisibility(View.GONE);
+            
+            gameStarted = false;
+            
+            // Show game over dialog with score
+            new MaterialAlertDialogBuilder(requireContext())                    .setTitle("Game Over")
+                    .setMessage("Skor Akhir: " + score + "\nSkor Tertinggi: " + highScore)
+                    .setPositiveButton("Main Lagi", (dialog, which) -> {
+                        if (gameEngine != null) {
+                            gameEngine.resetGame();
+                            startGame();
+                        }
+                    })
+                    .setNegativeButton("Tutup", null)
+                    .show();
         });
-        
-        // Setup description
-        binding.tvGameDescription.setText("Game edukasi interaktif untuk belajar tentang sampah, daur ulang, dan pelestarian lingkungan.\n\nSegera hadir!");
-        
-        // Setup button placeholder
-        binding.btnComingSoon.setOnClickListener(v -> {
-            Toast.makeText(requireContext(), "Game segera hadir! 🎮", Toast.LENGTH_SHORT).show();
-        });
+    }
+
+    @Override
+    public void onScoreChanged(int score) {
+        // You could update a score display here if needed
+    }
+    
+    private void updateHighScoreText(int highScore) {
+        highScoreText.setText("Skor Tertinggi: " + highScore);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        if (gameEngine != null && gameStarted) {
+            gameEngine.pauseGame();
+        }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Do not auto-resume, let the user decide
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        binding = null;
+        if (gameEngine != null) {
+            gameEngine.releaseResources();
+            gameEngine = null;
+        }
     }
 }
