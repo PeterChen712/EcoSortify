@@ -117,11 +117,28 @@ public class RegisterFragment extends Fragment {
             @Override
             public void onSuccess(FirebaseUser user) {
                 if (isAdded() && getActivity() != null) {
-                    binding.progressBar.setVisibility(View.GONE);
-                    binding.btnRegister.setEnabled(true);
-                    
-                    Toast.makeText(requireContext(), "Registration successful! Welcome to EcoSortify!", Toast.LENGTH_SHORT).show();
-                    navigateToMain();
+                    // Simpan data user ke Firestore
+                    com.google.firebase.firestore.FirebaseFirestore mStore = com.google.firebase.firestore.FirebaseFirestore.getInstance();
+                    String userID = user.getUid();
+                    com.google.firebase.firestore.DocumentReference documentReference = mStore.collection("users").document(userID);
+                    java.util.Map<String, Object> userMap = new java.util.HashMap<>();
+                    userMap.put("nama", name);
+                    userMap.put("email", email);
+                    userMap.put("totalPoints", 0);
+                    userMap.put("totalKm", 0.0);
+                    userMap.put("photoURL", "https://via.placeholder.com/150");
+                    documentReference.set(userMap)
+                        .addOnSuccessListener(aVoid -> {
+                            binding.progressBar.setVisibility(View.GONE);
+                            binding.btnRegister.setEnabled(true);
+                            Toast.makeText(requireContext(), "Registration successful! Welcome to EcoSortify!", Toast.LENGTH_SHORT).show();
+                            navigateToMain();
+                        })
+                        .addOnFailureListener(e -> {
+                            binding.progressBar.setVisibility(View.GONE);
+                            binding.btnRegister.setEnabled(true);
+                            Toast.makeText(requireContext(), "Failed to save user data: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                        });
                 }
             }
 
@@ -130,7 +147,6 @@ public class RegisterFragment extends Fragment {
                 if (isAdded() && getActivity() != null) {
                     binding.progressBar.setVisibility(View.GONE);
                     binding.btnRegister.setEnabled(true);
-                    
                     Toast.makeText(requireContext(), "Registration failed: " + error, Toast.LENGTH_LONG).show();
                 }
             }

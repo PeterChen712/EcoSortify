@@ -18,11 +18,14 @@ public class GleanApplication extends Application {
       @Override
     public void onCreate() {
         super.onCreate();
-        
-        // Initialize Firebase
+          // Initialize Firebase
         try {
-            FirebaseApp.initializeApp(this);
-            Log.d(TAG, "Firebase initialized successfully");
+            if (FirebaseApp.getApps(this).isEmpty()) {
+                FirebaseApp.initializeApp(this);
+                Log.d(TAG, "Firebase initialized successfully");
+            } else {
+                Log.d(TAG, "Firebase already initialized");
+            }
         } catch (Exception e) {
             Log.e(TAG, "Failed to initialize Firebase", e);
         }

@@ -14,6 +14,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -50,17 +51,33 @@ public class FirebaseAuthManager {
     public interface UserDataCallback {
         void onSuccess();
         void onFailure(String error);
-    }
-    
-    private FirebaseAuthManager(Context context) {
+    }    private FirebaseAuthManager(Context context) {
         this.context = context.getApplicationContext();
-        this.mAuth = FirebaseAuth.getInstance();
-        this.db = FirebaseFirestore.getInstance();
+        
+        // Force initialize Firebase if not already done
+        try {
+            // Always try to initialize Firebase regardless of current state
+            FirebaseApp.initializeApp(context);
+            Log.d(TAG, "Firebase initialized successfully in FirebaseAuthManager");
+        } catch (Exception e) {
+            Log.w(TAG, "Firebase may already be initialized", e);
+        }
+        
+        // Get Firebase instances
+        try {
+            this.mAuth = FirebaseAuth.getInstance();
+            this.db = FirebaseFirestore.getInstance();
+            Log.d(TAG, "Firebase instances obtained successfully");
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting Firebase instances", e);
+            throw new RuntimeException("Firebase not properly initialized", e);
+        }
+        
         this.prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         
-        // Configure Google Sign-In
+        // Configure Google Sign-In with dummy client ID for development
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestIdToken("YOUR_WEB_CLIENT_ID") // Replace with your actual web client ID
+                .requestIdToken("123456789-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com") // Dummy client ID
                 .requestEmail()
                 .build();
         
