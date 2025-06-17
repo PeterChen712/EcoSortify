@@ -6,7 +6,7 @@ import androidx.viewpager2.adapter.FragmentStateAdapter;
 
 import com.example.glean.fragment.community.NewsFragment;
 import com.example.glean.fragment.AiChatFragment;
-import com.example.glean.fragment.KlasifikasiFragment;
+import com.example.glean.fragment.ClassifyFragment;
 
 /**
  * Adapter untuk mengelola tabs di menu Eksplorasi
@@ -26,7 +26,7 @@ public class EksplorasiSectionAdapter extends FragmentStateAdapter {
             case 1:
                 return new AiChatFragment();
             case 2:
-                return new KlasifikasiFragment();
+                return new ClassifyFragment();
             default:
                 return new NewsFragment();
         }
