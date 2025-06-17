@@ -5,7 +5,7 @@ import androidx.fragment.app.Fragment;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 
 import com.example.glean.fragment.community.NewsFragment;
-import com.example.glean.fragment.ChatbotFragment;
+import com.example.glean.fragment.AiChatFragment;
 import com.example.glean.fragment.KlasifikasiFragment;
 
 /**
@@ -20,12 +20,11 @@ public class EksplorasiSectionAdapter extends FragmentStateAdapter {
 
     @NonNull
     @Override
-    public Fragment createFragment(int position) {
-        switch (position) {
+    public Fragment createFragment(int position) {        switch (position) {
             case 0:
                 return new NewsFragment();
             case 1:
-                return new ChatbotFragment();
+                return new AiChatFragment();
             case 2:
                 return new KlasifikasiFragment();
             default:

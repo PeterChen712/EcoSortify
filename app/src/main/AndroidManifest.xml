@@ -91,18 +91,12 @@
         <activity
             android:name=".activity.AuthActivity"
             android:exported="false"
-            android:screenOrientation="portrait" />        <!-- Main Activity with Bottom Navigation -->
-        <activity
+            android:screenOrientation="portrait" />        <!-- Main Activity with Bottom Navigation -->        <activity
             android:name=".activity.MainActivity"
             android:exported="false"
             android:screenOrientation="portrait" />
 
-        <!-- Post Detail Activity -->
-        <activity
-            android:name=".activity.PostDetailActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:parentActivityName=".activity.MainActivity" />        <!-- UCrop Activity for Image Cropping -->
+        <!-- UCrop Activity for Image Cropping -->
         <activity
             android:name="com.yalantis.ucrop.UCropActivity"
             android:exported="false"

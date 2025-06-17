@@ -17,7 +17,7 @@ import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 
 /**
- * Fragment Eksplorasi yang berisi: News, Chatbot AI, dan Klasifikasi Sampah
+ * Fragment Eksplorasi yang berisi: News, EcoBot AI, dan Klasifikasi Sampah
  */
 public class EksplorasiFragment extends Fragment {
 

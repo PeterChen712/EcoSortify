@@ -1607,9 +1607,9 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         if (gpsDialog != null && gpsDialog.isShowing()) {
             return; // Dialog already showing
         }
+          if (getContext() == null || !isAdded()) return;
         
-        if (getContext() == null || !isAdded()) return;
-           gpsDialog = new MaterialAlertDialogBuilder(requireContext())
+        gpsDialog = new MaterialAlertDialogBuilder(requireContext())
                 .setTitle(getString(R.string.enable_location_title))
                 .setMessage(getString(R.string.enable_location_message))
                 .setPositiveButton(getString(R.string.open_settings), (dialog, which) -> {
