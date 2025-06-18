@@ -38,6 +38,7 @@ import com.example.glean.R;
 import com.example.glean.activity.SkinSelectionActivity;
 import com.example.glean.adapter.BadgeAdapter;
 import com.example.glean.adapter.ProfileBadgeAdapter;
+import com.example.glean.auth.AuthGuard;
 import com.example.glean.auth.FirebaseAuthManager;
 import com.example.glean.databinding.FragmentProfileBinding;
 import com.example.glean.databinding.DialogEditProfileBinding;
@@ -45,6 +46,7 @@ import com.example.glean.databinding.DialogSettingsBinding;
 import com.example.glean.db.AppDatabase;
 import com.example.glean.model.Badge;
 import com.example.glean.model.UserEntity;
+import com.example.glean.util.NetworkUtil;
 import com.example.glean.util.PasswordValidator;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -77,7 +79,7 @@ public class ProfileFragment extends Fragment {    private static final String T
     private ExecutorService executor;
     private Uri selectedImageUri;
     private Uri cameraImageUri;
-    private String profileImagePath;    @Override
+    private String profileImagePath;@Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
@@ -151,17 +153,59 @@ public class ProfileFragment extends Fragment {    private static final String T
         
         scrollView.addView(layout);
         return scrollView;
-    }
-
-    @Override
+    }    @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-          try {
+        
+        // Check authentication first
+        AuthGuard.checkFeatureAccess(requireContext(), "profile", new AuthGuard.AuthCheckCallback() {
+            @Override
+            public void onAuthenticationRequired() {
+                // Redirect to login
+                AuthGuard.navigateToLogin(ProfileFragment.this, "profile");
+                return;
+            }
+            
+            @Override
+            public void onProceedWithFeature() {
+                // User is authenticated, check network for profile sync
+                if (NetworkUtil.isNetworkAvailable(requireContext())) {
+                    // Network available, can sync profile data
+                    setupAuthenticatedProfile();
+                } else {
+                    // No network, use local data only
+                    setupOfflineProfile();
+                }
+            }
+            
+            @Override
+            public void onNetworkRequired() {
+                // Not applicable for profile main view
+                setupOfflineProfile();
+            }
+        });
+    }
+    
+    private void setupAuthenticatedProfile() {
+        try {
             setupUI();
             loadUserData();
             updateProfileSkin(); // Apply current skin
         } catch (Exception e) {
-            Log.e(TAG, "Error setting up ProfileFragment", e);
+            Log.e(TAG, "Error setting up authenticated ProfileFragment", e);
+            Toast.makeText(requireContext(), getString(R.string.error_loading_profile), Toast.LENGTH_SHORT).show();
+        }
+    }
+    
+    private void setupOfflineProfile() {
+        try {
+            setupUI();
+            // Show limited functionality message
+            Toast.makeText(requireContext(), "Profil terbatas tanpa koneksi internet.", Toast.LENGTH_SHORT).show();
+            loadUserData(); // Load local data only
+            updateProfileSkin();
+        } catch (Exception e) {
+            Log.e(TAG, "Error setting up offline ProfileFragment", e);
             Toast.makeText(requireContext(), getString(R.string.error_loading_profile), Toast.LENGTH_SHORT).show();
         }
     }

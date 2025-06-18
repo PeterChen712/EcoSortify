@@ -186,17 +186,43 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         binding = FragmentPloggingBinding.inflate(inflater, container, false);
         return binding.getRoot();
+    }    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {        super.onViewCreated(view, savedInstanceState);
+        
+        // Check authentication before proceeding with plogging setup
+        AuthGuard.checkFeatureAccess(requireContext(), "plogging", new AuthGuard.AuthCheckCallback() {
+            @Override
+            public void onAuthenticationRequired() {
+                // Redirect to login and exit this fragment
+                AuthGuard.navigateToLogin(PloggingFragment.this, "plogging");
+                return;
+            }
+            
+            @Override
+            public void onProceedWithFeature() {
+                // User is authenticated, proceed with plogging setup
+                setupPloggingFeature();
+            }
+            
+            @Override
+            public void onNetworkRequired() {
+                // Not applicable for plogging main functionality
+                setupPloggingFeature();
+            }
+        });
     }
-
-    @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {        super.onViewCreated(view, savedInstanceState);        initializeNoInternetViews();
+    
+    private void setupPloggingFeature() {
+        initializeNoInternetViews();
         // Removed notification banner initialization
 
         SupportMapFragment mapFragment = (SupportMapFragment) getChildFragmentManager()
                 .findFragmentById(R.id.map);
         if (mapFragment != null) {
             mapFragment.getMapAsync(this);
-        }restoreTrackingSession();        updateUIForTrackingState(isTracking);
+        }
+
+        restoreTrackingSession();        updateUIForTrackingState(isTracking);
         updateUIForNetworkState(isNetworkAvailable);          // Set up button click listeners for new UI structure        binding.btnStartStop.setOnClickListener(v -> toggleTracking());
         binding.btnCollectTrash.setOnClickListener(v -> navigateToTrashCollection());
         binding.btnFinish.setOnClickListener(v -> finishPlogging());
@@ -208,7 +234,7 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
 
         // Restore auto-finish timer if needed
         checkAndRestoreAutoFinishTimer();
-    }    private void initializeNoInternetViews() {
+    }private void initializeNoInternetViews() {
         noInternetLayout = binding.layoutNoInternetOverlay;
         btnRetryConnection = noInternetLayout.findViewById(R.id.btn_retry_connection);
         

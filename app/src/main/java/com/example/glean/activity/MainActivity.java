@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.view.View;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.navigation.NavController;
@@ -14,48 +15,54 @@ import androidx.navigation.ui.NavigationUI;
 import com.example.glean.R;
 import com.example.glean.activity.AuthActivity;
 import com.example.glean.auth.FirebaseAuthManager;
+import com.example.glean.auth.AuthGuard;
 import com.example.glean.databinding.ActivityMainBinding;
+import com.example.glean.util.GuestModeManager;
 import com.google.android.material.navigation.NavigationBarView;
 
 public class MainActivity extends AppCompatActivity {
     private ActivityMainBinding binding;
     private NavController navController;
     private FirebaseAuthManager authManager;
+    private GuestModeManager guestModeManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         binding = ActivityMainBinding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());        // Initialize FirebaseAuthManager
+        setContentView(binding.getRoot());
+        
+        // Initialize managers
         authManager = FirebaseAuthManager.getInstance(this);
-        android.util.Log.d("MainActivity", "FirebaseAuthManager initialized");
+        guestModeManager = GuestModeManager.getInstance(this);
+        android.util.Log.d("MainActivity", "Managers initialized");
         
-        // Check if user is logged in using FirebaseAuthManager
+        // Set app mode based on login status
         boolean isLoggedIn = authManager.isLoggedIn();
-        android.util.Log.d("MainActivity", "User logged in: " + isLoggedIn);
+        guestModeManager.setGuestMode(!isLoggedIn);
         
-        if (!isLoggedIn) {
-            android.util.Log.d("MainActivity", "User not logged in, redirecting to AuthActivity");
-            startActivity(new Intent(this, AuthActivity.class));
-            finish();
-            return;
-        }
+        android.util.Log.d("MainActivity", "User logged in: " + isLoggedIn + ", Guest mode: " + guestModeManager.isGuestMode());
         
-        android.util.Log.d("MainActivity", "User is logged in, setting up UI");
+        // Always proceed to main UI (no forced login)
+        setupUI();
+    }
+    
+    private void setupUI() {
+        android.util.Log.d("MainActivity", "Setting up main UI");
         
         binding.bottomNavigation.setVisibility(View.VISIBLE);
         binding.bottomNavigation.setLabelVisibilityMode(NavigationBarView.LABEL_VISIBILITY_UNLABELED);
         
-        // Add error handling for the entire onCreate process
+        // Add error handling for the entire setup process
         try {
             setupNavigation();
             setupBottomNavigation();
         } catch (Exception e) {
-            android.util.Log.e("MainActivity", "Critical error in onCreate: " + e.getMessage(), e);
+            android.util.Log.e("MainActivity", "Critical error in setupUI: " + e.getMessage(), e);
             // Create emergency fallback view
             createEmergencyView();
         }
-    }    private void setupNavigation() {
+    }private void setupNavigation() {
         try {
             NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager()
                     .findFragmentById(R.id.nav_host_fragment);
@@ -78,14 +85,32 @@ public class MainActivity extends AppCompatActivity {
             }
         } catch (Exception e) {
             android.util.Log.e("MainActivity", "Error in setupNavigation: " + e.getMessage(), e);
-        }
-          binding.bottomNavigation.setOnItemSelectedListener(item -> {
+        }        binding.bottomNavigation.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
             if (itemId == R.id.homeFragment) {
                 navController.navigate(R.id.homeFragment);
                 return true;
             } else if (itemId == R.id.ploggingTabsFragment) {
-                navController.navigate(R.id.ploggingTabsFragment);
+                // Check authentication for plogging feature
+                AuthGuard.checkFeatureAccess(this, "plogging", new AuthGuard.AuthCheckCallback() {
+                    @Override
+                    public void onAuthenticationRequired() {
+                        // Redirect to login
+                        AuthGuard.redirectToLogin(MainActivity.this, "plogging");
+                    }
+                    
+                    @Override
+                    public void onProceedWithFeature() {
+                        // User is authenticated, proceed to plogging
+                        navController.navigate(R.id.ploggingTabsFragment);
+                    }
+                    
+                    @Override
+                    public void onNetworkRequired() {
+                        // Not applicable for plogging main screen
+                        navController.navigate(R.id.ploggingTabsFragment);
+                    }
+                });
                 return true;
             } else if (itemId == R.id.eksplorasiFragment) {
                 navController.navigate(R.id.eksplorasiFragment);
@@ -93,11 +118,12 @@ public class MainActivity extends AppCompatActivity {
                 navController.navigate(R.id.gameFragment);
                 return true;
             }
-            return false;
-        });
+            return false;        });
 
         handleIntentExtras();
-    }    public void navigateToPlgging() {
+        // Handle initial navigation intent
+        handleNavigationIntent(getIntent());
+    }public void navigateToPlgging() {
         if (navController != null) {
             try {
                 navController.navigate(R.id.ploggingTabsFragment);
@@ -187,5 +213,53 @@ public class MainActivity extends AppCompatActivity {
     private void setupBottomNavigation() {
         binding.bottomNavigation.setVisibility(View.VISIBLE);
         binding.bottomNavigation.setLabelVisibilityMode(NavigationBarView.LABEL_VISIBILITY_UNLABELED);
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        handleNavigationIntent(intent);
+    }
+    
+    private void handleNavigationIntent(Intent intent) {
+        if (intent != null && intent.hasExtra("NAVIGATE_TO")) {
+            String navigateTo = intent.getStringExtra("NAVIGATE_TO");
+            
+            // Reset guest mode toast flag for new navigation
+            guestModeManager.resetLoginToastFlag();
+            
+            if (navController != null && navigateTo != null) {
+                switch (navigateTo.toLowerCase()) {
+                    case "plogging":
+                        try {
+                            navController.navigate(R.id.ploggingTabsFragment);
+                        } catch (Exception e) {
+                            // Fallback to home if navigation fails
+                            navController.navigate(R.id.homeFragment);
+                        }
+                        break;
+                    case "stats":
+                        // Navigate to stats through plogging
+                        try {
+                            navController.navigate(R.id.ploggingTabsFragment);
+                        } catch (Exception e) {
+                            navController.navigate(R.id.homeFragment);
+                        }
+                        break;
+                    case "ranking":
+                        // Navigate to ranking through appropriate route
+                        try {
+                            navController.navigate(R.id.rankingFragment);
+                        } catch (Exception e) {
+                            navController.navigate(R.id.homeFragment);
+                        }
+                        break;
+                    case "home":
+                    default:
+                        navController.navigate(R.id.homeFragment);
+                        break;
+                }
+            }
+        }
     }
 }

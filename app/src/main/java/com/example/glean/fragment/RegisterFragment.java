@@ -152,11 +152,16 @@ public class RegisterFragment extends Fragment {
             }
         });
     }
-    
-    private void navigateToMain() {
-        Intent intent = new Intent(requireContext(), MainActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        startActivity(intent);
+      private void navigateToMain() {
+        // Call AuthActivity's onLoginSuccess if available
+        if (getActivity() instanceof com.example.glean.activity.AuthActivity) {
+            ((com.example.glean.activity.AuthActivity) getActivity()).onLoginSuccess();
+        } else {
+            // Fallback to direct navigation
+            Intent intent = new Intent(requireContext(), MainActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+        }
     }
 
     private void navigateBack() {

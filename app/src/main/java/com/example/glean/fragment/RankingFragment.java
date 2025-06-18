@@ -42,8 +42,7 @@ public class RankingFragment extends Fragment {
             }
         });
     }
-    
-    private void setupTabsAndViewPager() {
+      private void setupTabsAndViewPager() {
         // Setup ViewPager2 with adapter
         pagerAdapter = new RankingPagerAdapter(requireActivity());
         binding.viewPager.setAdapter(pagerAdapter);
@@ -53,10 +52,10 @@ public class RankingFragment extends Fragment {
                 (tab, position) -> {
                     switch (position) {
                         case 0:
-                            tab.setText("🏆 Points");
+                            tab.setText("Points");
                             break;
                         case 1:
-                            tab.setText("🏃 Distance");
+                            tab.setText("Distance");
                             break;
                     }
                 }).attach();

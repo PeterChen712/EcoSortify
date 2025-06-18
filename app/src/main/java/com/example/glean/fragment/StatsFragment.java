@@ -11,6 +11,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -19,11 +20,13 @@ import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
 
 import com.example.glean.R;
+import com.example.glean.auth.FirebaseAuthManager;
 import com.example.glean.databinding.FragmentStatsBinding;
 import com.example.glean.db.AppDatabase;
 import com.example.glean.model.RecordEntity;
 import com.example.glean.model.TrashEntity;
 import com.example.glean.model.UserEntity;
+import com.example.glean.util.NetworkUtil;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.Description;
 import com.github.mikephil.charting.components.XAxis;
@@ -52,12 +55,12 @@ public class StatsFragment extends Fragment {    private FragmentStatsBinding bi
     private List<RecordEntity> recordList = new ArrayList<>();
     private List<TrashEntity> trashList = new ArrayList<>();
     private boolean dataLoaded = false;
-
-    @Override
+    private FirebaseAuthManager authManager;    @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         db = AppDatabase.getInstance(requireContext());
         executor = Executors.newSingleThreadExecutor();
+        authManager = FirebaseAuthManager.getInstance(requireContext());
         
         // Get user ID from SharedPreferences using correct method
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
@@ -75,6 +78,17 @@ public class StatsFragment extends Fragment {    private FragmentStatsBinding bi
         
         setupBackButton();
         
+        // Check network connectivity and authentication before loading stats
+        if (!NetworkUtil.isNetworkAvailable(requireContext())) {
+            showNetworkError();
+            return;
+        }
+        
+        if (!authManager.isLoggedIn()) {
+            showAuthenticationError();
+            return;
+        }
+        
         // Setup navigation for history button
         binding.btnViewHistory.setOnClickListener(v -> {
             // Navigate to History activity or fragment
@@ -90,6 +104,18 @@ public class StatsFragment extends Fragment {    private FragmentStatsBinding bi
         });
           // Load data
         loadData();
+    }
+    
+    private void showNetworkError() {
+        // Hide content and show network error
+        binding.scrollViewContent.setVisibility(View.GONE);
+        Toast.makeText(requireContext(), "Fitur statistik membutuhkan koneksi internet.", Toast.LENGTH_LONG).show();
+    }
+    
+    private void showAuthenticationError() {
+        // Hide content and show auth error
+        binding.scrollViewContent.setVisibility(View.GONE);
+        Toast.makeText(requireContext(), "Silakan login untuk melihat statistik Anda.", Toast.LENGTH_LONG).show();
     }
 
     private void setupBackButton() {

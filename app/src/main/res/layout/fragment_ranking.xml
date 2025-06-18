@@ -26,15 +26,13 @@
             android:src="@drawable/ic_arrow_back"
             app:tint="@color/white"
             android:padding="12dp"
-            android:layout_marginEnd="8dp" />
-
-        <!-- Title Text -->
+            android:layout_marginEnd="8dp" />        <!-- Title Text -->
         <TextView
             android:id="@+id/tv_header_title"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="🏆 Ranking Plogging"
+            android:text="Ranking Plogging"
             android:textColor="@color/white"
             android:textSize="20sp"
             android:textStyle="bold"

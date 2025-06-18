@@ -70,30 +70,12 @@ public class RankingAdapter extends RecyclerView.Adapter<RankingAdapter.RankingV
             ivUserProfile = itemView.findViewById(R.id.ivUserProfile);
             ivCrown = itemView.findViewById(R.id.ivCrown);
             cardRanking = itemView.findViewById(R.id.cardRanking);
-        }
-
-        public void bind(RankingUser user, int position) {
+        }        public void bind(RankingUser user, int position) {
             // Set position
             tvRankingPosition.setText("#" + position);
             
-            // Show crown for top 3
-            if (position <= 3) {
-                ivCrown.setVisibility(View.VISIBLE);
-                // Different crown colors for different positions
-                switch (position) {
-                    case 1: // Gold
-                        ivCrown.setColorFilter(ContextCompat.getColor(context, R.color.gold));
-                        break;
-                    case 2: // Silver
-                        ivCrown.setColorFilter(ContextCompat.getColor(context, R.color.silver));
-                        break;
-                    case 3: // Bronze
-                        ivCrown.setColorFilter(ContextCompat.getColor(context, R.color.bronze));
-                        break;
-                }
-            } else {
-                ivCrown.setVisibility(View.GONE);
-            }
+            // Hide crown icon (as per requirements)
+            ivCrown.setVisibility(View.GONE);
             
             // Set username
             String username = user.getUsername();

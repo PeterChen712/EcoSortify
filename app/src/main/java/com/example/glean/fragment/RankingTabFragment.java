@@ -6,6 +6,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -18,6 +19,7 @@ import com.example.glean.adapter.RankingAdapter;
 import com.example.glean.auth.FirebaseAuthManager;
 import com.example.glean.databinding.FragmentRankingTabBinding;
 import com.example.glean.model.RankingUser;
+import com.example.glean.util.NetworkUtil;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
@@ -67,13 +69,39 @@ public class RankingTabFragment extends Fragment {
         binding = FragmentRankingTabBinding.inflate(inflater, container, false);
         return binding.getRoot();
     }
-    
-    @Override
+      @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         
         setupRecyclerView();
+        
+        // Check network connectivity before loading data
+        if (!NetworkUtil.isNetworkAvailable(requireContext())) {
+            showNetworkError();
+            return;
+        }
+        
+        // Check authentication before loading data
+        if (!authManager.isLoggedIn()) {
+            showAuthenticationError();
+            return;
+        }
+        
         loadRankingData();
+    }
+    
+    private void showNetworkError() {
+        showLoading(false);
+        // Show network error message in UI
+        binding.recyclerViewRanking.setVisibility(View.GONE);
+        // You might want to add an error view to the layout
+        Toast.makeText(requireContext(), "Fitur ranking membutuhkan koneksi internet.", Toast.LENGTH_LONG).show();
+    }
+    
+    private void showAuthenticationError() {
+        showLoading(false);
+        binding.recyclerViewRanking.setVisibility(View.GONE);
+        Toast.makeText(requireContext(), "Silakan login untuk melihat ranking.", Toast.LENGTH_LONG).show();
     }
     
     private void setupRecyclerView() {
