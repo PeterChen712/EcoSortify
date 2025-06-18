@@ -106,11 +106,16 @@
             android:name=".activity.SkinSelectionActivity"
             android:exported="false"
             android:screenOrientation="portrait"
-            android:parentActivityName=".activity.MainActivity" />
-
-        <!-- Customize Profile Activity -->
+            android:parentActivityName=".activity.MainActivity" />        <!-- Customize Profile Activity -->
         <activity
             android:name=".activity.CustomizeProfileActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:parentActivityName=".activity.MainActivity" />
+
+        <!-- Other Player Profile Activity -->
+        <activity
+            android:name=".activity.OtherPlayerProfileActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:parentActivityName=".activity.MainActivity" />

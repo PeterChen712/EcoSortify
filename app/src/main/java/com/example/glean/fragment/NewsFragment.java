@@ -143,9 +143,7 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
         
         executor.execute(() -> {
             try {
-                List<NewsItem> cachedNews = db.newsDao().getAllNews();
-                
-                requireActivity().runOnUiThread(() -> {
+                List<NewsItem> cachedNews = db.newsDao().getAllNews();                safeRunOnUiThread(() -> {
                     if (cachedNews != null && !cachedNews.isEmpty()) {
                         newsList.clear();
                         newsList.addAll(cachedNews);
@@ -157,9 +155,8 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
                     }
                     showLoading(false);
                 });
-                
-            } catch (Exception e) {
-                requireActivity().runOnUiThread(() -> {
+                  } catch (Exception e) {
+                safeRunOnUiThread(() -> {
                     showLoading(false);
                     showEmptyState(true);
                     showMessage(getStringWithFallback(R.string.news_failed_load_cached, "Gagal memuat cache berita"), true);
@@ -193,11 +190,9 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
         binding.fabRefresh.setImageResource(R.drawable.ic_refresh_animated);
         
         // Show network status
-        showMessage(networkStatus.getStatusMessage() + " - Memuat berita...", false);
-        
-        // Check if API key is configured
+        showMessage(networkStatus.getStatusMessage() + " - Memuat berita...", false);        // Check if API key is configured
         if (!ApiConfig.isNewsApiKeyAvailable()) {
-            requireActivity().runOnUiThread(() -> {
+            safeRunOnUiThread(() -> {
                 isRefreshing = false;
                 binding.swipeRefreshLayout.setRefreshing(false);
                 binding.fabRefresh.setImageResource(R.drawable.ic_refresh);
@@ -243,8 +238,7 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
                                 }
                             });
                         }
-                        
-                        requireActivity().runOnUiThread(() -> {
+                          safeRunOnUiThread(() -> {
                             isRefreshing = false;
                             binding.swipeRefreshLayout.setRefreshing(false);
                             binding.fabRefresh.setImageResource(R.drawable.ic_refresh);
@@ -271,9 +265,8 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
                                 showMessage(getString(R.string.news_no_valid_articles_found), true);
                             }
                         });
-                        
-                    } catch (Exception e) {
-                        requireActivity().runOnUiThread(() -> {
+                          } catch (Exception e) {
+                        safeRunOnUiThread(() -> {
                             isRefreshing = false;
                             binding.swipeRefreshLayout.setRefreshing(false);
                             binding.fabRefresh.setImageResource(R.drawable.ic_refresh);
@@ -291,11 +284,9 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
                         });
                     }
                 });
-            }
-
-            @Override
+            }            @Override
             public void onValidationProgress(int processed, int total) {
-                requireActivity().runOnUiThread(() -> {
+                safeRunOnUiThread(() -> {
                     String progressMessage = getStringWithFallback(
                         R.string.news_validation_progress,
                         "🔍 Memvalidasi artikel %d/%d...",
@@ -307,7 +298,7 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
 
             @Override
             public void onError(String error) {
-                requireActivity().runOnUiThread(() -> {
+                safeRunOnUiThread(() -> {
                     isRefreshing = false;
                     binding.swipeRefreshLayout.setRefreshing(false);
                     binding.fabRefresh.setImageResource(R.drawable.ic_refresh);
@@ -374,9 +365,8 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
      */
     private void loadSampleNews() {
         android.util.Log.d(TAG, "No sample articles available - showing empty state");
-        
-        // No dummy data - show empty state with helpful message
-        requireActivity().runOnUiThread(() -> {
+          // No dummy data - show empty state with helpful message
+        safeRunOnUiThread(() -> {
             showEmptyState(true);
             showMessage("Tidak ada koneksi internet. Silakan periksa koneksi dan coba lagi.", true);
         });
@@ -406,8 +396,7 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
                             newsItem.setReadingTimeMinutes(calculateReadingTime(newsItem));
                             newsItems.add(newsItem);
                         }
-                        
-                        requireActivity().runOnUiThread(() -> {
+                          safeRunOnUiThread(() -> {
                             if (!newsItems.isEmpty()) {
                                 newsList.clear();
                                 newsList.addAll(newsItems);
@@ -422,8 +411,7 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
                             }
                         });
                         
-                    } catch (Exception e) {
-                        requireActivity().runOnUiThread(() -> {
+                    } catch (Exception e) {                        safeRunOnUiThread(() -> {
                             ErrorHandler.logError("NewsFragment", "Quick validation fallback", e);
                             loadValidatedCachedNews();
                         });
@@ -433,7 +421,7 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
 
             @Override
             public void onError(String error) {
-                requireActivity().runOnUiThread(() -> {
+                safeRunOnUiThread(() -> {
                     Log.e("NewsFragment", "Quick validation failed: " + error);
                     loadValidatedCachedNews();
                 });
@@ -445,10 +433,9 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
      * Load cached news articles with validation
      */
     private void loadValidatedCachedNews() {
-        cacheManager.getValidatedCachedArticles(new NewsCacheManager.CacheRetrievalCallback() {
-            @Override
+        cacheManager.getValidatedCachedArticles(new NewsCacheManager.CacheRetrievalCallback() {            @Override
             public void onCachedArticlesRetrieved(List<NewsItem> articles) {
-                requireActivity().runOnUiThread(() -> {
+                safeRunOnUiThread(() -> {
                     if (articles != null && !articles.isEmpty()) {
                         newsList.clear();
                         newsList.addAll(articles);
@@ -464,11 +451,9 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
                         loadSampleNews();
                     }
                 });
-            }
-
-            @Override
+            }            @Override
             public void onRetrievalError(String error) {
-                requireActivity().runOnUiThread(() -> {
+                safeRunOnUiThread(() -> {
                     showMessage(getString(R.string.news_error_loading_cached, error), true);
                     loadSampleNews();
                 });
@@ -704,11 +689,27 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
         } catch (Exception e) {
             showMessage(getString(R.string.news_failed_share_article) + ": " + e.getMessage(), true);
         }
-    }
-
-    @Override
+    }    @Override
     public void onDestroyView() {
         super.onDestroyView();
+        
+        // Stop refresh animation
+        isRefreshing = false;
+        isLoading = false;
+        
+        // Clean up UI operations
+        if (binding != null) {
+            if (binding.swipeRefreshLayout != null) {
+                binding.swipeRefreshLayout.setRefreshing(false);
+            }
+        }
+        
+        // Clear lists to prevent memory leaks
+        if (newsList != null) {
+            newsList.clear();
+        }
+        
+        // Nullify binding to prevent access after destruction
         binding = null;
     }
 
@@ -717,6 +718,20 @@ public class NewsFragment extends Fragment implements NewsAdapter.OnNewsItemClic
         super.onDestroy();
         if (executor != null && !executor.isShutdown()) {
             executor.shutdown();
+        }
+    }
+    
+    /**
+     * Safe way to run code on UI thread with null checks
+     */
+    private void safeRunOnUiThread(Runnable runnable) {
+        if (getActivity() != null) {
+            getActivity().runOnUiThread(() -> {
+                // Check if fragment is still attached and binding is not null
+                if (binding != null && isAdded()) {
+                    runnable.run();
+                }
+            });
         }
     }
 }

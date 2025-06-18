@@ -519,9 +519,67 @@ public class ClassifyFragment extends Fragment {
         }
     }
 
-    @Override
+    /**
+     * Clean up temporary image data and cache after classification
+     */
+    private void cleanupTemporaryImages() {
+        try {
+            // Clear selected image from memory
+            if (selectedImage != null && !selectedImage.isRecycled()) {
+                selectedImage.recycle();
+                selectedImage = null;
+                Log.d(TAG, "Selected image bitmap recycled");
+            }
+            
+            // Clear photo URI
+            photoUri = null;
+            
+            // Clear image preview to free memory
+            if (imagePreview != null) {
+                imagePreview.setImageDrawable(null);
+            }
+            
+            // Clear any temporary files if they exist
+            try {
+                File cacheDir = requireContext().getCacheDir();
+                File[] tempFiles = cacheDir.listFiles((dir, name) -> 
+                    name.startsWith("JPEG_") || name.startsWith("cropped_") || name.startsWith("shared_image"));
+                
+                if (tempFiles != null) {
+                    for (File tempFile : tempFiles) {
+                        if (tempFile.exists() && tempFile.delete()) {
+                            Log.d(TAG, "Temporary file deleted: " + tempFile.getName());
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error cleaning temporary files: " + e.getMessage());
+            }
+            
+            Log.d(TAG, "Temporary image cleanup completed");
+        } catch (Exception e) {
+            Log.e(TAG, "Error cleaning up temporary images: " + e.getMessage());
+        }
+    }
+      /**
+     * Reset UI and cleanup for new classification
+     */
+    private void resetForNewClassification() {
+        cleanupTemporaryImages();
+        
+        // Reset UI state
+        showEmptyState();
+        
+        // Clear classification results
+        classificationResult = null;
+        classificationDescription = null;
+    }@Override
     public void onDestroy() {
         super.onDestroy();
+        
+        // Clean up temporary images and free memory
+        cleanupTemporaryImages();
+        
         if (classificationHelper != null) {
             classificationHelper.release();
         }

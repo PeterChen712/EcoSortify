@@ -1,6 +1,7 @@
 package com.example.glean.adapter;
 
 import android.content.Context;
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,6 +15,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.example.glean.R;
+import com.example.glean.activity.OtherPlayerProfileActivity;
 import com.example.glean.model.RankingUser;
 import de.hdodenhof.circleimageview.CircleImageView;
 
@@ -131,9 +133,23 @@ public class RankingAdapter extends RecyclerView.Adapter<RankingAdapter.RankingV
             if (currentUserId != null && currentUserId.equals(user.getUserId())) {
                 itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.highlight_background));
                 itemView.setAlpha(0.95f);
+                
+                // Current user card - no click action (as per requirements)
+                itemView.setOnClickListener(null);
+                itemView.setClickable(false);
             } else {
                 itemView.setBackgroundColor(ContextCompat.getColor(context, android.R.color.transparent));
                 itemView.setAlpha(1.0f);
+                
+                // Other players - navigate to their profile
+                itemView.setOnClickListener(v -> {
+                    Intent intent = new Intent(context, OtherPlayerProfileActivity.class);
+                    intent.putExtra(OtherPlayerProfileActivity.EXTRA_PLAYER_ID, user.getUserId());
+                    intent.putExtra(OtherPlayerProfileActivity.EXTRA_PLAYER_USERNAME, user.getUsername());
+                    intent.putExtra(OtherPlayerProfileActivity.EXTRA_RANKING_USER, user);
+                    context.startActivity(intent);
+                });
+                itemView.setClickable(true);
             }
         }
     }

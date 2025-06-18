@@ -4,7 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 
-import com.example.glean.fragment.community.NewsFragment;
+import com.example.glean.fragment.NewsFragment;
 import com.example.glean.fragment.DonationFragment;
 import com.example.glean.fragment.ClassifyFragment;
 

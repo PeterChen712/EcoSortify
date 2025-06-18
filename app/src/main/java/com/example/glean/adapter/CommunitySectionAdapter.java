@@ -4,12 +4,13 @@ import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 
-import com.example.glean.fragment.community.NewsFragment;
-// import com.example.glean.fragment.community.RankingFragment; // Temporarily disabled
+import com.example.glean.fragment.NewsFragment;
+import com.example.glean.fragment.RankingFragment;
 
 /**
- * Simplified Community Section Adapter without social posting features
- * Contains only: News, Ranking
+ * Community Section Adapter for main app sections
+ * Contains: News, Ranking
+ * No social posting features - just informational content
  */
 public class CommunitySectionAdapter extends FragmentStateAdapter {
 
@@ -22,8 +23,7 @@ public class CommunitySectionAdapter extends FragmentStateAdapter {
             case 0:
                 return new NewsFragment();
             case 1:
-                // return new RankingFragment(); // Temporarily disabled
-                return new NewsFragment(); // Fallback to news for now
+                return new RankingFragment();
             default:
                 return new NewsFragment();
         }

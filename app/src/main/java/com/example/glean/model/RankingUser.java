@@ -1,6 +1,10 @@
 package com.example.glean.model;
 
-public class RankingUser {
+import java.io.Serializable;
+
+public class RankingUser implements Serializable {
+    private static final long serialVersionUID = 1L;
+    
     private String userId;
     private String username;
     private String profileImageUrl;

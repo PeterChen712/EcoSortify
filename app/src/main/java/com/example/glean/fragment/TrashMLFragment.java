@@ -259,22 +259,32 @@ public class TrashMLFragment extends Fragment {
         File image = File.createTempFile(imageFileName, ".jpg", storageDir);
         currentPhotoPath = image.getAbsolutePath();
         return image;
-    }      @Override
+    }    @Override
     public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         
-        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == requireActivity().RESULT_OK) {
-            if (photoFile != null && photoFile.exists()) {
-                capturedImage = BitmapFactory.decodeFile(photoFile.getAbsolutePath());
-                  if (capturedImage != null) {
-                    displayCapturedImage();                    enableStartDetectionButton();
-                    updateInstructionText(getString(R.string.photo_taken_success));
+        if (requestCode == REQUEST_IMAGE_CAPTURE) {
+            if (resultCode == requireActivity().RESULT_OK) {
+                if (photoFile != null && photoFile.exists()) {
+                    capturedImage = BitmapFactory.decodeFile(photoFile.getAbsolutePath());
+                      if (capturedImage != null) {
+                        displayCapturedImage();                    enableStartDetectionButton();
+                        updateInstructionText(getString(R.string.photo_taken_success));
+                    } else {
+                        updateInstructionText(getString(R.string.failed_to_load_photo));
+                        cleanupTemporaryPhoto(); // Clean up if image loading failed
+                    }
                 } else {
-                    updateInstructionText(getString(R.string.failed_to_load_photo));
+                    updateInstructionText("Gagal mengambil foto. Coba lagi.");
+                    cleanupTemporaryPhoto(); // Clean up if file doesn't exist
                 }
+            } else {
+                // User cancelled photo capture or camera failed
+                updateInstructionText("Pengambilan foto dibatalkan.");
+                cleanupOnCancel(); // Clean up cancelled photo capture
             }
         }
-    }      private void displayCapturedImage() {
+    }private void displayCapturedImage() {
         try {
             // Hide camera instruction view
             View cameraInstruction = findViewSafely("layout_camera_instruction");
@@ -418,11 +428,14 @@ public class TrashMLFragment extends Fragment {
                     
                     Log.d(TAG, "Gemini classification successful: " + trashType + " (" + confidence + ")");
                 });
-            }              @Override
+            }            @Override
             public void onError(String error) {
                 requireActivity().runOnUiThread(() -> {
                     hideProgressOverlay();
                     enableStartDetectionButton();
+                    
+                    // Clean up temporary photo after failed classification
+                    cleanupTemporaryPhoto();
                     
                     String errorText = "❌ Deteksi gagal: " + error + "\n\nCoba lagi atau periksa koneksi internet kamu.";
                     updateInstructionText(errorText);
@@ -492,13 +505,19 @@ public class TrashMLFragment extends Fragment {
                     String message = generateConfidenceWarningMessage(confidence, trashType);
                     ((android.widget.TextView) warningText).setText(message);
                 }
-                
-                // Setup retake photo button
+                  // Setup retake photo button
                 View retakeBtn = findViewSafely("btnRetakePhoto", "btn_retake_photo");
                 if (retakeBtn != null) {
                     retakeBtn.setOnClickListener(v -> {
                         hideConfidenceWarning();
+                        
+                        // Clean up current photo before taking new one
+                        cleanupTemporaryPhoto();
+                        
                         resetForNewCapture();                        updateInstructionText(getString(R.string.ready_for_new_photo_detailed));
+                        
+                        // Take new photo
+                        checkPermissionsAndTakePhoto();
                     });
                 }
             }
@@ -766,16 +785,23 @@ public class TrashMLFragment extends Fragment {
             }
         }
     }
-    
-    @Override
+      @Override
     public void onDestroyView() {
         super.onDestroyView();
+        
+        // Clean up any remaining temporary photos
+        cleanupTemporaryPhoto();
+        
         binding = null;
     }
     
     @Override
     public void onDestroy() {
         super.onDestroy();
+        
+        // Final cleanup to ensure no memory leaks
+        cleanupTemporaryPhoto();
+        
         if (executor != null && !executor.isShutdown()) {
             executor.shutdown();
         }
@@ -818,8 +844,7 @@ public class TrashMLFragment extends Fragment {
                     confidence * 100);
         }
     }
-    
-    /**
+      /**
      * Clean up temporary photo file and memory after AI processing
      * This ensures photos are not permanently stored on device
      */
@@ -831,12 +856,51 @@ public class TrashMLFragment extends Fragment {
                 Log.d(TAG, "Temporary photo file deleted: " + deleted);
             }
             
-            // Clear photo path
-            currentPhotoPath = null;
+            // Clear captured image from memory to free RAM
+            if (capturedImage != null && !capturedImage.isRecycled()) {
+                capturedImage.recycle();
+                capturedImage = null;
+                Log.d(TAG, "Captured image bitmap recycled");
+            }
             
-            Log.d(TAG, "Temporary photo cleanup completed");
+            // Clear photo paths
+            currentPhotoPath = null;
+            photoFile = null;
+            
+            // Clear any cached images in ImageView
+            View imageView = findViewSafely("imageView", "image_view", "image_view_main", "ivTrashImage", "ivPhoto");
+            if (imageView instanceof android.widget.ImageView) {
+                ((android.widget.ImageView) imageView).setImageDrawable(null);
+            }
+            
+            Log.d(TAG, "Temporary photo cleanup completed - all resources freed");
         } catch (Exception e) {
             Log.e(TAG, "Error cleaning up temporary photo: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Clean up resources when user cancels classification process
+     */
+    private void cleanupOnCancel() {
+        try {
+            cleanupTemporaryPhoto();
+            
+            // Reset UI state
+            hideClassificationResult();
+            hideConfidenceWarning();
+            hideProgressOverlay();
+            
+            // Clear any pending AI requests (if possible)
+            if (geminiHelper != null) {
+                // Note: GeminiHelper should implement a cancel method if available
+                Log.d(TAG, "AI classification process cancelled");
+            }
+            
+            updateInstructionText("Proses dibatalkan. Ambil foto baru untuk mengklasifikasi sampah.");
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error during cleanup on cancel: " + e.getMessage());
         }
     }
 }
