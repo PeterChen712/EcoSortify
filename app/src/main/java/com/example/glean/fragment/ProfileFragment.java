@@ -68,10 +68,10 @@ public class ProfileFragment extends Fragment {    private static final String T
     private static final int REQUEST_STORAGE_PERMISSION = 1003;
     private static final int REQUEST_CAMERA_PERMISSION = 1004;
     private static final int SKIN_SELECTION_REQUEST = 1005;    private FragmentProfileBinding binding;
-    
-    // Firebase components
+      // Firebase components
     private FirebaseAuthManager authManager;
     private FirebaseFirestore firestore;
+    private com.example.glean.service.FirebaseDataManager firebaseDataManager;
     
     private AppDatabase db;
     private int userId;
@@ -82,10 +82,10 @@ public class ProfileFragment extends Fragment {    private static final String T
     private String profileImagePath;@Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        
-        // Initialize Firebase
+          // Initialize Firebase
         authManager = FirebaseAuthManager.getInstance(requireContext());
         firestore = FirebaseFirestore.getInstance();
+        firebaseDataManager = com.example.glean.service.FirebaseDataManager.getInstance(requireContext());
         
         db = AppDatabase.getInstance(requireContext());
         
@@ -348,31 +348,144 @@ public class ProfileFragment extends Fragment {    private static final String T
             }
         }
         return null;
-    }
-      private void loadUserData() {
-        // First try to load from Firebase if user is logged in
+    }    private void loadUserData() {
+        // First load from local database
+        loadUserDataFromLocal();
+        
+        // Then set up real-time Firebase synchronization if user is logged in
         if (authManager.isLoggedIn()) {
-            String firebaseUserId = authManager.getUserId();
-            Log.d(TAG, "Loading user data from Firebase for userId: " + firebaseUserId);
-            
-            firestore.collection("users").document(firebaseUserId)
-                    .get()
-                    .addOnSuccessListener(documentSnapshot -> {
-                        if (documentSnapshot.exists()) {
-                            Log.d(TAG, "Firebase user data found, updating UI");
-                            updateUIWithFirebaseData(documentSnapshot);
-                        } else {
-                            Log.d(TAG, "No Firebase data found, loading from local database");
-                            loadUserDataFromLocal();
-                        }
-                    })
-                    .addOnFailureListener(e -> {
-                        Log.e(TAG, "Failed to load from Firebase, using local data", e);
-                        loadUserDataFromLocal();
-                    });
+            Log.d(TAG, "🔥 Setting up real-time Firebase data synchronization");
+            setupFirebaseRealTimeSync();
         } else {
-            Log.d(TAG, "User not logged in with Firebase, loading from local database");
-            loadUserDataFromLocal();
+            Log.d(TAG, "User not logged in with Firebase, using local data only");
+        }
+    }
+    
+    /**
+     * Set up real-time Firebase data synchronization
+     */
+    private void setupFirebaseRealTimeSync() {
+        try {
+            // Subscribe to real-time user stats updates
+            firebaseDataManager.subscribeToUserStats(new com.example.glean.service.FirebaseDataManager.StatsDataCallback() {
+                @Override
+                public void onStatsLoaded(com.example.glean.service.FirebaseDataManager.UserStats stats) {
+                    if (getActivity() != null) {
+                        getActivity().runOnUiThread(() -> {
+                            Log.d(TAG, "🔥 Real-time stats update received - Points: " + stats.getTotalPoints());
+                            updateUIWithFirebaseStats(stats);
+                            Toast.makeText(requireContext(), "Data updated from server", Toast.LENGTH_SHORT).show();
+                        });
+                    }
+                }
+
+                @Override
+                public void onError(String error) {
+                    Log.w(TAG, "Firebase stats listener error: " + error);
+                }
+            });
+            
+            // Subscribe to real-time user profile updates
+            firebaseDataManager.subscribeToUserProfile(new com.example.glean.service.FirebaseDataManager.ProfileDataCallback() {
+                @Override
+                public void onProfileLoaded(com.example.glean.service.FirebaseDataManager.UserProfile profile) {
+                    if (getActivity() != null) {
+                        getActivity().runOnUiThread(() -> {
+                            Log.d(TAG, "🔥 Real-time profile update received");
+                            updateUIWithFirebaseProfile(profile);
+                        });
+                    }
+                }
+
+                @Override
+                public void onError(String error) {
+                    Log.w(TAG, "Firebase profile listener error: " + error);
+                }
+            });
+            
+            Log.d(TAG, "🔥 Real-time Firebase listeners activated");
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error setting up Firebase real-time sync", e);
+        }
+    }
+    
+    /**
+     * Update UI with real-time Firebase stats data
+     */
+    private void updateUIWithFirebaseStats(com.example.glean.service.FirebaseDataManager.UserStats stats) {
+        try {
+            if (binding != null) {
+                // Update points display
+                if (binding.tvTotalPoints != null) {
+                    binding.tvTotalPoints.setText(String.valueOf(stats.getTotalPoints()));
+                }
+                
+                // Update distance display
+                if (binding.tvTotalDistance != null) {
+                    binding.tvTotalDistance.setText(String.format(java.util.Locale.getDefault(), "%.1f", stats.getTotalDistance() / 1000f));
+                }
+                
+                // Update sessions count
+                if (binding.tvTotalPlogs != null) {
+                    binding.tvTotalPlogs.setText(String.valueOf(stats.getTotalSessions()));
+                }
+                
+                // Update local user entity if needed
+                if (currentUser != null && currentUser.getPoints() != stats.getTotalPoints()) {
+                    currentUser.setPoints(stats.getTotalPoints());
+                    executor.execute(() -> {
+                        try {
+                            db.userDao().update(currentUser);
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error updating local user with Firebase stats", e);
+                        }
+                    });
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error updating UI with Firebase stats", e);
+        }
+    }
+    
+    /**
+     * Update UI with real-time Firebase profile data
+     */
+    private void updateUIWithFirebaseProfile(com.example.glean.service.FirebaseDataManager.UserProfile profile) {
+        try {
+            if (binding != null && currentUser != null) {
+                // Update name if changed
+                if (profile.getFirstName() != null && !profile.getFirstName().equals(currentUser.getFirstName())) {
+                    currentUser.setFirstName(profile.getFirstName());
+                    if (binding.tvName != null) {
+                        String displayName = profile.getFirstName();
+                        if (profile.getLastName() != null && !profile.getLastName().isEmpty()) {
+                            displayName += " " + profile.getLastName();
+                        }
+                        binding.tvName.setText(displayName);
+                    }
+                }
+                
+                // Update profile image if changed
+                if (profile.getAvatarUrl() != null && !profile.getAvatarUrl().equals(currentUser.getProfileImagePath())) {
+                    currentUser.setProfileImagePath(profile.getAvatarUrl());
+                    loadProfileImage(currentUser);
+                }
+                
+                // Update local database
+                executor.execute(() -> {
+                    try {
+                        if (profile.getLastName() != null) {
+                            currentUser.setLastName(profile.getLastName());
+                        }
+                        db.userDao().update(currentUser);
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error updating local user with Firebase profile", e);
+                    }
+                });
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error updating UI with Firebase profile", e);
         }
     }
     
@@ -1116,31 +1229,64 @@ public class ProfileFragment extends Fragment {    private static final String T
                 .setNegativeButton(getString(R.string.cancel), null)
                 .show();
     }
-    
-    private void logout() {
+      private void logout() {
         try {
-            // Clear user data from SharedPreferences
-            SharedPreferences prefs = requireActivity().getSharedPreferences("USER_PREFS", 0);
-            prefs.edit().clear().apply();
+            Log.d(TAG, "🔴 Logout initiated from ProfileFragment");
             
-            SharedPreferences defaultPrefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
-            defaultPrefs.edit().remove("USER_ID").apply();
+            // Show loading/progress indicator
+            Toast.makeText(requireContext(), "Logging out...", Toast.LENGTH_SHORT).show();
+            
+            // Perform complete logout using Firebase Auth Manager
+            if (authManager != null) {
+                authManager.logout();
+                Log.d(TAG, "🔴 FirebaseAuthManager logout completed");
+            }
+            
+            // Clear any local references
+            currentUser = null;
+            userId = -1;
+            
+            // Reset any cached data
+            if (executor != null && !executor.isShutdown()) {
+                executor.shutdown();
+                executor = Executors.newSingleThreadExecutor();
+            }
+            
+            Log.d(TAG, "🔴 Local data cleared");
             
             Toast.makeText(requireContext(), getString(R.string.logged_out_success), Toast.LENGTH_SHORT).show();
             
-            // Navigate to login screen
+            // Navigate to login screen and clear back stack
             try {
                 NavController navController = Navigation.findNavController(requireView());
+                // Clear back stack by navigating to login with no back stack
+                navController.popBackStack(R.id.loginFragment, false);
                 navController.navigate(R.id.action_profileFragment_to_loginFragment);
-                requireActivity().finish();
+                
+                // Finish the current activity to prevent going back
+                if (getActivity() != null) {
+                    getActivity().finish();
+                }
             } catch (Exception e) {
                 Log.e(TAG, "Navigation error during logout", e);
-                requireActivity().finish();
+                // Fallback: finish activity directly
+                if (getActivity() != null) {
+                    getActivity().finish();
+                }
             }
             
         } catch (Exception e) {
             Log.e(TAG, "Error during logout", e);
             Toast.makeText(requireContext(), getString(R.string.logout_error), Toast.LENGTH_SHORT).show();
+            
+            // Even if there's an error, try to finish the activity
+            try {
+                if (getActivity() != null) {
+                    getActivity().finish();
+                }
+            } catch (Exception finishError) {
+                Log.e(TAG, "Error finishing activity during logout", finishError);
+            }
         }
     }
 
@@ -1208,19 +1354,31 @@ public class ProfileFragment extends Fragment {    private static final String T
         if (userId != -1 && currentUser != null) {
             loadUserData();
         }
-    }
-
-    @Override
+    }    @Override
     public void onDestroyView() {
         super.onDestroyView();
+        
+        // Stop Firebase real-time listeners
+        if (firebaseDataManager != null) {
+            Log.d(TAG, "🔥 Stopping Firebase real-time listeners");
+            firebaseDataManager.stopAllListeners();
+        }
+        
         binding = null;
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
+        
+        // Clean up executor
         if (executor != null && !executor.isShutdown()) {
             executor.shutdown();
+        }
+        
+        // Additional cleanup for Firebase listeners
+        if (firebaseDataManager != null) {
+            firebaseDataManager.stopAllListeners();
         }
     }
 

@@ -31,8 +31,7 @@ public class AuthGuard {
         void onAuthConfirmed();
         void onAuthCancelled();
     }
-    
-    /**
+      /**
      * Check if user can access a feature that requires authentication
      * @param context Application context
      * @param featureName Name of the feature being accessed
@@ -44,8 +43,8 @@ public class AuthGuard {
         
         // Check if feature requires login
         if (guestManager.featureRequiresLogin(featureName)) {
-            // Check if user is logged in
-            if (!authManager.isLoggedIn()) {
+            // Perform thorough authentication check
+            if (!isUserProperlyAuthenticated(authManager)) {
                 // User needs to login
                 callback.onAuthenticationRequired();
                 return;
@@ -62,6 +61,30 @@ public class AuthGuard {
         
         // User can proceed with the feature
         callback.onProceedWithFeature();
+    }
+    
+    /**
+     * Perform thorough authentication check
+     * @param authManager FirebaseAuthManager instance
+     * @return true if user is properly authenticated, false otherwise
+     */
+    private static boolean isUserProperlyAuthenticated(FirebaseAuthManager authManager) {
+        if (!authManager.isLoggedIn()) {
+            return false;
+        }
+        
+        // Check if we have valid user ID
+        String userId = authManager.getUserId();
+        if (userId == null || userId.isEmpty() || userId.equals("-1")) {
+            return false;
+        }
+        
+        // For Firebase users, check if Firebase user exists
+        if (authManager.getCurrentUser() == null && !userId.startsWith("local_")) {
+            return false;
+        }
+        
+        return true;
     }
     
     /**
@@ -116,14 +139,13 @@ public class AuthGuard {
                 Toast.LENGTH_LONG).show();
         }
     }
-    
-    /**
+      /**
      * Legacy method for plogging - now uses the new system
      */
     public static boolean requireAuthForPlogging(Context context, Fragment fragment, AuthRequiredCallback callback) {
         FirebaseAuthManager authManager = FirebaseAuthManager.getInstance(context);
         
-        if (authManager.isLoggedIn()) {
+        if (isUserProperlyAuthenticated(authManager)) {
             callback.onAuthConfirmed();
             return true;
         } else {

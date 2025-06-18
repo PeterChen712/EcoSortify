@@ -462,18 +462,18 @@ public class FirebaseDataManager {
     }
       /**
      * Update data statistik di database lokal
-     */
-    private void updateLocalStatsData(UserStats stats) {
-        // Log Firebase stats data for debugging
-        Log.d(TAG, "Stats data received from Firebase: " + stats.toString());
-        
-        // Note: Kita tidak update database lokal dari Firebase untuk menghindari konflik data
-        // Database lokal tetap menjadi source of truth, Firebase hanya menerima update dari lokal
-        // Namun kita bisa gunakan data Firebase untuk validasi atau debugging
+     */    private void updateLocalStatsData(UserStats stats) {
+        Log.d(TAG, "🔄 Firebase stats update received: " + stats.toString());
         
         executor.execute(() -> {
             try {
-                // Hitung statistik dari database lokal untuk perbandingan
+                int localUserId = getCurrentLocalUserId();
+                if (localUserId == -1) {
+                    Log.w(TAG, "Cannot update local stats - no valid local user ID");
+                    return;
+                }
+                
+                // Get current local stats for comparison
                 UserStats localStats = calculateUserStats();
                 
                 Log.d(TAG, "📊 Stats comparison:");
@@ -482,15 +482,35 @@ public class FirebaseDataManager {
                 Log.d(TAG, "   Local    - Points: " + localStats.getTotalPoints() + ", Distance: " + localStats.getTotalDistance() + 
                           ", Trash: " + localStats.getTotalTrashCollected() + ", Sessions: " + localStats.getTotalSessions());
                 
-                // Jika ada perbedaan signifikan, log sebagai warning
-                if (Math.abs(stats.getTotalPoints() - localStats.getTotalPoints()) > 0 ||
-                    Math.abs(stats.getTotalDistance() - localStats.getTotalDistance()) > 1.0 ||
-                    Math.abs(stats.getTotalTrashCollected() - localStats.getTotalTrashCollected()) > 0) {
-                    Log.w(TAG, "⚠️  Data discrepancy detected between Firebase and local database");
+                // Check if Firebase has newer data (manual updates from dashboard)
+                boolean firebaseHasNewerData = stats.getLastUpdated() > localStats.getLastUpdated();
+                boolean significantDifference = Math.abs(stats.getTotalPoints() - localStats.getTotalPoints()) > 0;
+                
+                if (firebaseHasNewerData && significantDifference) {
+                    Log.d(TAG, "🔄 Firebase has newer data - updating local user entity");
+                    
+                    // Update the user's points in local database to match Firebase
+                    UserEntity user = localDb.userDao().getUserByIdSync(localUserId);
+                    if (user != null) {
+                        int oldPoints = user.getPoints();
+                        user.setPoints(stats.getTotalPoints());
+                        localDb.userDao().update(user);
+                        
+                        Log.d(TAG, "✅ Local user points updated from " + oldPoints + " to " + stats.getTotalPoints());
+                        
+                        // Notify UI thread about the update
+                        new Handler(Looper.getMainLooper()).post(() -> {
+                            Log.d(TAG, "🔄 UI will be notified of real-time update");
+                        });
+                    }
+                } else if (significantDifference) {
+                    Log.w(TAG, "⚠️ Data discrepancy detected but local data is newer - Firebase may need update");
+                } else {
+                    Log.d(TAG, "✅ Firebase and local data are in sync");
                 }
                 
             } catch (Exception e) {
-                Log.e(TAG, "Error comparing local and Firebase stats", e);
+                Log.e(TAG, "Error updating local stats from Firebase", e);
             }
         });
     }
@@ -559,7 +579,44 @@ public class FirebaseDataManager {
             profileListener = null;
         }
     }
-      /**
+    
+    /**
+     * Complete logout - clear all listeners and reset singleton instance
+     */
+    public void logout() {
+        Log.d(TAG, "🔴 FirebaseDataManager logout initiated");
+        
+        // Stop all Firebase listeners
+        stopAllListeners();
+        
+        // Shutdown executor service
+        if (executor != null && !executor.isShutdown()) {
+            executor.shutdown();
+            try {
+                // Wait for tasks to complete with timeout
+                if (!executor.awaitTermination(5, java.util.concurrent.TimeUnit.SECONDS)) {
+                    executor.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                executor.shutdownNow();
+            }
+        }
+        
+        Log.d(TAG, "🔴 FirebaseDataManager logout completed - all resources cleared");
+    }
+    
+    /**
+     * Reset singleton instance (called during logout)
+     */
+    public static void resetInstance() {
+        Log.d(TAG, "🔴 Resetting FirebaseDataManager singleton instance");
+        if (instance != null) {
+            instance.logout();
+            instance = null;
+        }
+    }
+    
+    /**
      * Update Firebase stats setelah sesi plogging selesai
      * Menggunakan increment untuk menghindari race condition
      */    public void updateUserStatsAfterPloggingSession(DataSyncCallback callback) {
@@ -1088,5 +1145,54 @@ public class FirebaseDataManager {
                 Log.e(TAG, "❌ Error updating ranking data", e);
             }
         });
+    }
+    
+    /**
+     * Comprehensive test method to verify logout and real-time sync functionality
+     */
+    public void testLogoutAndRealTimeSync() {
+        Log.d(TAG, "🧪 === TESTING LOGOUT AND REAL-TIME SYNC ===");
+        
+        // Test authentication state
+        boolean isLoggedIn = isUserLoggedIn();
+        String userId = getCurrentUserId();
+        int localUserId = getCurrentLocalUserId();
+        
+        Log.d(TAG, "🧪 Current auth state:");
+        Log.d(TAG, "   Is logged in: " + isLoggedIn);
+        Log.d(TAG, "   Firebase user ID: " + userId);
+        Log.d(TAG, "   Local user ID: " + localUserId);
+        
+        if (isLoggedIn) {
+            // Test real-time listeners
+            Log.d(TAG, "🧪 Testing real-time listeners...");
+            
+            subscribeToUserStats(new StatsDataCallback() {
+                @Override
+                public void onStatsLoaded(UserStats stats) {
+                    Log.d(TAG, "🧪 ✅ Real-time stats listener working: " + stats.toString());
+                }
+
+                @Override
+                public void onError(String error) {
+                    Log.e(TAG, "🧪 ❌ Real-time stats listener error: " + error);
+                }
+            });
+            
+            // Test Firebase sync
+            syncAllUserData(new DataSyncCallback() {
+                @Override
+                public void onSuccess() {
+                    Log.d(TAG, "🧪 ✅ Firebase sync successful");
+                }
+
+                @Override
+                public void onError(String error) {
+                    Log.e(TAG, "🧪 ❌ Firebase sync error: " + error);
+                }
+            });
+        } else {
+            Log.d(TAG, "🧪 User not logged in - testing auth guards");
+        }
     }
 }

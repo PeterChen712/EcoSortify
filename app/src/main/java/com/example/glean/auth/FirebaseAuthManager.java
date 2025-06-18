@@ -438,14 +438,171 @@ public class FirebaseAuthManager {
             return -1;
         }
     }
-    
-    /**
-     * Logout user
+      /**
+     * Complete logout - clear all user data and session information
      */
     public void logout() {
-        mAuth.signOut();
-        googleSignInClient.signOut();
+        Log.d(TAG, "🔴 Complete logout initiated");
+        
+        // Sign out from Firebase
+        try {
+            mAuth.signOut();
+            Log.d(TAG, "🔴 Firebase auth signed out");
+        } catch (Exception e) {
+            Log.w(TAG, "Firebase sign out error", e);
+        }
+        
+        // Sign out from Google
+        try {
+            googleSignInClient.signOut();
+            Log.d(TAG, "🔴 Google sign-in signed out");
+        } catch (Exception e) {
+            Log.w(TAG, "Google sign out error", e);
+        }
+        
+        // Clear login state from SharedPreferences
         clearLoginState();
+        
+        // Clear all user-specific SharedPreferences
+        clearAllUserData();
+        
+        // Reset FirebaseDataManager instance
+        try {
+            Class<?> firebaseDataManagerClass = Class.forName("com.example.glean.service.FirebaseDataManager");
+            java.lang.reflect.Method resetMethod = firebaseDataManagerClass.getMethod("resetInstance");
+            resetMethod.invoke(null);
+            Log.d(TAG, "🔴 FirebaseDataManager instance reset");
+        } catch (Exception e) {
+            Log.w(TAG, "Could not reset FirebaseDataManager", e);
+        }
+        
+        Log.d(TAG, "🔴 Complete logout finished");
+    }
+    
+    /**
+     * Clear all user-related data from SharedPreferences
+     */
+    private void clearAllUserData() {
+        try {
+            // Clear main auth preferences
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.clear();
+            editor.apply();
+            
+            // Clear user preferences
+            SharedPreferences userPrefs = context.getSharedPreferences("USER_PREFS", Context.MODE_PRIVATE);
+            userPrefs.edit().clear().apply();
+            
+            // Clear local users (development mode)
+            SharedPreferences localUsers = context.getSharedPreferences("local_users", Context.MODE_PRIVATE);
+            localUsers.edit().clear().apply();
+            
+            // Clear default preferences
+            android.preference.PreferenceManager.getDefaultSharedPreferences(context)
+                    .edit()
+                    .remove("USER_ID")
+                    .remove("is_logged_in")
+                    .remove("user_id")
+                    .remove("user_email")
+                    .remove("user_name")
+                    .apply();
+            
+            // Clear any other user-specific preferences
+            String[] prefsToCheck = {"user_prefs", "app_prefs", "glean_prefs"};
+            for (String prefsName : prefsToCheck) {
+                try {
+                    SharedPreferences preferences = context.getSharedPreferences(prefsName, Context.MODE_PRIVATE);
+                    preferences.edit().clear().apply();
+                } catch (Exception e) {
+                    Log.w(TAG, "Could not clear preferences: " + prefsName, e);
+                }
+            }
+            
+            // Clear app cache directories
+            clearAppCache();
+            
+            Log.d(TAG, "🔴 All user data cleared from SharedPreferences");
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error clearing user data", e);
+        }
+    }
+    
+    /**
+     * Clear app cache and temporary files during logout
+     */
+    private void clearAppCache() {
+        try {
+            // Clear cache directory
+            java.io.File cacheDir = context.getCacheDir();
+            if (cacheDir != null && cacheDir.exists()) {
+                deleteRecursive(cacheDir);
+                Log.d(TAG, "🔴 Cache directory cleared");
+            }
+            
+            // Clear external cache directory
+            java.io.File externalCacheDir = context.getExternalCacheDir();
+            if (externalCacheDir != null && externalCacheDir.exists()) {
+                deleteRecursive(externalCacheDir);
+                Log.d(TAG, "🔴 External cache directory cleared");
+            }
+            
+            // Clear specific app directories that might contain user data
+            java.io.File filesDir = context.getFilesDir();
+            if (filesDir != null) {
+                java.io.File profileImagesDir = new java.io.File(filesDir, "profile_images");
+                if (profileImagesDir.exists()) {
+                    deleteRecursive(profileImagesDir);
+                    Log.d(TAG, "🔴 Profile images cleared");
+                }
+                
+                java.io.File imagesDir = new java.io.File(filesDir, "images");
+                if (imagesDir.exists()) {
+                    deleteRecursive(imagesDir);
+                    Log.d(TAG, "🔴 Images directory cleared");
+                }
+            }
+            
+        } catch (Exception e) {
+            Log.w(TAG, "Error clearing app cache", e);
+        }
+    }
+    
+    /**
+     * Recursively delete directory and all its contents
+     */
+    private void deleteRecursive(java.io.File fileOrDirectory) {
+        try {
+            if (fileOrDirectory.isDirectory()) {
+                java.io.File[] children = fileOrDirectory.listFiles();
+                if (children != null) {
+                    for (java.io.File child : children) {
+                        deleteRecursive(child);
+                    }
+                }
+            }
+            boolean deleted = fileOrDirectory.delete();
+            if (!deleted) {
+                Log.w(TAG, "Could not delete: " + fileOrDirectory.getAbsolutePath());
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Error deleting file/directory: " + fileOrDirectory.getAbsolutePath(), e);
+        }
+    }
+    
+    /**
+     * Reset singleton instance (called during complete app logout)
+     */
+    public static void resetInstance() {
+        Log.d(TAG, "🔴 Resetting FirebaseAuthManager singleton instance");
+        if (instance != null) {
+            try {
+                instance.clearAllUserData();
+            } catch (Exception e) {
+                Log.w(TAG, "Error during instance reset", e);
+            }
+            instance = null;
+        }
     }
     
     /**
