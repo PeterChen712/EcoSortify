@@ -13,15 +13,8 @@
     <item
         android:id="@+id/eksplorasiFragment"
         android:icon="@drawable/ic_explore"
-        android:title="Eksplorasi" />
-
-    <item
+        android:title="Eksplorasi" />    <item
         android:id="@+id/gameFragment"
         android:icon="@drawable/ic_game"
         android:title="Game" />
-
-    <item
-        android:id="@+id/profileFragment"
-        android:icon="@drawable/ic_profile"
-        android:title="Profile" />
 </menu>

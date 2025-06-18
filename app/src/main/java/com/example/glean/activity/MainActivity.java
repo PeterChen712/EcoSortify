@@ -89,12 +89,8 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             } else if (itemId == R.id.eksplorasiFragment) {
                 navController.navigate(R.id.eksplorasiFragment);
-                return true;
-            } else if (itemId == R.id.gameFragment) {
+                return true;            } else if (itemId == R.id.gameFragment) {
                 navController.navigate(R.id.gameFragment);
-                return true;
-            } else if (itemId == R.id.profileFragment) {
-                navController.navigate(R.id.profileFragment);
                 return true;
             }
             return false;

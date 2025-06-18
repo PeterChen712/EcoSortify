@@ -49,10 +49,12 @@
             app:destination="@id/trashMLFragment" />
         <action
             android:id="@+id/action_ploggingFragment_to_routeMapFragment"
-            app:destination="@id/routeMapFragment" />
-        <action
+            app:destination="@id/routeMapFragment" />        <action
             android:id="@+id/action_ploggingFragment_to_ploggingSummaryFragment"
             app:destination="@id/ploggingSummaryFragment" />
+        <action
+            android:id="@+id/action_ploggingFragment_to_profileFragment"
+            app:destination="@id/profileFragment" />
     </fragment>
 
     <fragment
@@ -135,14 +137,34 @@
         android:id="@+id/rankingFragment"
         android:name="com.example.glean.fragment.RankingFragment"
         android:label="Ranking"
-        tools:layout="@layout/fragment_ranking" />
-
-    <!-- Plogging Fragment (directly use existing one) -->
+        tools:layout="@layout/fragment_ranking" />    <!-- Plogging Fragment (directly use existing one) -->
     <fragment
         android:id="@+id/ploggingTabsFragment"
         android:name="com.example.glean.fragment.PloggingFragment"
         android:label="Plogging"
-        tools:layout="@layout/fragment_plogging" />
+        tools:layout="@layout/fragment_plogging">
+        <action
+            android:id="@+id/action_ploggingTabsFragment_to_summaryFragment"
+            app:destination="@id/summaryFragment" />
+        <action
+            android:id="@+id/action_ploggingTabsFragment_to_trashMLFragment"
+            app:destination="@id/trashMLFragment" />
+        <action
+            android:id="@+id/action_ploggingTabsFragment_to_routeMapFragment"
+            app:destination="@id/routeMapFragment" />
+        <action
+            android:id="@+id/action_ploggingTabsFragment_to_ploggingSummaryFragment"
+            app:destination="@id/ploggingSummaryFragment" />
+        <action
+            android:id="@+id/action_ploggingTabsFragment_to_profileFragment"
+            app:destination="@id/profileFragment" />
+        <action
+            android:id="@+id/action_ploggingTabsFragment_to_statsFragment"
+            app:destination="@id/statsFragment" />
+        <action
+            android:id="@+id/action_ploggingTabsFragment_to_rankingFragment"
+            app:destination="@id/rankingFragment" />
+    </fragment>
 
     <!-- New Eksplorasi Fragment -->
     <fragment
