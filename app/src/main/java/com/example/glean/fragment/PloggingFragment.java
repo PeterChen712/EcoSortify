@@ -2207,14 +2207,16 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
     private void showMenuPopup(View anchor) {
         PopupMenu popup = new PopupMenu(requireContext(), anchor);
         popup.getMenuInflater().inflate(R.menu.plogging_menu, popup.getMenu());
-        
-        popup.setOnMenuItemClickListener(item -> {
+          popup.setOnMenuItemClickListener(item -> {
             int itemId = item.getItemId();
             if (itemId == R.id.menu_stats) {
                 navigateToStats();
                 return true;
             } else if (itemId == R.id.menu_ranking) {
                 navigateToRanking();
+                return true;
+            } else if (itemId == R.id.menu_profile) {
+                navigateToProfile();
                 return true;
             }
             return false;
@@ -2231,6 +2233,31 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         if (getActivity() != null) {
             Navigation.findNavController(requireView()).navigate(R.id.rankingFragment);
         }
+    }
+
+    private void navigateToProfile() {
+        // Check authentication and network for Profile feature
+        AuthGuard.checkFeatureAccess(getActivity(), "profile", new AuthGuard.AuthCheckCallback() {
+            @Override
+            public void onAuthenticationRequired() {
+                // User not logged in, redirect to login
+                AuthGuard.redirectToLogin(getActivity(), "profile");
+            }
+            
+            @Override
+            public void onProceedWithFeature() {
+                // User is authenticated, navigate to profile
+                if (getActivity() != null) {
+                    Navigation.findNavController(requireView()).navigate(R.id.profileFragment);
+                }
+            }
+            
+            @Override
+            public void onNetworkRequired() {
+                // User offline, show network required message
+                showNetworkStatusMessage("📱 Fitur Profile membutuhkan koneksi internet", false);
+            }
+        });
     }
 
     // Notification Banner Methods    // Notification banner methods removed - using bottom status indicator instead

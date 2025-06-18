@@ -4,75 +4,95 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp">
+    android:orientation="vertical">
 
-    <!-- Header with high score -->
+    <!-- Header -->
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar_game"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="?attr/colorPrimary"
+        android:elevation="4dp"
+        app:title="🎮 Game Eco Sorting"
+        app:titleTextColor="?attr/colorOnPrimary"
+        style="@style/Widget.Material3.Toolbar" />
+
+    <!-- Content Container -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical">
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="16dp">
 
+        <!-- Header with high score -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/high_score_text"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textAppearance="?attr/textAppearanceSubtitle1"
+                tools:text="Skor Tertinggi: 250" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/help_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="48dp"
+                android:minHeight="48dp"
+                app:icon="@drawable/ic_help_24"
+                app:iconGravity="textStart"
+                app:iconPadding="0dp"
+                android:insetLeft="0dp"
+                android:insetTop="0dp"
+                android:insetRight="0dp"
+                android:insetBottom="0dp"
+                style="?attr/materialIconButtonStyle" />
+        </LinearLayout>
+
+        <!-- Game instructions -->
         <TextView
-            android:id="@+id/high_score_text"
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="16dp"
+            android:text="Seret sampah ke tempat sampah yang sesuai untuk mendapatkan poin!"
+            android:textAppearance="?attr/textAppearanceBody2"/>
+
+        <!-- Game container -->
+        <FrameLayout
+            android:id="@+id/game_container"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
             android:layout_weight="1"
-            android:textAppearance="?attr/textAppearanceSubtitle1"
-            tools:text="Skor Tertinggi: 250" />
+            android:background="@drawable/game_background"/>
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/help_button"
-            android:layout_width="wrap_content"
+        <!-- Game controls -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:minWidth="48dp"
-            android:minHeight="48dp"
-            app:icon="@drawable/ic_help_24"
-            app:iconGravity="textStart"
-            app:iconPadding="0dp"
-            android:insetLeft="0dp"
-            android:insetTop="0dp"
-            android:insetRight="0dp"
-            android:insetBottom="0dp"
-            style="?attr/materialIconButtonStyle" />
-    </LinearLayout>    <!-- Game instructions -->
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="16dp"
-        android:text="Seret sampah ke tempat sampah yang sesuai untuk mendapatkan poin!"
-        android:textAppearance="?attr/textAppearanceBody2"/>
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginTop="16dp">
 
-    <!-- Game container -->
-    <FrameLayout
-        android:id="@+id/game_container"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:background="@drawable/game_background"/>
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/play_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Mulai"
+                app:icon="@drawable/ic_play_24" />
 
-    <!-- Game controls -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center"
-        android:layout_marginTop="16dp">
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/play_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Mulai"
-            app:icon="@drawable/ic_play_24" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/pause_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Jeda"
-            app:icon="@drawable/ic_pause_24" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/pause_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Jeda"
+                app:icon="@drawable/ic_pause_24" />
+        </LinearLayout>
     </LinearLayout>
 </LinearLayout>

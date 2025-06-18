@@ -112,6 +112,9 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
                 return true;
+            } else if (itemId == R.id.aiChatFragment) {
+                navController.navigate(R.id.aiChatFragment);
+                return true;
             } else if (itemId == R.id.eksplorasiFragment) {
                 navController.navigate(R.id.eksplorasiFragment);
                 return true;            } else if (itemId == R.id.gameFragment) {
