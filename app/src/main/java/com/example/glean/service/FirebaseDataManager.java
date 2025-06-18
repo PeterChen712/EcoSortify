@@ -37,6 +37,7 @@ public class FirebaseDataManager {
     private AppDatabase localDb;
     private ExecutorService executor;
     private Context context;
+    private FirebaseAuthManager authManager;
     private ListenerRegistration statsListener;
     private ListenerRegistration rankingListener;
     private ListenerRegistration profileListener;
@@ -66,6 +67,7 @@ public class FirebaseDataManager {
         this.firestore = FirebaseFirestore.getInstance();
         this.localDb = AppDatabase.getInstance(context);
         this.executor = Executors.newSingleThreadExecutor();
+        this.authManager = FirebaseAuthManager.getInstance(context);
     }
     
     public static synchronized FirebaseDataManager getInstance(Context context) {
@@ -279,15 +281,37 @@ public class FirebaseDataManager {
         } catch (Exception e) {
             Log.e(TAG, "Error in syncUserProfile", e);
         }
-    }
-    
-    /**
+    }    /**
      * Hitung statistik user dari data lokal
      */
     private UserStats calculateUserStats() {
         try {
+            Log.d(TAG, "🔢 === CALCULATING USER STATS ===");
+            
+            // Try multiple ways to get correct user ID
             int currentUserId = getCurrentLocalUserId();
+            
+            // If getCurrentLocalUserId returns -1, try getting from SharedPreferences directly
+            if (currentUserId == -1) {
+                android.content.SharedPreferences prefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE);
+                currentUserId = prefs.getInt("USER_ID", -1);
+                Log.w(TAG, "🔍 FirebaseAuthManager returned -1, trying USER_ID from SharedPreferences: " + currentUserId);
+            }
+            
+            Log.d(TAG, "🔍 Using currentUserId: " + currentUserId + " to calculate stats");
+            
+            if (currentUserId == -1) {
+                Log.e(TAG, "❌ CRITICAL: Cannot find valid user ID! Stats will be zero.");
+                return new UserStats(0, 0.0, 0, 0, 0, System.currentTimeMillis());
+            }
+            
             List<RecordEntity> records = localDb.recordDao().getRecordsByUserIdSync(currentUserId);
+            Log.d(TAG, "🔍 Found " + records.size() + " records for userId: " + currentUserId);
+            
+            if (records.isEmpty()) {
+                Log.w(TAG, "⚠️ No records found for user ID: " + currentUserId + " - stats will be zero");
+                return new UserStats(0, 0.0, 0, 0, 0, System.currentTimeMillis());
+            }
             
             int totalPoints = 0;
             double totalDistance = 0.0;
@@ -296,20 +320,42 @@ public class FirebaseDataManager {
             long totalDuration = 0;
             
             for (RecordEntity record : records) {
-                totalPoints += record.getPoints();
-                totalDistance += record.getDistance();
-                totalDuration += record.getDuration();
-                
-                // Get trash count for this record
-                int trashCount = localDb.trashDao().getTrashCountByRecordIdSync(record.getId());
-                totalTrashCollected += trashCount;
+                try {
+                    int recordPoints = record.getPoints();
+                    double recordDistance = record.getDistance();
+                    long recordDuration = record.getDuration();
+                    
+                    totalPoints += recordPoints;
+                    totalDistance += recordDistance;
+                    totalDuration += recordDuration;
+                    
+                    // Get trash count for this record
+                    int trashCount = localDb.trashDao().getTrashCountByRecordIdSync(record.getId());
+                    totalTrashCollected += trashCount;
+                    
+                    Log.d(TAG, "🔍 Record ID " + record.getId() + ": points=" + recordPoints + 
+                              ", distance=" + recordDistance + ", duration=" + recordDuration + ", trash=" + trashCount);
+                } catch (Exception e) {
+                    Log.e(TAG, "Error processing record ID " + record.getId(), e);
+                }
             }
             
-            return new UserStats(totalPoints, totalDistance, totalTrashCollected, 
-                               totalSessions, totalDuration, System.currentTimeMillis());
+            // Always use current timestamp for lastUpdated to ensure Firebase reflects latest sync
+            long currentTimestamp = System.currentTimeMillis();
+            
+            UserStats stats = new UserStats(totalPoints, totalDistance, totalTrashCollected, 
+                               totalSessions, totalDuration, currentTimestamp);
+            
+            Log.d(TAG, "📊 Calculated fresh user stats:");
+            Log.d(TAG, "   Points: " + totalPoints + ", Distance: " + String.format("%.2f km", totalDistance/1000));
+            Log.d(TAG, "   Trash: " + totalTrashCollected + ", Sessions: " + totalSessions);
+            Log.d(TAG, "   Duration: " + (totalDuration/60000) + " minutes, LastUpdated: " + new java.util.Date(currentTimestamp));
+            Log.d(TAG, "🔢 === END CALCULATING USER STATS ===");
+            
+            return stats;
                                
         } catch (Exception e) {
-            Log.e(TAG, "Error calculating user stats", e);
+            Log.e(TAG, "❌ CRITICAL ERROR in calculateUserStats", e);
             return new UserStats(0, 0.0, 0, 0, 0, System.currentTimeMillis());
         }
     }
@@ -366,14 +412,39 @@ public class FirebaseDataManager {
         
         return null;
     }
-    
-    /**
+      /**
      * Update data statistik di database lokal
      */
     private void updateLocalStatsData(UserStats stats) {
-        // This could be used to update local cache if needed
-        // For now, we rely on the local database as source of truth
+        // Log Firebase stats data for debugging
         Log.d(TAG, "Stats data received from Firebase: " + stats.toString());
+        
+        // Note: Kita tidak update database lokal dari Firebase untuk menghindari konflik data
+        // Database lokal tetap menjadi source of truth, Firebase hanya menerima update dari lokal
+        // Namun kita bisa gunakan data Firebase untuk validasi atau debugging
+        
+        executor.execute(() -> {
+            try {
+                // Hitung statistik dari database lokal untuk perbandingan
+                UserStats localStats = calculateUserStats();
+                
+                Log.d(TAG, "📊 Stats comparison:");
+                Log.d(TAG, "   Firebase - Points: " + stats.getTotalPoints() + ", Distance: " + stats.getTotalDistance() + 
+                          ", Trash: " + stats.getTotalTrashCollected() + ", Sessions: " + stats.getTotalSessions());
+                Log.d(TAG, "   Local    - Points: " + localStats.getTotalPoints() + ", Distance: " + localStats.getTotalDistance() + 
+                          ", Trash: " + localStats.getTotalTrashCollected() + ", Sessions: " + localStats.getTotalSessions());
+                
+                // Jika ada perbedaan signifikan, log sebagai warning
+                if (Math.abs(stats.getTotalPoints() - localStats.getTotalPoints()) > 0 ||
+                    Math.abs(stats.getTotalDistance() - localStats.getTotalDistance()) > 1.0 ||
+                    Math.abs(stats.getTotalTrashCollected() - localStats.getTotalTrashCollected()) > 0) {
+                    Log.w(TAG, "⚠️  Data discrepancy detected between Firebase and local database");
+                }
+                
+            } catch (Exception e) {
+                Log.e(TAG, "Error comparing local and Firebase stats", e);
+            }
+        });
     }
     
     /**
@@ -440,24 +511,221 @@ public class FirebaseDataManager {
             profileListener = null;
         }
     }
-    
+      /**
+     * Update Firebase stats setelah sesi plogging selesai
+     * Menggunakan increment untuk menghindari race condition
+     */    public void updateUserStatsAfterPloggingSession(DataSyncCallback callback) {
+        Log.d(TAG, "🔄 === UPDATE FIREBASE STATS AFTER PLOGGING SESSION ===");
+        
+        if (!isUserLoggedIn()) {
+            Log.e(TAG, "❌ Cannot update Firebase stats - user not logged in");
+            callback.onError("User not logged in");
+            return;
+        }
+        
+        executor.execute(() -> {
+            try {
+                String userId = getCurrentUserId();
+                int localUserId = getCurrentLocalUserId();
+                Log.d(TAG, "🔄 Starting Firebase stats update for user: " + userId + " (local ID: " + localUserId + ")");
+                
+                // Calculate fresh stats from local data
+                UserStats freshStats = calculateUserStats();
+                
+                // Log the stats we're about to send to Firebase
+                Log.d(TAG, "🔄 Stats to be sent to Firebase:");
+                Log.d(TAG, "   Points: " + freshStats.getTotalPoints());
+                Log.d(TAG, "   Distance: " + freshStats.getTotalDistance() + " meters");
+                Log.d(TAG, "   Trash: " + freshStats.getTotalTrashCollected());
+                Log.d(TAG, "   Sessions: " + freshStats.getTotalSessions());
+                Log.d(TAG, "   Duration: " + freshStats.getTotalDuration() + " ms");
+                
+                // Validate that we have meaningful data before sending to Firebase
+                if (freshStats.getTotalSessions() == 0) {
+                    Log.w(TAG, "⚠️ WARNING: No sessions found, Firebase update may not be meaningful");
+                }
+                
+                // Update Firebase with latest data
+                firestore.collection(COLLECTION_STATS)
+                        .document(userId)
+                        .set(freshStats)
+                        .addOnSuccessListener(aVoid -> {
+                            Log.d(TAG, "✅ Firebase user stats updated successfully after plogging session");
+                            Log.d(TAG, "   Updated stats: " + freshStats.toString());
+                            callback.onSuccess();
+                        })
+                        .addOnFailureListener(e -> {
+                            Log.e(TAG, "❌ Error updating Firebase user stats after plogging session", e);
+                            callback.onError(e.getMessage());
+                        });
+                        
+            } catch (Exception e) {
+                Log.e(TAG, "❌ Error in updateUserStatsAfterPloggingSession", e);
+                callback.onError(e.getMessage());
+            }
+        });
+    }
+
     /**
-     * Helper methods
+     * Update Firebase stats with retry mechanism untuk meningkatkan reliabilitas
      */
+    public void updateUserStatsWithRetry(DataSyncCallback callback) {
+        updateUserStatsWithRetry(callback, 3); // Default 3 attempts
+    }
+    
+    private void updateUserStatsWithRetry(DataSyncCallback callback, int attemptsLeft) {
+        if (!isUserLoggedIn()) {
+            callback.onError("User not logged in");
+            return;
+        }
+        
+        if (attemptsLeft <= 0) {
+            callback.onError("Failed to update Firebase stats after multiple attempts");
+            return;
+        }
+        
+        updateUserStatsAfterPloggingSession(new DataSyncCallback() {
+            @Override
+            public void onSuccess() {
+                callback.onSuccess();
+            }
+
+            @Override
+            public void onError(String error) {
+                Log.w(TAG, "Firebase update attempt failed, " + (attemptsLeft - 1) + " attempts remaining: " + error);
+                
+                if (attemptsLeft > 1) {
+                    // Retry after a delay
+                    new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                        updateUserStatsWithRetry(callback, attemptsLeft - 1);
+                    }, 2000); // 2 second delay between retries
+                } else {
+                    callback.onError("Failed after retries: " + error);
+                }
+            }
+        });
+    }
+
+    /**
+     * Verify Firebase stats update by reading back the data
+     * This helps debug if the update actually worked
+     */
+    public void verifyFirebaseStatsUpdate(DataSyncCallback callback) {
+        if (!isUserLoggedIn()) {
+            callback.onError("User not logged in");
+            return;
+        }
+        
+        String userId = getCurrentUserId();
+        Log.d(TAG, "🔍 Verifying Firebase stats for user: " + userId);
+        
+        firestore.collection(COLLECTION_STATS)
+                .document(userId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        UserStats firebaseStats = documentSnapshot.toObject(UserStats.class);
+                        if (firebaseStats != null) {
+                            Log.d(TAG, "✅ Firebase verification - current stats in Firebase:");
+                            Log.d(TAG, "   Points: " + firebaseStats.getTotalPoints());
+                            Log.d(TAG, "   Distance: " + firebaseStats.getTotalDistance() + " meters");
+                            Log.d(TAG, "   Trash: " + firebaseStats.getTotalTrashCollected());
+                            Log.d(TAG, "   Sessions: " + firebaseStats.getTotalSessions());
+                            Log.d(TAG, "   Duration: " + firebaseStats.getTotalDuration() + " ms");
+                            Log.d(TAG, "   LastUpdated: " + new java.util.Date(firebaseStats.getLastUpdated()));
+                            callback.onSuccess();
+                        } else {
+                            Log.w(TAG, "⚠️ Firebase document exists but data is null");
+                            callback.onError("Firebase data is null");
+                        }
+                    } else {
+                        Log.w(TAG, "⚠️ Firebase document does not exist for user: " + userId);
+                        callback.onError("Firebase document does not exist");
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "❌ Error verifying Firebase stats", e);
+                    callback.onError(e.getMessage());
+                });
+    }
+
+    /**
+     * Debug method to check current local database state
+     */
+    public void debugCurrentDatabaseState() {
+        executor.execute(() -> {
+            try {
+                Log.d(TAG, "🔍 === DEBUG DATABASE STATE ===");
+                
+                // Check multiple user ID sources
+                int userIdFromFirebase = getCurrentLocalUserId();
+                android.content.SharedPreferences userPrefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE);
+                int userIdFromPrefs = userPrefs.getInt("USER_ID", -1);
+                
+                Log.d(TAG, "🔍 User ID from FirebaseAuthManager: " + userIdFromFirebase);
+                Log.d(TAG, "🔍 User ID from user_prefs: " + userIdFromPrefs);
+                
+                // Check all users in database
+                List<UserEntity> allUsers = localDb.userDao().getAllUsersSync();
+                Log.d(TAG, "🔍 Total users in database: " + allUsers.size());
+                for (UserEntity user : allUsers) {
+                    Log.d(TAG, "🔍 User ID: " + user.getId() + ", Name: " + user.getFirstName() + " " + user.getLastName());
+                }
+                
+                // Check records for each user ID
+                for (int userId : new int[]{userIdFromFirebase, userIdFromPrefs}) {
+                    if (userId != -1) {
+                        List<RecordEntity> records = localDb.recordDao().getRecordsByUserIdSync(userId);
+                        Log.d(TAG, "🔍 Records for userId " + userId + ": " + records.size());
+                        
+                        for (RecordEntity record : records) {
+                            int trashCount = localDb.trashDao().getTrashCountByRecordIdSync(record.getId());
+                            Log.d(TAG, "🔍   Record " + record.getId() + ": points=" + record.getPoints() + 
+                                      ", distance=" + record.getDistance() + ", duration=" + record.getDuration() + 
+                                      ", trash=" + trashCount);
+                        }
+                    }
+                }
+                
+                Log.d(TAG, "🔍 === END DEBUG ===");
+                
+            } catch (Exception e) {
+                Log.e(TAG, "Error in debugCurrentDatabaseState", e);
+            }
+        });
+    }
+
+    // Helper methods for authentication
     private boolean isUserLoggedIn() {
-        return FirebaseAuthManager.getInstance(context).isLoggedIn();
+        return authManager != null && authManager.isLoggedIn();
     }
-    
+
     private String getCurrentUserId() {
-        return FirebaseAuthManager.getInstance(context).getCurrentUserId();
+        if (authManager == null) return null;
+        
+        // Get Firebase UID if using real Firebase authentication
+        String firebaseUserId = authManager.getCurrentUserId();
+        if (firebaseUserId != null && !firebaseUserId.isEmpty() && !firebaseUserId.equals("-1")) {
+            Log.d(TAG, "🔍 Using Firebase UID: " + firebaseUserId);
+            return firebaseUserId;
+        }
+        
+        // Fallback: If using local authentication, generate a consistent Firebase-compatible ID
+        int localUserId = authManager.getCurrentLocalUserId();
+        if (localUserId != -1) {
+            String localFirebaseId = "local_user_" + localUserId;
+            Log.d(TAG, "🔍 Using local Firebase-compatible ID: " + localFirebaseId + " (from local ID: " + localUserId + ")");
+            return localFirebaseId;
+        }
+        
+        Log.w(TAG, "⚠️ No valid user ID found");
+        return null;
     }
-    
+
     private int getCurrentLocalUserId() {
-        // Get local user ID from SharedPreferences or database
-        // This should match the logic in your existing code
-        return FirebaseAuthManager.getInstance(context).getCurrentLocalUserId();
+        return authManager != null ? authManager.getCurrentLocalUserId() : -1;
     }
-    
+
     // Data classes for Firebase
     public static class UserStats {
         private int totalPoints;
@@ -598,5 +866,140 @@ public class FirebaseDataManager {
         
         public long getLastUpdated() { return lastUpdated; }
         public void setLastUpdated(long lastUpdated) { this.lastUpdated = lastUpdated; }
+    }
+    
+    /**
+     * Manual method to force update Firebase stats for testing
+     */
+    public void forceUpdateFirebaseStatsForTesting(DataSyncCallback callback) {
+        Log.d(TAG, "🧪 === FORCE UPDATE FOR TESTING ===");
+        debugCurrentDatabaseState();
+        
+        // Try both update methods
+        updateUserStatsAfterPloggingSession(callback);
+        
+        // Also try the new force update method
+        int localUserId = getCurrentLocalUserId();
+        if (localUserId != -1) {
+            // Find the latest record for this user
+            executor.execute(() -> {
+                try {
+                    List<RecordEntity> records = localDb.recordDao().getRecordsByUserIdSync(localUserId);
+                    if (!records.isEmpty()) {
+                        RecordEntity latestRecord = records.get(records.size() - 1);
+                        forceUpdateAfterPloggingSession((int) latestRecord.getId(), new DataSyncCallback() {
+                            @Override
+                            public void onSuccess() {
+                                Log.d(TAG, "🧪 Force update testing completed successfully");
+                            }
+                            
+                            @Override
+                            public void onError(String error) {
+                                Log.e(TAG, "🧪 Force update testing failed: " + error);
+                            }
+                        });
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Error in testing force update", e);
+                }
+            });
+        }
+    }
+
+    /**
+     * Manual method to force update Firebase stats immediately after plogging session
+     * This ensures Firebase is updated with latest data
+     */
+    public void forceUpdateAfterPloggingSession(int recordId, DataSyncCallback callback) {
+        Log.d(TAG, "🚀 === FORCE UPDATE AFTER PLOGGING SESSION ===");
+        Log.d(TAG, "🔍 Triggered by record ID: " + recordId);
+        
+        if (!isUserLoggedIn()) {
+            Log.e(TAG, "❌ Cannot force update Firebase stats - user not logged in");
+            callback.onError("User not logged in");
+            return;
+        }
+        
+        executor.execute(() -> {
+            try {
+                String userId = getCurrentUserId();
+                int localUserId = getCurrentLocalUserId();
+                
+                Log.d(TAG, "🔍 Force update Firebase for user: " + userId + " (local ID: " + localUserId + ")");
+                Log.d(TAG, "🔍 After saving record ID: " + recordId);
+                
+                // Wait a moment to ensure database transaction is complete
+                Thread.sleep(500);
+                
+                // Calculate fresh stats from local data including the new record
+                UserStats freshStats = calculateUserStats();
+                
+                if (freshStats == null) {
+                    Log.e(TAG, "❌ Failed to calculate stats");
+                    callback.onError("Failed to calculate stats");
+                    return;
+                }
+                
+                Log.d(TAG, "🚀 FORCE UPDATING Firebase with fresh stats:");
+                Log.d(TAG, "   Points: " + freshStats.getTotalPoints());
+                Log.d(TAG, "   Distance: " + String.format("%.2f km", freshStats.getTotalDistance()/1000));
+                Log.d(TAG, "   Trash: " + freshStats.getTotalTrashCollected());
+                Log.d(TAG, "   Sessions: " + freshStats.getTotalSessions());
+                Log.d(TAG, "   Duration: " + freshStats.getTotalDuration() + " ms");
+                
+                // Force update Firebase with latest data
+                firestore.collection(COLLECTION_STATS)
+                        .document(userId)
+                        .set(freshStats)
+                        .addOnSuccessListener(aVoid -> {
+                            Log.d(TAG, "✅ FORCE UPDATE SUCCESS! Firebase stats updated after record " + recordId);
+                            Log.d(TAG, "   Final stats in Firebase: " + freshStats.toString());
+                            
+                            // Also update ranking data
+                            updateUserRankingInFirebase(userId, freshStats);
+                            
+                            callback.onSuccess();
+                        })
+                        .addOnFailureListener(e -> {
+                            Log.e(TAG, "❌ FORCE UPDATE FAILED! Error updating Firebase stats after record " + recordId, e);
+                            callback.onError("Firebase update failed: " + e.getMessage());
+                        });
+                        
+            } catch (Exception e) {
+                Log.e(TAG, "❌ Error in forceUpdateAfterPloggingSession", e);
+                callback.onError(e.getMessage());
+            }
+        });
+    }
+
+    /**
+     * Update ranking data in Firebase
+     */
+    private void updateUserRankingInFirebase(String userId, UserStats stats) {
+        try {
+            // Get user profile data for ranking
+            UserEntity user = localDb.userDao().getUserByIdSync(getCurrentLocalUserId());
+            if (user != null) {
+                RankingUser rankingData = new RankingUser(
+                    userId,
+                    user.getUsername(),
+                    user.getFirstName() + " " + user.getLastName(),
+                    stats.getTotalPoints(),
+                    stats.getTotalDistance(),
+                    stats.getTotalTrashCollected(),
+                    stats.getLastUpdated()
+                );
+                
+                firestore.collection(COLLECTION_RANKING)
+                        .document(userId)
+                        .set(rankingData)
+                        .addOnSuccessListener(aVoid -> 
+                            Log.d(TAG, "✅ User ranking updated in Firebase"))
+                        .addOnFailureListener(e -> 
+                            Log.e(TAG, "❌ Error updating user ranking in Firebase", e));
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error updating ranking data", e);
+        }
     }
 }

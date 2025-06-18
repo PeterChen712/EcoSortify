@@ -61,6 +61,7 @@ import com.example.glean.model.RecordEntity;
 import com.example.glean.model.UserEntity;
 import com.example.glean.service.LocationService;
 import com.example.glean.service.FirebaseRankingService;
+import com.example.glean.service.FirebaseDataManager;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -646,15 +647,80 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                         int finalTrashCount = db.trashDao().getTrashCountByRecordIdSync(currentRecordId);
                         int finalPoints = db.trashDao().getTotalPointsByRecordIdSync(currentRecordId);                        record.setDuration(elapsedTimeMillis);
                         record.setUpdatedAt(System.currentTimeMillis());
-                        record.setDistance(totalDistance);
-                        record.setPoints(finalPoints);
-
-                        db.recordDao().update(record);
-
+                        record.setDistance(totalDistance);                        record.setPoints(finalPoints);                        db.recordDao().update(record);
+                        
+                        // Log the record that was just updated
+                        Log.d(TAG, "📝 Updated record ID " + currentRecordId + ":");
+                        Log.d(TAG, "   Points: " + finalPoints + ", Distance: " + totalDistance);
+                        Log.d(TAG, "   Duration: " + elapsedTimeMillis + " ms, Trash count: " + finalTrashCount);
+                        
                         updateUserPoints(finalPoints);
                         
+                        // Small delay to ensure database write is completed
+                        try {
+                            Thread.sleep(100); // 100ms delay
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        }
+                        
+                        // Force immediate Firebase update with the new record
+                        FirebaseDataManager.getInstance(requireContext()).forceUpdateAfterPloggingSession(
+                            (int) currentRecordId,
+                            new FirebaseDataManager.DataSyncCallback() {
+                                @Override
+                                public void onSuccess() {
+                                    Log.d(TAG, "✅ FORCE Firebase update successful for record " + currentRecordId);
+                                }
+                                
+                                @Override
+                                public void onError(String error) {
+                                    Log.e(TAG, "❌ FORCE Firebase update failed for record " + currentRecordId + ": " + error);
+                                }
+                            }
+                        );
+                        
                         // Update Firebase ranking data
-                        FirebaseRankingService.getInstance(requireContext()).updateUserRankingData();                        requireActivity().runOnUiThread(() -> {
+                        FirebaseRankingService.getInstance(requireContext()).updateUserRankingData();
+                        
+                        // Debug: Check database state before Firebase update
+                        FirebaseDataManager.getInstance(requireContext()).debugCurrentDatabaseState();
+                        
+                        // Update Firebase user statistics with retry mechanism for better reliability
+                        FirebaseDataManager.getInstance(requireContext()).updateUserStatsWithRetry(new FirebaseDataManager.DataSyncCallback() {
+                            @Override
+                            public void onSuccess() {
+                                Log.d(TAG, "✅ Firebase statistics updated successfully after plogging session completed");
+                                
+                                // Verify the update was successful by reading back the data
+                                FirebaseDataManager.getInstance(requireContext()).verifyFirebaseStatsUpdate(new FirebaseDataManager.DataSyncCallback() {
+                                    @Override
+                                    public void onSuccess() {
+                                        Log.d(TAG, "✅ Firebase stats verification completed");
+                                    }
+
+                                    @Override
+                                    public void onError(String error) {
+                                        Log.w(TAG, "⚠️ Firebase stats verification failed: " + error);
+                                    }
+                                });
+                                
+                                requireActivity().runOnUiThread(() -> {
+                                    // Show success toast to user
+                                    Toast.makeText(requireContext(), "📊 Data berhasil disimpan ke cloud", Toast.LENGTH_SHORT).show();
+                                });
+                            }
+
+                            @Override
+                            public void onError(String error) {
+                                Log.e(TAG, "❌ Failed to update Firebase statistics: " + error);
+                                requireActivity().runOnUiThread(() -> {
+                                    // Show warning toast to user but don't block the flow
+                                    Toast.makeText(requireContext(), "⚠️ Data disimpan lokal, sinkronisasi cloud nanti", Toast.LENGTH_SHORT).show();
+                                });
+                            }
+                        });
+
+                        requireActivity().runOnUiThread(() -> {
                             stopTracking();
                             
                             // Show completion toast and navigate directly to summary

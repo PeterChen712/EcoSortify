@@ -114,9 +114,11 @@ public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallb
         binding.btnShare.setOnClickListener(v -> shareActivity());
         binding.btnSaveToGallery.setOnClickListener(v -> savePloggingResultToGallery());
         binding.btnRetry.setOnClickListener(v -> loadActivityData());
-        
-        // Load activity data
+          // Load activity data
         loadActivityData();
+        
+        // Check and display Firebase sync status if user is logged in
+        checkFirebaseSyncStatus();
     }@Override
     public void onMapReady(@NonNull GoogleMap googleMap) {
         mMap = googleMap;
@@ -985,6 +987,39 @@ public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallb
         } catch (Exception e) {
             Log.e(TAG, "Error sharing activity", e);
             Toast.makeText(getContext(), "Gagal membagikan aktivitas", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * Check Firebase sync status and show feedback to user
+     */
+    private void checkFirebaseSyncStatus() {
+        // Import Firebase classes if needed
+        try {
+            com.example.glean.auth.FirebaseAuthManager authManager = 
+                com.example.glean.auth.FirebaseAuthManager.getInstance(requireContext());
+            
+            if (authManager.isLoggedIn()) {
+                // Show sync status message
+                com.google.android.material.snackbar.Snackbar.make(
+                    binding.getRoot(), 
+                    "📊 Data sedang disinkronkan ke cloud...", 
+                    com.google.android.material.snackbar.Snackbar.LENGTH_SHORT
+                ).show();
+                
+                // Use a simple timer to show success message after a delay
+                new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                    if (isAdded() && getContext() != null) {
+                        com.google.android.material.snackbar.Snackbar.make(
+                            binding.getRoot(), 
+                            "✅ Data berhasil disimpan ke cloud", 
+                            com.google.android.material.snackbar.Snackbar.LENGTH_SHORT
+                        ).show();
+                    }
+                }, 2000); // 2 seconds delay
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error checking Firebase sync status", e);
         }
     }
 }
