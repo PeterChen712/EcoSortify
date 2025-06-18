@@ -211,8 +211,9 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
             }
         });
     }
-    
-    private void setupPloggingFeature() {
+      private void setupPloggingFeature() {
+        Log.d(TAG, "setupPloggingFeature() called");
+        
         initializeNoInternetViews();
         // Removed notification banner initialization
 
@@ -222,18 +223,42 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
             mapFragment.getMapAsync(this);
         }
 
-        restoreTrackingSession();        updateUIForTrackingState(isTracking);
-        updateUIForNetworkState(isNetworkAvailable);          // Set up button click listeners for new UI structure        binding.btnStartStop.setOnClickListener(v -> toggleTracking());
-        binding.btnCollectTrash.setOnClickListener(v -> navigateToTrashCollection());
-        binding.btnFinish.setOnClickListener(v -> finishPlogging());
-        binding.btnHelp.setOnClickListener(v -> showHelpDialog());
-        binding.btnMenu.setOnClickListener(v -> showMenuPopup(v));
+        restoreTrackingSession();        
+        updateUIForTrackingState(isTracking);
+        updateUIForNetworkState(isNetworkAvailable);          
+        
+        // Set up button click listeners for new UI structure        
+        binding.btnStartStop.setOnClickListener(v -> {
+            Log.d(TAG, "Start/Stop button clicked");
+            toggleTracking();
+        });
+        binding.btnCollectTrash.setOnClickListener(v -> {
+            Log.d(TAG, "Collect trash button clicked");
+            navigateToTrashCollection();
+        });
+        binding.btnFinish.setOnClickListener(v -> {
+            Log.d(TAG, "Finish button clicked");
+            finishPlogging();
+        });
+        binding.btnHelp.setOnClickListener(v -> {
+            Log.d(TAG, "Help button clicked");
+            showHelpDialog();
+        });
+        binding.btnMenu.setOnClickListener(v -> {
+            Log.d(TAG, "Menu button clicked");
+            showMenuPopup(v);
+        });
 
+        Log.d(TAG, "About to check network and GPS status");
         checkNetworkStatus();
         checkGpsStatus();
+        
+        Log.d(TAG, "After status checks - Network: " + isNetworkAvailable + ", GPS: " + isGpsEnabled);
 
         // Restore auto-finish timer if needed
         checkAndRestoreAutoFinishTimer();
+        
+        Log.d(TAG, "setupPloggingFeature() completed");
     }private void initializeNoInternetViews() {
         noInternetLayout = binding.layoutNoInternetOverlay;
         btnRetryConnection = noInternetLayout.findViewById(R.id.btn_retry_connection);
@@ -314,11 +339,34 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
             }
         }
     }    private void toggleTracking() {
+        // Add debug logging to help diagnose the issue
+        Log.d(TAG, "toggleTracking() called");
+        Log.d(TAG, "isGpsEnabled: " + isGpsEnabled);
+        Log.d(TAG, "isNetworkAvailable: " + isNetworkAvailable);
+        Log.d(TAG, "isPloggingEnabled: " + isPloggingEnabled);
+        Log.d(TAG, "isTracking: " + isTracking);
+        
+        // Show user feedback about current status
+        if (!isGpsEnabled) {
+            Toast.makeText(requireContext(), "GPS/Location services tidak aktif. Silakan aktifkan di pengaturan.", Toast.LENGTH_LONG).show();
+            Log.w(TAG, "GPS not enabled, showing GPS dialog");
+            showGpsDisabledDialog();
+            return;
+        }
+        
+        if (!isNetworkAvailable) {
+            Toast.makeText(requireContext(), "Tidak ada koneksi internet. Silakan periksa koneksi Anda.", Toast.LENGTH_LONG).show();
+            Log.w(TAG, "Network not available, showing network dialog");
+            showNetworkOptionsDialog();
+            return;
+        }
+        
         // First check authentication for plogging
         if (!AuthGuard.requireAuthForPlogging(requireContext(), this, new AuthGuard.AuthRequiredCallback() {
             @Override
             public void onAuthConfirmed() {
                 // User is authenticated, proceed with tracking
+                Log.d(TAG, "Authentication confirmed, proceeding with tracking");
                 proceedWithTracking();
             }
 
@@ -326,39 +374,56 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
             public void onAuthCancelled() {
                 // User cancelled authentication, don't start tracking
                 // Optional: Show a message
+                Log.w(TAG, "Authentication cancelled");
                 if (isAdded()) {
                     Toast.makeText(requireContext(), "Authentication required for plogging", Toast.LENGTH_SHORT).show();
                 }
             }
         })) {
             // User is not authenticated, dialog shown, return
+            Log.w(TAG, "User not authenticated, dialog shown");
             return;
         }
     }
-    
-    private void proceedWithTracking() {
+      private void proceedWithTracking() {
+        Log.d(TAG, "proceedWithTracking() called");
+        Log.d(TAG, "isNetworkAvailable: " + isNetworkAvailable);
+        Log.d(TAG, "isGpsEnabled: " + isGpsEnabled);
+        Log.d(TAG, "isPloggingEnabled: " + isPloggingEnabled);
+        Log.d(TAG, "isTracking: " + isTracking);
+        
         // If network is not available, show network options
         if (!isNetworkAvailable) {
+            Log.w(TAG, "Network not available in proceedWithTracking");
+            Toast.makeText(requireContext(), "Koneksi internet diperlukan untuk memulai plogging", Toast.LENGTH_LONG).show();
             showNetworkOptionsDialog();
             return;
         }
         
         // If GPS is not enabled, directly show GPS settings dialog
         if (!isGpsEnabled) {
+            Log.w(TAG, "GPS not enabled in proceedWithTracking");
+            Toast.makeText(requireContext(), "GPS/Location services diperlukan untuk tracking", Toast.LENGTH_LONG).show();
             showGpsDisabledDialog();
             return;
-        }        // If both conditions are met, proceed with normal tracking
+        }        
+
+        // If both conditions are met, proceed with normal tracking
         if (!isPloggingEnabled) {
+            Log.w(TAG, "Plogging not enabled despite GPS and network being available");
             showNetworkStatusMessage(getString(R.string.network_warning), true);
             return;
         }
 
+        Log.d(TAG, "All conditions met, proceeding with tracking logic");
         if (isTracking) {
+            Log.d(TAG, "Currently tracking, showing stop confirmation");
             showStopConfirmationDialog();
         } else {
             if (hasActiveSession()) {
-                resumeTracking();
-            } else {
+                Log.d(TAG, "Has active session, resuming tracking");
+                resumeTracking();            } else {
+                Log.d(TAG, "No active session, starting new tracking");
                 startTracking();
             }
         }
@@ -1425,36 +1490,45 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         if (binding == null) return;
 
         // Legacy support for old network status view removed - tvNetworkStatus not in layout
-    }private void enablePloggingFeatures() {
+    }    private void enablePloggingFeatures() {
         // Only enable plogging if both network and GPS are available
         isPloggingEnabled = isNetworkAvailable && isGpsEnabled;
+        
+        Log.d(TAG, "enablePloggingFeatures() called");
+        Log.d(TAG, "isNetworkAvailable: " + isNetworkAvailable);
+        Log.d(TAG, "isGpsEnabled: " + isGpsEnabled);
+        Log.d(TAG, "isPloggingEnabled: " + isPloggingEnabled);
 
         if (binding != null) {
             // Enable start button only if both conditions are met
             binding.btnStartStop.setEnabled(isPloggingEnabled);
             binding.btnStartStop.setAlpha(isPloggingEnabled ? 1.0f : 0.6f);
+            Log.d(TAG, "Start/Stop button enabled: " + isPloggingEnabled);
             
             // Enable other buttons based on tracking state and conditions
             if (isTracking && isPloggingEnabled) {
                 binding.btnCollectTrash.setEnabled(true);
                 binding.btnCollectTrash.setAlpha(1.0f);
+                Log.d(TAG, "Collect trash button enabled: true (tracking and plogging enabled)");
             } else {
                 binding.btnCollectTrash.setEnabled(false);
                 binding.btnCollectTrash.setAlpha(0.6f);
+                Log.d(TAG, "Collect trash button enabled: false (not tracking or plogging disabled)");
             }
             
             // Enable finish button only if there's an active session
             if (hasActiveSession()) {
                 binding.btnFinish.setEnabled(true);
                 binding.btnFinish.setAlpha(1.0f);
-            } else {
+                Log.d(TAG, "Finish button enabled: true (has active session)");            } else {
                 binding.btnFinish.setEnabled(false);
                 binding.btnFinish.setAlpha(0.6f);
+                Log.d(TAG, "Finish button enabled: false (no active session)");
             }
 
             updateUIForTrackingState(isTracking);
         }
-    }    private void showNetworkStatusMessage(String message, boolean isError) {
+    }private void showNetworkStatusMessage(String message, boolean isError) {
         // Notification banner removed - status shown in bottom button only
         Log.d("PloggingFragment", "Network status: " + message);
     }
@@ -1581,16 +1655,18 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
             Log.e(TAG, "Error unregistering GPS callbacks", e);
         }
     }
-    
-    private void checkGpsStatus() {
+      private void checkGpsStatus() {
         if (locationManager == null) return;
         
         boolean gpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
         boolean networkLocationEnabled = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
         boolean locationServicesEnabled = gpsEnabled || networkLocationEnabled;
         
+        Log.d(TAG, "checkGpsStatus() - GPS enabled: " + gpsEnabled + ", Network location enabled: " + networkLocationEnabled + ", Overall location services enabled: " + locationServicesEnabled);
+        
         if (locationServicesEnabled != isGpsEnabled) {
             isGpsEnabled = locationServicesEnabled;
+            Log.d(TAG, "GPS status changed to: " + isGpsEnabled);
             
             if (isGpsEnabled) {
                 onGpsAvailable();
@@ -1997,8 +2073,7 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                 // Reset photo capture variables
                 photoUri = null;
                 currentPhotoPath = null;
-            }
-        );
+            }        );
     }
 
     // Network monitoring methods
@@ -2021,8 +2096,11 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
             networkAvailable = activeNetworkInfo != null && activeNetworkInfo.isConnected();
         }
         
+        Log.d(TAG, "checkNetworkStatus() - Network available: " + networkAvailable + ", Previous status: " + isNetworkAvailable);
+        
         if (networkAvailable != isNetworkAvailable) {
             isNetworkAvailable = networkAvailable;
+            Log.d(TAG, "Network status changed to: " + isNetworkAvailable);
             if (isNetworkAvailable) {
                 onNetworkAvailable();
             } else {
