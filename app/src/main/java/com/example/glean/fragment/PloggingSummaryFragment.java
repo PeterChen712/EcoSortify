@@ -1,7 +1,10 @@
 package com.example.glean.fragment;
 
+import android.Manifest;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -26,6 +29,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
@@ -60,8 +64,11 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallback {    private static final String TAG = "PloggingSummaryFragment";
-      private FragmentPloggingSummaryBinding binding;
+public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallback {    
+    private static final String TAG = "PloggingSummaryFragment";
+    private static final int STORAGE_PERMISSION_REQUEST_CODE = 1001;
+      
+    private FragmentPloggingSummaryBinding binding;
     private AppDatabase db;
     private ExecutorService executor;
     private int recordId;
@@ -70,7 +77,7 @@ public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallb
     private int currentUserId;
     private RecordEntity currentRecord;
     private Location lastKnownLocation;
-    private List<LocationPointEntity> routePoints;    @Override
+    private List<LocationPointEntity> routePoints;@Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         db = AppDatabase.getInstance(requireContext());
@@ -91,9 +98,7 @@ public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallb
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         binding = FragmentPloggingSummaryBinding.inflate(inflater, container, false);
         return binding.getRoot();
-    }
-
-    @Override
+    }    @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         
@@ -107,13 +112,12 @@ public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallb
         // Set click listeners
         binding.btnBack.setOnClickListener(v -> navigateBack());
         binding.btnShare.setOnClickListener(v -> shareActivity());
-        binding.btnShareCommunity.setOnClickListener(v -> shareToCommunitiy());
         binding.btnSaveToGallery.setOnClickListener(v -> savePloggingResultToGallery());
         binding.btnRetry.setOnClickListener(v -> loadActivityData());
         
         // Load activity data
         loadActivityData();
-    }    @Override
+    }@Override
     public void onMapReady(@NonNull GoogleMap googleMap) {
         mMap = googleMap;
         
@@ -442,35 +446,46 @@ public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallb
         shareIntent.putExtra(Intent.EXTRA_SUBJECT, "My Plogging Achievement");
         
         startActivity(Intent.createChooser(shareIntent, "Share your plogging achievement"));
-    }    private void shareToCommunitiy() {
-        // Simple success message instead of complex sharing
-        Toast.makeText(requireContext(), "Great plogging session! Keep up the good work! 🎉", 
-                      Toast.LENGTH_LONG).show();
-    }
-
-    private void savePloggingResultToGallery() {
+    }    private void savePloggingResultToGallery() {
         if (currentRecord == null) {
             Toast.makeText(requireContext(), "No data to save", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        try {
-            // Create summary message
-            String summaryMessage = String.format(Locale.getDefault(),
-                    "🎉 Plogging Complete!\n" +
-                            "📍 Distance: %.2f km\n" +
-                            "🗑️ Trash: %d items\n" +
-                            "⭐ Points: %d\n" +
-                            "⏱️ Duration: %s",
-                    currentRecord.getDistance() / 1000f, 
-                    currentRecord.getPoints() / 10,
-                    currentRecord.getPoints(),
-                    formatDuration(currentRecord.getDuration()));
+        // Check permission for storage access on older Android versions
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            if (ActivityCompat.checkSelfPermission(requireContext(), 
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 
+                                STORAGE_PERMISSION_REQUEST_CODE);
+                return;
+            }
+        }
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                savePloggingImageAndroid10Plus(summaryMessage);
+        try {
+            // Take screenshot of map with route and create comprehensive image
+            if (mMap != null) {
+                mMap.snapshot(new GoogleMap.SnapshotReadyCallback() {
+                    @Override
+                    public void onSnapshotReady(@Nullable Bitmap mapSnapshot) {
+                        if (mapSnapshot != null) {
+                            // Create comprehensive plogging result image with map
+                            Bitmap finalImage = createComprehensivePloggingImage(mapSnapshot);
+                            if (finalImage != null) {
+                                saveImageToGallery(finalImage);
+                            } else {
+                                Toast.makeText(requireContext(), "Failed to create result image", 
+                                             Toast.LENGTH_SHORT).show();
+                            }
+                        } else {
+                            // Fallback: create image without map
+                            createAndSaveFallbackImage();
+                        }
+                    }
+                });
             } else {
-                savePloggingImageLegacy(summaryMessage);
+                // No map available, create fallback image
+                createAndSaveFallbackImage();
             }
         } catch (Exception e) {
             Log.e(TAG, "Error saving to gallery", e);
@@ -478,77 +493,238 @@ public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallb
         }
     }
 
-    @androidx.annotation.RequiresApi(api = Build.VERSION_CODES.Q)
-    private void savePloggingImageAndroid10Plus(String completionMessage) {
+    /**
+     * Creates a comprehensive plogging result image with map screenshot and all details
+     */
+    private Bitmap createComprehensivePloggingImage(Bitmap mapSnapshot) {
         try {
-            Bitmap bitmap = createPloggingSummaryBitmap(completionMessage);
+            // Calculate dimensions for the comprehensive image
+            int imageWidth = 1080; // Standard width for good quality
+            int mapHeight = 600;    // Height for map area
+            int infoHeight = 500;   // Height for information area
+            int totalHeight = mapHeight + infoHeight + 100; // Extra padding
 
-            if (bitmap != null) {
-                android.content.ContentValues values = new android.content.ContentValues();
-                values.put(MediaStore.Images.Media.DISPLAY_NAME,
-                        "Plogging_Result_" + System.currentTimeMillis() + ".jpg");
-                values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
-                values.put(MediaStore.Images.Media.RELATIVE_PATH,
-                        android.os.Environment.DIRECTORY_PICTURES + "/Glean/");
-
-                Uri uri = requireContext().getContentResolver()
-                        .insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
-
-                if (uri != null) {
-                    try (OutputStream outputStream = requireContext().getContentResolver()
-                            .openOutputStream(uri)) {
-                        if (outputStream != null) {
-                            bitmap.compress(Bitmap.CompressFormat.JPEG, 95, outputStream);
-                            Toast.makeText(requireContext(), "Plogging result saved to gallery! 📸", 
-                                         Toast.LENGTH_LONG).show();
-                        }
-                    }
-                } else {
-                    Toast.makeText(requireContext(), "Failed to save image", Toast.LENGTH_SHORT).show();
-                }
+            Bitmap resultBitmap = Bitmap.createBitmap(imageWidth, totalHeight, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(resultBitmap);
+            
+            // Background
+            canvas.drawColor(Color.WHITE);
+            
+            // Draw map snapshot (scaled to fit)
+            if (mapSnapshot != null) {
+                Bitmap scaledMap = Bitmap.createScaledBitmap(mapSnapshot, imageWidth - 40, mapHeight - 40, true);
+                canvas.drawBitmap(scaledMap, 20, 20, null);
+                scaledMap.recycle();
             }
+            
+            // Prepare paint objects
+            Paint titlePaint = new Paint();
+            titlePaint.setColor(Color.parseColor("#2E7D32")); // Green color
+            titlePaint.setTextSize(48f);
+            titlePaint.setAntiAlias(true);
+            titlePaint.setTypeface(Typeface.DEFAULT_BOLD);
+            
+            Paint headerPaint = new Paint();
+            headerPaint.setColor(Color.parseColor("#1B5E20"));
+            headerPaint.setTextSize(36f);
+            headerPaint.setAntiAlias(true);
+            headerPaint.setTypeface(Typeface.DEFAULT_BOLD);
+            
+            Paint infoPaint = new Paint();
+            infoPaint.setColor(Color.parseColor("#424242"));
+            infoPaint.setTextSize(32f);
+            infoPaint.setAntiAlias(true);
+            infoPaint.setTypeface(Typeface.DEFAULT);
+            
+            Paint valuePaint = new Paint();
+            valuePaint.setColor(Color.parseColor("#1B5E20"));
+            valuePaint.setTextSize(34f);
+            valuePaint.setAntiAlias(true);
+            valuePaint.setTypeface(Typeface.DEFAULT_BOLD);
+            
+            // Start drawing info below the map
+            int yStart = mapHeight + 40;
+            
+            // Title
+            canvas.drawText("🌱 Plogging Summary", 40, yStart, titlePaint);
+            yStart += 70;
+            
+            // Date and time information
+            SimpleDateFormat dateFormat = new SimpleDateFormat("dd MMMM yyyy", Locale.getDefault());
+            SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
+            String dateText = dateFormat.format(new Date(currentRecord.getCreatedAt()));
+            String timeText = timeFormat.format(new Date(currentRecord.getCreatedAt()));
+            
+            canvas.drawText("📅 Tanggal: " + dateText, 40, yStart, infoPaint);
+            yStart += 50;
+            canvas.drawText("🕒 Jam Mulai: " + timeText, 40, yStart, infoPaint);
+            yStart += 70;
+            
+            // Statistics in two columns
+            float leftColumn = 40f;
+            float rightColumn = imageWidth / 2f + 20f;
+            int columnStart = yStart;
+            
+            // Left column - Distance and Duration
+            canvas.drawText("🏃 Jarak Tempuh:", leftColumn, columnStart, infoPaint);
+            canvas.drawText(String.format(Locale.getDefault(), "%.2f km", 
+                           currentRecord.getDistance() / 1000f), leftColumn, columnStart + 40, valuePaint);
+            
+            canvas.drawText("⏱️ Durasi:", leftColumn, columnStart + 100, infoPaint);
+            canvas.drawText(formatDuration(currentRecord.getDuration()), leftColumn, columnStart + 140, valuePaint);
+            
+            // Right column - Trash and Points
+            canvas.drawText("🗑️ Sampah Terkumpul:", rightColumn, columnStart, infoPaint);
+            canvas.drawText(String.valueOf(currentRecord.getPoints() / 10) + " item", 
+                           rightColumn, columnStart + 40, valuePaint);
+            
+            canvas.drawText("⭐ Poin Didapat:", rightColumn, columnStart + 100, infoPaint);
+            canvas.drawText(String.valueOf(currentRecord.getPoints()) + " poin", 
+                           rightColumn, columnStart + 140, valuePaint);
+            
+            // Footer
+            Paint footerPaint = new Paint();
+            footerPaint.setColor(Color.parseColor("#757575"));
+            footerPaint.setTextSize(24f);
+            footerPaint.setAntiAlias(true);
+            
+            SimpleDateFormat timestampFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
+            String timestamp = timestampFormat.format(new Date());
+            
+            canvas.drawText("Dibuat oleh GleanGo - " + timestamp, 40, totalHeight - 40, footerPaint);
+            
+            return resultBitmap;
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating comprehensive image", e);
+            return null;
+        }
+    }
+    
+    /**
+     * Creates fallback image when map snapshot is not available
+     */
+    private void createAndSaveFallbackImage() {
+        try {
+            String summaryMessage = String.format(Locale.getDefault(),
+                    "🎉 Plogging Selesai!\n\n" +
+                    "📅 Tanggal: %s\n" +
+                    "🕒 Jam Mulai: %s\n" +
+                    "🏃 Jarak: %.2f km\n" +
+                    "⏱️ Durasi: %s\n" +
+                    "🗑️ Sampah: %d item\n" +
+                    "⭐ Poin: %d",
+                    new SimpleDateFormat("dd MMMM yyyy", Locale.getDefault()).format(new Date(currentRecord.getCreatedAt())),
+                    new SimpleDateFormat("HH:mm", Locale.getDefault()).format(new Date(currentRecord.getCreatedAt())),
+                    currentRecord.getDistance() / 1000f,
+                    formatDuration(currentRecord.getDuration()),
+                    currentRecord.getPoints() / 10,
+                    currentRecord.getPoints());
+
+            Bitmap fallbackImage = createPloggingSummaryBitmap(summaryMessage);
+            if (fallbackImage != null) {
+                saveImageToGallery(fallbackImage);
+            } else {
+                Toast.makeText(requireContext(), "Failed to create result image", Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating fallback image", e);
+            Toast.makeText(requireContext(), "Failed to save to gallery", Toast.LENGTH_SHORT).show();
+        }
+    }
+    
+    /**
+     * Saves the bitmap to gallery with proper handling for different Android versions
+     */
+    private void saveImageToGallery(Bitmap bitmap) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                saveImageAndroid10Plus(bitmap);
+            } else {
+                saveImageLegacy(bitmap);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error saving image to gallery", e);
+            Toast.makeText(requireContext(), "Failed to save image", Toast.LENGTH_SHORT).show();
+        }
+    }    @androidx.annotation.RequiresApi(api = Build.VERSION_CODES.Q)
+    private void saveImageAndroid10Plus(Bitmap bitmap) {
+        try {
+            ContentValues values = new ContentValues();
+            values.put(MediaStore.Images.Media.DISPLAY_NAME,
+                    "Plogging_Route_" + System.currentTimeMillis() + ".jpg");
+            values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
+            values.put(MediaStore.Images.Media.RELATIVE_PATH,
+                    android.os.Environment.DIRECTORY_PICTURES + "/GleanGo/");
+
+            Uri uri = requireContext().getContentResolver()
+                    .insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+
+            if (uri != null) {
+                try (OutputStream outputStream = requireContext().getContentResolver()
+                        .openOutputStream(uri)) {
+                    if (outputStream != null) {
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, 95, outputStream);
+                        requireActivity().runOnUiThread(() -> {
+                            Toast.makeText(requireContext(), "📸 Hasil plogging tersimpan di galeri!", 
+                                         Toast.LENGTH_LONG).show();
+                        });
+                    }
+                }
+            } else {
+                requireActivity().runOnUiThread(() -> {
+                    Toast.makeText(requireContext(), "Gagal menyimpan gambar", Toast.LENGTH_SHORT).show();
+                });
+            }
+            
+            bitmap.recycle();
         } catch (Exception e) {
             Log.e(TAG, "Error saving image (Android 10+)", e);
-            Toast.makeText(requireContext(), "Error saving to gallery", Toast.LENGTH_SHORT).show();
+            requireActivity().runOnUiThread(() -> {
+                Toast.makeText(requireContext(), "Error menyimpan ke galeri", Toast.LENGTH_SHORT).show();
+            });
         }
     }
 
-    private void savePloggingImageLegacy(String completionMessage) {
+    private void saveImageLegacy(Bitmap bitmap) {
         try {
-            Bitmap bitmap = createPloggingSummaryBitmap(completionMessage);
+            File picturesDir = android.os.Environment
+                    .getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_PICTURES);
+            File gleanDir = new File(picturesDir, "GleanGo");
 
-            if (bitmap != null) {
-                File picturesDir = android.os.Environment
-                        .getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_PICTURES);
-                File gleanDir = new File(picturesDir, "Glean");
-
-                if (!gleanDir.exists()) {
-                    gleanDir.mkdirs();
-                }
-
-                File imageFile = new File(gleanDir,
-                        "Plogging_Result_" + System.currentTimeMillis() + ".jpg");
-
-                try (FileOutputStream outputStream = new FileOutputStream(imageFile)) {
-                    bitmap.compress(Bitmap.CompressFormat.JPEG, 95, outputStream);
-
-                    android.media.MediaScannerConnection.scanFile(requireContext(),
-                            new String[]{imageFile.getAbsolutePath()}, null, null);
-
-                    Toast.makeText(requireContext(), "Plogging result saved to gallery! 📸", 
-                                 Toast.LENGTH_LONG).show();
-                }
+            if (!gleanDir.exists()) {
+                gleanDir.mkdirs();
             }
+
+            File imageFile = new File(gleanDir,
+                    "Plogging_Route_" + System.currentTimeMillis() + ".jpg");
+
+            try (FileOutputStream outputStream = new FileOutputStream(imageFile)) {
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 95, outputStream);
+
+                android.media.MediaScannerConnection.scanFile(requireContext(),
+                        new String[]{imageFile.getAbsolutePath()}, null, null);
+
+                requireActivity().runOnUiThread(() -> {
+                    Toast.makeText(requireContext(), "📸 Hasil plogging tersimpan di galeri!", 
+                                 Toast.LENGTH_LONG).show();
+                });
+            }
+            
+            bitmap.recycle();
         } catch (Exception e) {
             Log.e(TAG, "Error saving image (Legacy)", e);
-            Toast.makeText(requireContext(), "Error saving to gallery", Toast.LENGTH_SHORT).show();
+            requireActivity().runOnUiThread(() -> {
+                Toast.makeText(requireContext(), "Error menyimpan ke galeri", Toast.LENGTH_SHORT).show();
+            });
         }
-    }
-
+    }    /**
+     * Creates a basic summary bitmap (fallback when map screenshot is not available)
+     */
     private Bitmap createPloggingSummaryBitmap(String completionMessage) {
         try {
-            int width = 800;
-            int height = 600;
+            int width = 1080;
+            int height = 800;
 
             Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
             Canvas canvas = new Canvas(bitmap);
@@ -557,61 +733,47 @@ public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallb
 
             Paint textPaint = new Paint();
             textPaint.setColor(Color.BLACK);
-            textPaint.setTextSize(24f);
+            textPaint.setTextSize(32f);
             textPaint.setAntiAlias(true);
-            textPaint.setTypeface(Typeface.DEFAULT_BOLD);
+            textPaint.setTypeface(Typeface.DEFAULT);
 
             Paint titlePaint = new Paint();
-            titlePaint.setColor(Color.parseColor("#4CAF50"));
-            titlePaint.setTextSize(32f);
+            titlePaint.setColor(Color.parseColor("#2E7D32"));
+            titlePaint.setTextSize(48f);
             titlePaint.setAntiAlias(true);
             titlePaint.setTypeface(Typeface.DEFAULT_BOLD);
 
-            canvas.drawText("🌱 Glean Plogging Result", 50, 80, titlePaint);
+            canvas.drawText("🌱 GleanGo - Plogging Result", 50, 100, titlePaint);
 
             String[] lines = completionMessage.split("\n");
-            int yPosition = 150;
+            int yPosition = 200;
 
             for (String line : lines) {
-                canvas.drawText(line, 50, yPosition, textPaint);
-                yPosition += 40;
+                if (!line.trim().isEmpty()) {
+                    canvas.drawText(line, 50, yPosition, textPaint);
+                    yPosition += 60;
+                }
             }
 
             SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
-            String timestamp = "Generated on: " + sdf.format(new Date());
+            String timestamp = "Dibuat pada: " + sdf.format(new Date());
 
             Paint timestampPaint = new Paint();
             timestampPaint.setColor(Color.GRAY);
-            timestampPaint.setTextSize(18f);
+            timestampPaint.setTextSize(24f);
             timestampPaint.setAntiAlias(true);
 
-            canvas.drawText(timestamp, 50, height - 50, timestampPaint);
-            canvas.drawText("Generated by Glean App", 50, height - 20, timestampPaint);
+            canvas.drawText(timestamp, 50, height - 100, timestampPaint);
+            canvas.drawText("Aplikasi GleanGo - Make Your World Clean 🌱", 50, height - 50, timestampPaint);
 
             return bitmap;
         } catch (Exception e) {
             Log.e(TAG, "Error creating summary bitmap", e);
             return null;
         }
-    }
-
-    private String createPloggingPostContent(RecordEntity record) {
-        float distanceKm = record.getDistance() / 1000f;
-        int durationMin = (int) (record.getDuration() / 60000);
-        int trashCount = record.getPoints() / 10;
-        
-        return String.format(Locale.getDefault(),
-                "🏃‍♂️ Just completed an amazing plogging session!\n\n" +
-                "📊 Stats:\n" +
-                "• Distance: %.2f km\n" +
-                "• Duration: %d minutes\n" +
-                "• Trash collected: %d items\n" +
-                "• Points earned: %d\n\n" +
-                "Every small action makes a big difference! 🌱\n" +
-                "#GleanGo #Plogging #MakeTheWorldClean",
-                distanceKm, durationMin, trashCount, record.getPoints());
-    }
-
+    }    /**
+     * Format duration from milliseconds to readable string
+     */
     private String formatDuration(long durationMillis) {
         long durationSeconds = durationMillis / 1000;
         int hours = (int) (durationSeconds / 3600);
@@ -623,20 +785,9 @@ public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallb
         } else {
             return String.format(Locale.getDefault(), "%d min %d sec", minutes, seconds);
         }
-    }
-
-    private void showLoginPrompt() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
-        builder.setTitle("Join Community")
-                .setMessage("Sign in to share your achievements with the GleanGo community!")
-                .setPositiveButton("Sign In", (dialog, which) -> {
-                    NavController navController = Navigation.findNavController(requireView());
-                    navController.navigate(R.id.communityFeedFragment);
-                })
-                .setNegativeButton("Later", null)
-                .show();
-    }
-
+    }    /**
+     * Navigate back to previous screen
+     */
     private void navigateBack() {
         NavController navController = Navigation.findNavController(requireView());
         navController.navigateUp();
@@ -653,11 +804,24 @@ public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallb
         binding.layoutMainContent.setVisibility(View.GONE);
         binding.progressBar.setVisibility(View.GONE);
         binding.tvError.setText(message);
-    }
-
-    private void showMainContent(boolean show) {
+    }    private void showMainContent(boolean show) {
         binding.layoutMainContent.setVisibility(show ? View.VISIBLE : View.GONE);
         binding.layoutError.setVisibility(show ? View.GONE : View.VISIBLE);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        
+        if (requestCode == STORAGE_PERMISSION_REQUEST_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Permission granted, try saving again
+                savePloggingResultToGallery();
+            } else {
+                Toast.makeText(requireContext(), "Izin penyimpanan diperlukan untuk menyimpan gambar", 
+                             Toast.LENGTH_LONG).show();
+            }
+        }
     }
 
     @Override
