@@ -17,7 +17,7 @@ import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 
 /**
- * Fragment Eksplorasi yang berisi: News, EcoBot AI, dan Klasifikasi Sampah
+ * Fragment Eksplorasi yang berisi: News, Donasi, dan Klasifikasi Sampah
  */
 public class EksplorasiFragment extends Fragment {
 
@@ -46,8 +46,8 @@ public class EksplorasiFragment extends Fragment {
                             tab.setText("Berita");
                             tab.setIcon(R.drawable.ic_news);
                             break;                        case 1:
-                            tab.setText("EcoBot");
-                            tab.setIcon(R.drawable.ic_chat);
+                            tab.setText("Donasi");
+                            tab.setIcon(R.drawable.ic_donation);
                             break;
                         case 2:
                             tab.setText("Sampah");
@@ -72,7 +72,7 @@ public class EksplorasiFragment extends Fragment {
             case 0:
                 binding.tvEksplorasiHeader.setText("Berita");
                 break;            case 1:
-                binding.tvEksplorasiHeader.setText("EcoBot");
+                binding.tvEksplorasiHeader.setText("Donasi");
                 break;
             case 2:
                 binding.tvEksplorasiHeader.setText("Klasifikasi");

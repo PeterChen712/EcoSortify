@@ -221,8 +221,15 @@ public class ProfileFragment extends Fragment {    private static final String T
         // Add some visual feedback
         addVisualFeedback();
     }
-    
-    private void setupClickListeners() {
+      private void setupClickListeners() {
+        // Back button to navigate to Plogging
+        if (binding.btnBack != null) {
+            binding.btnBack.setOnClickListener(v -> {
+                Log.d(TAG, "Back button clicked - navigating to Plogging");
+                navigateBackToPlogging();
+            });
+        }
+        
         // Edit Profile button
         if (binding.btnEditProfile != null) {
             binding.btnEditProfile.setOnClickListener(v -> {
@@ -307,6 +314,22 @@ public class ProfileFragment extends Fragment {    private static final String T
         View themeToggle = findViewById("switchTheme", "btnTheme", "toggleTheme");
         if (themeToggle != null) {
             themeToggle.setOnClickListener(v -> toggleTheme());
+        }
+    }
+    
+    private void navigateBackToPlogging() {
+        // Navigate back to Plogging using NavController
+        try {
+            NavController navController = Navigation.findNavController(requireView());
+            navController.navigate(R.id.ploggingTabsFragment);
+        } catch (Exception e) {
+            Log.e(TAG, "Error navigating back to plogging", e);
+            // Fallback: try to pop back stack
+            try {
+                requireActivity().onBackPressed();
+            } catch (Exception fallbackError) {
+                Log.e(TAG, "Fallback navigation also failed", fallbackError);
+            }
         }
     }
     

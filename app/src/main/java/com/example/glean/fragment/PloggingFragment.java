@@ -2206,14 +2206,16 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
 
     private void showMenuPopup(View anchor) {
         PopupMenu popup = new PopupMenu(requireContext(), anchor);
-        popup.getMenuInflater().inflate(R.menu.plogging_menu, popup.getMenu());
-          popup.setOnMenuItemClickListener(item -> {
+        popup.getMenuInflater().inflate(R.menu.plogging_menu, popup.getMenu());          popup.setOnMenuItemClickListener(item -> {
             int itemId = item.getItemId();
             if (itemId == R.id.menu_stats) {
                 navigateToStats();
                 return true;
             } else if (itemId == R.id.menu_ranking) {
                 navigateToRanking();
+                return true;
+            } else if (itemId == R.id.menu_trash_map) {
+                navigateToTrashMap();
                 return true;
             } else if (itemId == R.id.menu_profile) {
                 navigateToProfile();
@@ -2232,6 +2234,13 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         // Navigate to dedicated Ranking fragment
         if (getActivity() != null) {
             Navigation.findNavController(requireView()).navigate(R.id.rankingFragment);
+        }
+    }
+
+    private void navigateToTrashMap() {
+        // Navigate to Trash Map fragment
+        if (getActivity() != null) {
+            Navigation.findNavController(requireView()).navigate(R.id.trashMapFragment);
         }
     }
 

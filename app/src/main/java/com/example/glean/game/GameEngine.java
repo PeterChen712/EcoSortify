@@ -141,17 +141,18 @@ public class GameEngine extends SurfaceView implements SurfaceHolder.Callback, R
         soundPool = new SoundPool.Builder()
                 .setMaxStreams(6)
                 .setAudioAttributes(audioAttributes)
-                .build();
-          // Load sounds - commented out until audio files are available
-        // correctSound = soundPool.load(context, R.raw.correct, 1);
-        // wrongSound = soundPool.load(context, R.raw.wrong, 1);
-        // levelUpSound = soundPool.load(context, R.raw.level_up, 1);
-        // gameOverSound = soundPool.load(context, R.raw.game_over, 1);
+                .build();          // Load sounds
+        correctSound = soundPool.load(context, R.raw.correct, 1);
+        wrongSound = soundPool.load(context, R.raw.wrong, 1);
+        levelUpSound = soundPool.load(context, R.raw.level_up, 1);
+        gameOverSound = soundPool.load(context, R.raw.game_over, 1);
         
-        // Set up background music - commented out until audio files are available
-        // bgMusic = MediaPlayer.create(context, R.raw.game_music);
-        // bgMusic.setLooping(true);
-        // bgMusic.setVolume(0.5f, 0.5f);
+        // Set up background music
+        bgMusic = MediaPlayer.create(context, R.raw.game_music);
+        if (bgMusic != null) {
+            bgMusic.setLooping(true);
+            bgMusic.setVolume(0.3f, 0.3f); // Reduced volume for better balance
+        }
     }
     
     private void loadHighScore() {
@@ -266,14 +267,15 @@ public class GameEngine extends SurfaceView implements SurfaceHolder.Callback, R
             // Only move items that aren't being dragged
             if (item != draggedItem) {
                 item.y += item.speed;
-                
-                // Check if item is out of screen
+                  // Check if item is out of screen
                 if (item.y > screenHeight) {
                     iterator.remove();
                     lives--;
                     
-                    // Play wrong sound
-                    soundPool.play(wrongSound, 1, 1, 0, 0, 1);
+                    // Play wrong sound with null check
+                    if (soundPool != null && wrongSound > 0) {
+                        soundPool.play(wrongSound, 0.8f, 0.8f, 0, 0, 1);
+                    }
                     
                     // Check for game over
                     if (lives <= 0) {
@@ -294,9 +296,10 @@ public class GameEngine extends SurfaceView implements SurfaceHolder.Callback, R
         level = newLevel;
         spawnDelay = Math.max(500, INITIAL_SPAWN_DELAY - (level - 1) * 200);
         baseSpeed += 0.5f;
-        
-        // Play level up sound
-        soundPool.play(levelUpSound, 1, 1, 0, 0, 1);
+          // Play level up sound with null check
+        if (soundPool != null && levelUpSound > 0) {
+            soundPool.play(levelUpSound, 0.9f, 0.9f, 0, 0, 1);
+        }
     }
 
     private void draw() {
@@ -502,9 +505,10 @@ public class GameEngine extends SurfaceView implements SurfaceHolder.Callback, R
         if (isCorrect) {
             // Increase score
             score += 10;
-            
-            // Play correct sound
-            soundPool.play(correctSound, 1, 1, 0, 0, 1);
+              // Play correct sound with null check
+            if (soundPool != null && correctSound > 0) {
+                soundPool.play(correctSound, 0.7f, 0.7f, 0, 0, 1);
+            }
             
             // Notify callback
             if (callback != null) {
@@ -513,9 +517,10 @@ public class GameEngine extends SurfaceView implements SurfaceHolder.Callback, R
         } else {
             // Decrease lives
             lives--;
-            
-            // Play wrong sound
-            soundPool.play(wrongSound, 1, 1, 0, 0, 1);
+              // Play wrong sound with null check
+            if (soundPool != null && wrongSound > 0) {
+                soundPool.play(wrongSound, 0.8f, 0.8f, 0, 0, 1);
+            }
             
             // Check for game over
             if (lives <= 0) {
@@ -526,9 +531,10 @@ public class GameEngine extends SurfaceView implements SurfaceHolder.Callback, R
 
     private void handleGameOver() {
         gameOver = true;
-        
-        // Play game over sound
-        soundPool.play(gameOverSound, 1, 1, 0, 0, 1);
+          // Play game over sound with null check
+        if (soundPool != null && gameOverSound > 0) {
+            soundPool.play(gameOverSound, 0.9f, 0.9f, 0, 0, 1);
+        }
         
         // Stop background music
         if (bgMusic != null && bgMusic.isPlaying()) {
