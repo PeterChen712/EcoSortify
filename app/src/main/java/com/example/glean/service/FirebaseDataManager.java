@@ -1,6 +1,8 @@
 package com.example.glean.service;
 
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import com.example.glean.auth.FirebaseAuthManager;
@@ -237,51 +239,61 @@ public class FirebaseDataManager {
         } catch (Exception e) {
             Log.e(TAG, "Error in syncUserStats", e);
         }
-    }
-    
-    /**
+    }    /**
      * Sinkronisasi data ranking user ke Firebase
      */
     private void syncUserRanking(String userId) {
         try {
-            // Calculate ranking data from local data
+            // Calculate ranking data from local data (safe on background thread)
             RankingUser rankingData = calculateUserRanking();
             
-            // Upload to Firebase
-            firestore.collection(COLLECTION_RANKING)
-                    .document(userId)
-                    .set(rankingData)
-                    .addOnSuccessListener(aVoid -> 
-                        Log.d(TAG, "User ranking synced successfully"))
-                    .addOnFailureListener(e -> 
-                        Log.e(TAG, "Error syncing user ranking", e));
-                        
+            if (rankingData == null) {
+                Log.w(TAG, "⚠️ Cannot sync user ranking - ranking data is null");
+                return;
+            }
+            
+            // Upload to Firebase (post to main thread)
+            new Handler(Looper.getMainLooper()).post(() -> {
+                firestore.collection(COLLECTION_RANKING)
+                        .document(userId)
+                        .set(rankingData)
+                        .addOnSuccessListener(aVoid -> 
+                            Log.d(TAG, "User ranking synced successfully"))
+                        .addOnFailureListener(e -> 
+                            Log.e(TAG, "Error syncing user ranking", e));
+            });
+                    
         } catch (Exception e) {
-            Log.e(TAG, "Error in syncUserRanking", e);
+            Log.e(TAG, "Error calculating user ranking", e);
         }
-    }
-    
-    /**
+    }    /**
      * Sinkronisasi data profile user ke Firebase
      */
     private void syncUserProfile(String userId) {
         try {
-            // Get profile data from local database
+            // Get profile data from local database (safe on background thread)
             UserProfile profile = getUserProfileFromLocal();
             
-            // Upload to Firebase
-            firestore.collection(COLLECTION_USERS)
-                    .document(userId)
-                    .set(profile)
-                    .addOnSuccessListener(aVoid -> 
-                        Log.d(TAG, "User profile synced successfully"))
-                    .addOnFailureListener(e -> 
-                        Log.e(TAG, "Error syncing user profile", e));
+            if (profile == null) {
+                Log.w(TAG, "⚠️ Cannot sync user profile - profile data is null");
+                return;
+            }
+            
+            // Upload to Firebase (post to main thread)
+            new Handler(Looper.getMainLooper()).post(() -> {
+                firestore.collection(COLLECTION_USERS)
+                        .document(userId)
+                        .set(profile)
+                        .addOnSuccessListener(aVoid -> 
+                            Log.d(TAG, "User profile synced successfully"))
+                        .addOnFailureListener(e -> 
+                            Log.e(TAG, "Error syncing user profile", e));
+            });
                         
         } catch (Exception e) {
-            Log.e(TAG, "Error in syncUserProfile", e);
+            Log.e(TAG, "Error getting user profile from local", e);
         }
-    }    /**
+    }/**
      * Hitung statistik user dari data lokal
      */
     private UserStats calculateUserStats() {
@@ -359,58 +371,87 @@ public class FirebaseDataManager {
             return new UserStats(0, 0.0, 0, 0, 0, System.currentTimeMillis());
         }
     }
-    
-    /**
+      /**
      * Hitung data ranking user dari data lokal
      */
     private RankingUser calculateUserRanking() {
         try {
             UserStats stats = calculateUserStats();
-            UserEntity user = localDb.userDao().getUserByIdSync(getCurrentLocalUserId());
-            
-            if (user != null) {
-                return new RankingUser(
-                    getCurrentUserId(),
-                    user.getUsername(),
-                    user.getFirstName() + " " + user.getLastName(),
-                    stats.getTotalPoints(),
-                    stats.getTotalDistance(),
-                    stats.getTotalTrashCollected(),
-                    System.currentTimeMillis()
-                );
+            if (stats == null) {
+                Log.w(TAG, "⚠️ Cannot calculate user ranking - user stats is null");
+                return null;
             }
             
+            int localUserId = getCurrentLocalUserId();
+            if (localUserId == -1) {
+                Log.w(TAG, "⚠️ Cannot calculate user ranking - local user ID is invalid (-1)");
+                return null;
+            }
+            
+            UserEntity user = localDb.userDao().getUserByIdSync(localUserId);
+            if (user == null) {
+                Log.w(TAG, "⚠️ Cannot calculate user ranking - user entity not found for ID: " + localUserId);
+                return null;
+            }
+            
+            String firebaseUserId = getCurrentUserId();
+            if (firebaseUserId == null || firebaseUserId.isEmpty()) {
+                Log.w(TAG, "⚠️ Cannot calculate user ranking - Firebase user ID is null or empty");
+                return null;
+            }
+              return new RankingUser(
+                firebaseUserId,
+                user.getUsername(),
+                user.getProfileImagePath() != null ? user.getProfileImagePath() : "", // profileImageUrl
+                stats.getTotalPoints(),
+                stats.getTotalDistance(),
+                stats.getTotalTrashCollected(),
+                0 // badgeCount - defaulting to 0 for now
+            );
+            
         } catch (Exception e) {
-            Log.e(TAG, "Error calculating user ranking", e);
+            Log.e(TAG, "❌ Error calculating user ranking", e);
+            return null;
         }
-        
-        return null;
     }
-    
-    /**
+      /**
      * Ambil data profile user dari database lokal
      */
     private UserProfile getUserProfileFromLocal() {
         try {
-            UserEntity user = localDb.userDao().getUserByIdSync(getCurrentLocalUserId());
-            
-            if (user != null) {                return new UserProfile(
-                    getCurrentUserId(),
-                    user.getUsername(),
-                    user.getFirstName(),
-                    user.getLastName(),
-                    user.getEmail(),
-                    user.getProfileImagePath() != null ? user.getProfileImagePath() : "",
-                    user.getActiveDecoration() != null ? user.getActiveDecoration() : "",
-                    System.currentTimeMillis()
-                );
+            int localUserId = getCurrentLocalUserId();
+            if (localUserId == -1) {
+                Log.w(TAG, "⚠️ Cannot get user profile - local user ID is invalid (-1)");
+                return null;
             }
             
+            UserEntity user = localDb.userDao().getUserByIdSync(localUserId);
+            if (user == null) {
+                Log.w(TAG, "⚠️ Cannot get user profile - user entity not found for ID: " + localUserId);
+                return null;
+            }
+            
+            String firebaseUserId = getCurrentUserId();
+            if (firebaseUserId == null || firebaseUserId.isEmpty()) {
+                Log.w(TAG, "⚠️ Cannot get user profile - Firebase user ID is null or empty");
+                return null;
+            }
+            
+            return new UserProfile(
+                firebaseUserId,
+                user.getUsername(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getEmail(),
+                user.getProfileImagePath() != null ? user.getProfileImagePath() : "",
+                user.getActiveDecoration() != null ? user.getActiveDecoration() : "",
+                System.currentTimeMillis()
+            );
+            
         } catch (Exception e) {
-            Log.e(TAG, "Error getting user profile from local", e);
+            Log.e(TAG, "❌ Error getting user profile from local", e);
+            return null;
         }
-        
-        return null;
     }
       /**
      * Update data statistik di database lokal
@@ -970,36 +1011,57 @@ public class FirebaseDataManager {
                 callback.onError(e.getMessage());
             }
         });
-    }
-
-    /**
+    }    /**
      * Update ranking data in Firebase
      */
     private void updateUserRankingInFirebase(String userId, UserStats stats) {
-        try {
-            // Get user profile data for ranking
-            UserEntity user = localDb.userDao().getUserByIdSync(getCurrentLocalUserId());
-            if (user != null) {
-                RankingUser rankingData = new RankingUser(
-                    userId,
-                    user.getUsername(),
-                    user.getFirstName() + " " + user.getLastName(),
-                    stats.getTotalPoints(),
-                    stats.getTotalDistance(),
-                    stats.getTotalTrashCollected(),
-                    stats.getLastUpdated()
-                );
-                
-                firestore.collection(COLLECTION_RANKING)
-                        .document(userId)
-                        .set(rankingData)
-                        .addOnSuccessListener(aVoid -> 
-                            Log.d(TAG, "✅ User ranking updated in Firebase"))
-                        .addOnFailureListener(e -> 
-                            Log.e(TAG, "❌ Error updating user ranking in Firebase", e));
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "❌ Error updating ranking data", e);
+        if (stats == null) {
+            Log.w(TAG, "⚠️ Cannot update user ranking - stats is null");
+            return;
         }
+        
+        if (userId == null || userId.isEmpty()) {
+            Log.w(TAG, "⚠️ Cannot update user ranking - userId is null or empty");
+            return;
+        }
+        
+        // Execute database operation on a background thread
+        executor.execute(() -> {
+            try {
+                int localUserId = getCurrentLocalUserId();
+                if (localUserId == -1) {
+                    Log.w(TAG, "⚠️ Cannot update user ranking - local user ID is invalid (-1)");
+                    return;
+                }
+                
+                // Get user profile data for ranking
+                UserEntity user = localDb.userDao().getUserByIdSync(localUserId);
+                if (user != null) {                    RankingUser rankingData = new RankingUser(
+                        userId,
+                        user.getUsername(),
+                        user.getProfileImagePath() != null ? user.getProfileImagePath() : "", // profileImageUrl
+                        stats.getTotalPoints(),
+                        stats.getTotalDistance(),
+                        stats.getTotalTrashCollected(),
+                        0 // badgeCount - defaulting to 0 for now
+                    );
+                    
+                    // Update ranking data in Firebase (this needs to be on main thread)
+                    new Handler(Looper.getMainLooper()).post(() -> {
+                        firestore.collection(COLLECTION_RANKING)
+                                .document(userId)
+                                .set(rankingData)
+                                .addOnSuccessListener(aVoid -> 
+                                    Log.d(TAG, "✅ User ranking updated in Firebase"))
+                                .addOnFailureListener(e -> 
+                                    Log.e(TAG, "❌ Error updating user ranking in Firebase", e));
+                    });
+                } else {
+                    Log.w(TAG, "⚠️ User not found for ranking update, local userId: " + localUserId);
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "❌ Error updating ranking data", e);
+            }
+        });
     }
 }
