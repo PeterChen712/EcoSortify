@@ -9,18 +9,16 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.glean.R;
+import com.example.glean.adapter.RankingPagerAdapter;
 import com.example.glean.databinding.FragmentRankingBinding;
-
-import java.util.ArrayList;
-import java.util.List;
+import com.google.android.material.tabs.TabLayoutMediator;
 
 public class RankingFragment extends Fragment {
     
     private FragmentRankingBinding binding;
+    private RankingPagerAdapter pagerAdapter;
     
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
@@ -28,12 +26,13 @@ public class RankingFragment extends Fragment {
         binding = FragmentRankingBinding.inflate(inflater, container, false);
         return binding.getRoot();
     }
-      @Override
+    
+    @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         
         setupBackButton();
-        setupRankingList();
+        setupTabsAndViewPager();
     }
     
     private void setupBackButton() {
@@ -44,12 +43,23 @@ public class RankingFragment extends Fragment {
         });
     }
     
-    private void setupRankingList() {
-        // Setup RecyclerView for ranking list
-        binding.recyclerViewRanking.setLayoutManager(new LinearLayoutManager(getContext()));
+    private void setupTabsAndViewPager() {
+        // Setup ViewPager2 with adapter
+        pagerAdapter = new RankingPagerAdapter(requireActivity());
+        binding.viewPager.setAdapter(pagerAdapter);
         
-        // TODO: Implement ranking adapter and load actual ranking data
-        // For now, this is a placeholder structure
+        // Connect TabLayout with ViewPager2
+        new TabLayoutMediator(binding.tabLayout, binding.viewPager,
+                (tab, position) -> {
+                    switch (position) {
+                        case 0:
+                            tab.setText("🏆 Points");
+                            break;
+                        case 1:
+                            tab.setText("🏃 Distance");
+                            break;
+                    }
+                }).attach();
     }
     
     @Override

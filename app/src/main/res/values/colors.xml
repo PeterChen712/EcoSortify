@@ -135,4 +135,9 @@
     <color name="warning_border">#FFE0A6</color>
     <color name="warning_text">#856404</color>    <!-- Additional chat colors -->
     <color name="text_hint">#9E9E9E</color>
+      <!-- Ranking colors -->
+    <color name="gold">#FFD700</color>
+    <color name="silver">#C0C0C0</color>
+    <color name="bronze">#CD7F32</color>
+    <color name="highlight_background">#E8F5E8</color>
 </resources>

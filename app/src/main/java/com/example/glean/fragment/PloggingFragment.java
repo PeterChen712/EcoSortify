@@ -60,6 +60,7 @@ import com.example.glean.model.LocationPointEntity;
 import com.example.glean.model.RecordEntity;
 import com.example.glean.model.UserEntity;
 import com.example.glean.service.LocationService;
+import com.example.glean.service.FirebaseRankingService;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -559,7 +560,10 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
 
                         db.recordDao().update(record);
 
-                        updateUserPoints(finalPoints);                        requireActivity().runOnUiThread(() -> {
+                        updateUserPoints(finalPoints);
+                        
+                        // Update Firebase ranking data
+                        FirebaseRankingService.getInstance(requireContext()).updateUserRankingData();                        requireActivity().runOnUiThread(() -> {
                             stopTracking();
                             
                             // Show completion toast and navigate directly to summary
@@ -2177,16 +2181,14 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
     private void showMenuPopup(View anchor) {
         PopupMenu popup = new PopupMenu(requireContext(), anchor);
         popup.getMenuInflater().inflate(R.menu.plogging_menu, popup.getMenu());
-          popup.setOnMenuItemClickListener(item -> {
+        
+        popup.setOnMenuItemClickListener(item -> {
             int itemId = item.getItemId();
             if (itemId == R.id.menu_stats) {
                 navigateToStats();
                 return true;
             } else if (itemId == R.id.menu_ranking) {
                 navigateToRanking();
-                return true;
-            } else if (itemId == R.id.menu_profile) {
-                navigateToProfile();
                 return true;
             }
             return false;
@@ -2202,13 +2204,6 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         // Navigate to dedicated Ranking fragment
         if (getActivity() != null) {
             Navigation.findNavController(requireView()).navigate(R.id.rankingFragment);
-        }
-    }
-
-    private void navigateToProfile() {
-        // Navigate to Profile fragment
-        if (getActivity() != null) {
-            Navigation.findNavController(requireView()).navigate(R.id.profileFragment);
         }
     }
 

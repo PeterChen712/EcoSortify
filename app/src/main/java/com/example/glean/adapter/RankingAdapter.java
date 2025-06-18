@@ -14,114 +14,143 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.example.glean.R;
-import com.example.glean.model.RankingEntity;
+import com.example.glean.model.RankingUser;
 import de.hdodenhof.circleimageview.CircleImageView;
 
-import java.io.File;
 import java.util.List;
 
 public class RankingAdapter extends RecyclerView.Adapter<RankingAdapter.RankingViewHolder> {
     
-    private List<RankingEntity> rankings;
+    private Context context;
+    private List<RankingUser> rankingList;
+    private boolean isPointsRanking; // true for points, false for distance
+    private String currentUserId;
     
-    public RankingAdapter(List<RankingEntity> rankings) {
-        this.rankings = rankings;
+    public RankingAdapter(Context context, List<RankingUser> rankingList, boolean isPointsRanking, String currentUserId) {
+        this.context = context;
+        this.rankingList = rankingList;
+        this.isPointsRanking = isPointsRanking;
+        this.currentUserId = currentUserId;
     }
     
     @NonNull
     @Override
     public RankingViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.item_ranking, parent, false);
+        View view = LayoutInflater.from(context).inflate(R.layout.item_ranking, parent, false);
         return new RankingViewHolder(view);
     }
     
     @Override
     public void onBindViewHolder(@NonNull RankingViewHolder holder, int position) {
-        RankingEntity ranking = rankings.get(position);
-        holder.bind(ranking);
+        RankingUser user = rankingList.get(position);
+        holder.bind(user, position + 1);
     }
     
     @Override
     public int getItemCount() {
-        return rankings.size();
+        return rankingList.size();
+    }
+    
+    public void updateData(List<RankingUser> newRankingList) {
+        this.rankingList = newRankingList;
+        notifyDataSetChanged();
     }    class RankingViewHolder extends RecyclerView.ViewHolder {
-        private TextView tvUsername, tvPoints, tvRankingPosition;
+        private TextView tvUsername, tvPoints, tvRankingPosition, tvStats, tvScoreUnit;
         private CardView cardRanking;
         private CircleImageView ivUserProfile;
+        private ImageView ivCrown;
         
         public RankingViewHolder(@NonNull View itemView) {
             super(itemView);
             tvUsername = itemView.findViewById(R.id.tvUserName);
             tvPoints = itemView.findViewById(R.id.tvPoints);
             tvRankingPosition = itemView.findViewById(R.id.tvRankingPosition);
+            tvStats = itemView.findViewById(R.id.tvStats);
+            tvScoreUnit = itemView.findViewById(R.id.tvScoreUnit);
             ivUserProfile = itemView.findViewById(R.id.ivUserProfile);
+            ivCrown = itemView.findViewById(R.id.ivCrown);
             cardRanking = itemView.findViewById(R.id.cardRanking);
-        }        public void bind(RankingEntity ranking) {
-            // Handle username with fallback for empty names
-            String username = ranking.getUsername();
+        }
+
+        public void bind(RankingUser user, int position) {
+            // Set position
+            tvRankingPosition.setText("#" + position);
+            
+            // Show crown for top 3
+            if (position <= 3) {
+                ivCrown.setVisibility(View.VISIBLE);
+                // Different crown colors for different positions
+                switch (position) {
+                    case 1: // Gold
+                        ivCrown.setColorFilter(ContextCompat.getColor(context, R.color.gold));
+                        break;
+                    case 2: // Silver
+                        ivCrown.setColorFilter(ContextCompat.getColor(context, R.color.silver));
+                        break;
+                    case 3: // Bronze
+                        ivCrown.setColorFilter(ContextCompat.getColor(context, R.color.bronze));
+                        break;
+                }
+            } else {
+                ivCrown.setVisibility(View.GONE);
+            }
+            
+            // Set username
+            String username = user.getUsername();
             if (username == null || username.trim().isEmpty()) {
                 username = "User Baru";
             }
             tvUsername.setText(username);
-            tvPoints.setText(ranking.getPoints() + " poin");
             
-            // Display ranking position
-            tvRankingPosition.setText(String.valueOf(ranking.getPosition()));
-            
-            // Load profile image
-            if (ranking.getAvatar() != null && !ranking.getAvatar().isEmpty()) {
-                // Load from file path
-                File imageFile = new File(ranking.getAvatar());
-                if (imageFile.exists()) {
-                    Glide.with(ivUserProfile.getContext())
-                            .load(imageFile)
-                            .placeholder(R.drawable.profile_placeholder)
-                            .error(R.drawable.profile_placeholder)
-                            .into(ivUserProfile);
-                } else {
-                    // File doesn't exist, load default
-                    ivUserProfile.setImageResource(R.drawable.profile_placeholder);
-                }
+            // Set profile image
+            if (user.getProfileImageUrl() != null && !user.getProfileImageUrl().isEmpty()) {
+                Glide.with(context)
+                        .load(user.getProfileImageUrl())
+                        .placeholder(R.drawable.ic_user_avatar)
+                        .error(R.drawable.ic_user_avatar)
+                        .into(ivUserProfile);
             } else {
-                // No profile image set, load default
-                ivUserProfile.setImageResource(R.drawable.profile_placeholder);
+                ivUserProfile.setImageResource(R.drawable.ic_user_avatar);
             }
-              // Set border color based on ranking position
-            Context context = itemView.getContext();
+            
+            // Set stats
+            tvStats.setText(user.getFormattedStats());
+            
+            // Set score based on ranking type
+            if (isPointsRanking) {
+                tvPoints.setText(String.valueOf(user.getTotalPoints()));
+                tvScoreUnit.setText("poin");
+            } else {
+                tvPoints.setText(String.format("%.1f", user.getTotalDistance() / 1000.0));
+                tvScoreUnit.setText("km");
+            }
+            
+            // Set border color based on ranking position
             int borderColor;
-            if (ranking.getPosition() == 1) {
-                borderColor = ContextCompat.getColor(context, R.color.badge_gold);
-                tvRankingPosition.setTextColor(ContextCompat.getColor(context, R.color.badge_gold));
-            } else if (ranking.getPosition() == 2) {
-                borderColor = ContextCompat.getColor(context, R.color.badge_silver);
-                tvRankingPosition.setTextColor(ContextCompat.getColor(context, R.color.badge_silver));
-            } else if (ranking.getPosition() == 3) {
-                borderColor = ContextCompat.getColor(context, R.color.badge_bronze);
-                tvRankingPosition.setTextColor(ContextCompat.getColor(context, R.color.badge_bronze));
+            if (position == 1) {
+                borderColor = ContextCompat.getColor(context, R.color.gold);
+                tvRankingPosition.setTextColor(ContextCompat.getColor(context, R.color.gold));
+            } else if (position == 2) {
+                borderColor = ContextCompat.getColor(context, R.color.silver);
+                tvRankingPosition.setTextColor(ContextCompat.getColor(context, R.color.silver));
+            } else if (position == 3) {
+                borderColor = ContextCompat.getColor(context, R.color.bronze);
+                tvRankingPosition.setTextColor(ContextCompat.getColor(context, R.color.bronze));
             } else {
-                borderColor = ContextCompat.getColor(context, R.color.divider_color);
-                tvRankingPosition.setTextColor(ContextCompat.getColor(context, R.color.card_text_secondary));
-            }            // Apply border color to CircleImageView
-            ivUserProfile.setBorderColor(borderColor);
-            ivUserProfile.setBorderWidth(ranking.getPosition() <= 3 ? 6 : 3); // Thicker border for top 3
-            
-            // Apply card background border for top 3 positions
-            if (ranking.getPosition() == 1) {
-                cardRanking.setBackground(ContextCompat.getDrawable(context, R.drawable.card_border_gold));
-            } else if (ranking.getPosition() == 2) {
-                cardRanking.setBackground(ContextCompat.getDrawable(context, R.drawable.card_border_silver));
-            } else if (ranking.getPosition() == 3) {
-                cardRanking.setBackground(ContextCompat.getDrawable(context, R.drawable.card_border_bronze));
-            } else {
-                cardRanking.setCardBackgroundColor(ContextCompat.getColor(context, R.color.card_background));
+                borderColor = ContextCompat.getColor(context, R.color.primary_color);
+                tvRankingPosition.setTextColor(ContextCompat.getColor(context, R.color.primary_color));
             }
+
+            // Apply border color to CircleImageView
+            ivUserProfile.setBorderColor(borderColor);
+            ivUserProfile.setBorderWidth(position <= 3 ? 6 : 3); // Thicker border for top 3
             
             // Highlight current user
-            if (ranking.isCurrentUser()) {
-                // Keep original background but add slight highlight
-                itemView.setAlpha(0.9f);
+            if (currentUserId != null && currentUserId.equals(user.getUserId())) {
+                itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.highlight_background));
+                itemView.setAlpha(0.95f);
             } else {
+                itemView.setBackgroundColor(ContextCompat.getColor(context, android.R.color.transparent));
                 itemView.setAlpha(1.0f);
             }
         }

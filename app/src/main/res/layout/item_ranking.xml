@@ -4,36 +4,48 @@
     android:id="@+id/cardRanking"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="6dp"
-    app:cardCornerRadius="8dp"
+    android:layout_marginVertical="4dp"
+    android:layout_marginHorizontal="16dp"
+    app:cardCornerRadius="12dp"
     app:cardElevation="2dp"
-    app:cardBackgroundColor="@color/card_background">    <LinearLayout
+    app:cardBackgroundColor="@color/white">
+
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="12dp"
-        android:gravity="center_vertical"
-        android:background="@color/card_background">
+        android:padding="16dp"
+        android:gravity="center_vertical">
 
         <!-- Ranking Position Number -->
         <TextView
             android:id="@+id/tvRankingPosition"
-            android:layout_width="wrap_content"
+            android:layout_width="48dp"
             android:layout_height="wrap_content"
             android:text="1"
             android:textSize="20sp"
             android:textStyle="bold"
-            android:textColor="?attr/colorPrimary"
+            android:textColor="@color/primary_color"
             android:layout_marginEnd="12dp"
-            android:minWidth="24dp"
-            android:gravity="center" />        <!-- User Profile with Border -->
+            android:gravity="center" />
+
+        <!-- Crown for top 3 positions -->
+        <ImageView
+            android:id="@+id/ivCrown"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_crown"
+            android:visibility="gone"
+            android:layout_marginEnd="8dp" />
+
+        <!-- User Profile with Border -->
         <de.hdodenhof.circleimageview.CircleImageView
             android:id="@+id/ivUserProfile"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:src="@drawable/ic_user_placeholder"
-            app:civ_border_width="3dp"
-            app:civ_border_color="?attr/colorPrimary"
+            android:src="@drawable/ic_user_avatar"
+            app:civ_border_width="2dp"
+            app:civ_border_color="@color/primary_color"
             android:layout_marginEnd="12dp" />
 
         <!-- User Info -->
@@ -49,18 +61,47 @@
                 android:layout_height="wrap_content"
                 android:text="Username"
                 android:textStyle="bold"
-                android:textSize="15sp"
-                android:textColor="@color/card_text_primary" />
+                android:textSize="16sp"
+                android:textColor="@color/text_primary"
+                android:singleLine="true"
+                android:ellipsize="end" />
+
+            <TextView
+                android:id="@+id/tvStats"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="12.5km • 850 poin • 3 badge"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary"
+                android:layout_marginTop="2dp" />
+
+        </LinearLayout>
+
+        <!-- Score -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="end">
 
             <TextView
                 android:id="@+id/tvPoints"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="1,250 poin"
-                android:textStyle="normal"
-                android:textSize="13sp"
-                android:textColor="?attr/colorPrimary"
-                android:layout_marginTop="2dp" />
+                android:text="1,250"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/primary_color"
+                android:gravity="end" />
+
+            <TextView
+                android:id="@+id/tvScoreUnit"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="poin"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary"
+                android:gravity="end" />
 
         </LinearLayout>
 
