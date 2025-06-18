@@ -690,9 +690,7 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
 
                 }
             });
-        }    }
-
-    /**
+        }    }    /**
      * Navigate to the plogging summary fragment
      */
     private void navigateToSummary(int recordId) {
@@ -700,10 +698,24 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
             NavController navController = Navigation.findNavController(requireView());
             Bundle args = new Bundle();
             args.putInt("RECORD_ID", recordId);
-            navController.navigate(R.id.action_ploggingFragment_to_ploggingSummaryFragment, args);
+            
+            // Try to use the correct navigation action based on current destination
+            try {
+                // First try the tabs fragment action (most likely case)
+                navController.navigate(R.id.action_ploggingTabsFragment_to_ploggingSummaryFragment, args);
+                Log.d(TAG, "Successfully navigated to summary from ploggingTabsFragment");
+            } catch (IllegalArgumentException e) {
+                // If that fails, try the regular plogging fragment action
+                Log.d(TAG, "Failed to navigate from ploggingTabsFragment, trying ploggingFragment action");
+                navController.navigate(R.id.action_ploggingFragment_to_ploggingSummaryFragment, args);
+                Log.d(TAG, "Successfully navigated to summary from ploggingFragment");
+            }
         } catch (Exception e) {
             Log.e(TAG, "Error navigating to plogging summary", e);
             Toast.makeText(requireContext(), "Gagal membuka hasil plogging", Toast.LENGTH_SHORT).show();
+            
+            // As a fallback, just show the completion message without navigation
+            Toast.makeText(requireContext(), "Plogging berhasil disimpan! Lihat riwayat di menu History.", Toast.LENGTH_LONG).show();
         }
     }
 
@@ -867,12 +879,21 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
                 args.putInt("RECORD_ID", currentRecordId);
                 args.putInt("CURRENT_TRASH_COUNT", currentTrashCount);
                 args.putInt("CURRENT_POINTS", currentPoints);
-                
-                Log.d("PloggingFragment", "NAV: Bundle created with keys: " + args.keySet().toString());
+                  Log.d("PloggingFragment", "NAV: Bundle created with keys: " + args.keySet().toString());
                 Log.d("PloggingFragment", "NAV: Bundle RECORD_ID value: " + args.getInt("RECORD_ID"));
                 Log.d("PloggingFragment", "=== NAVIGATION DEBUG END ===");
                 
-                navController.navigate(R.id.action_ploggingFragment_to_trashMLFragment, args);
+                // Try to use the correct navigation action based on current destination
+                try {
+                    // First try the tabs fragment action (most likely case)
+                    navController.navigate(R.id.action_ploggingTabsFragment_to_trashMLFragment, args);
+                    Log.d(TAG, "Successfully navigated to trash ML from ploggingTabsFragment");
+                } catch (IllegalArgumentException e) {
+                    // If that fails, try the regular plogging fragment action
+                    Log.d(TAG, "Failed to navigate from ploggingTabsFragment, trying ploggingFragment action");
+                    navController.navigate(R.id.action_ploggingFragment_to_trashMLFragment, args);
+                    Log.d(TAG, "Successfully navigated to trash ML from ploggingFragment");
+                }
             } catch (Exception e) {
                 Log.e("PloggingFragment", "NAV: Error navigating to trash collection", e);
                 Toast.makeText(requireContext(), "Trash collection feature temporarily unavailable", Toast.LENGTH_SHORT).show();
@@ -1617,7 +1638,6 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
     private void initializeGpsMonitoring() {
         locationManager = (LocationManager) requireContext().getSystemService(Context.LOCATION_SERVICE);
         
-        // Create GPS receiver for monitoring GPS enable/disable events
         gpsReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
@@ -2306,12 +2326,26 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
     }    private void navigateToStats() {
         // Navigate to Stats fragment
         if (getActivity() != null) {
-            Navigation.findNavController(requireView()).navigate(R.id.statsFragment);
+            try {
+                // First try the tabs fragment action
+                Navigation.findNavController(requireView()).navigate(R.id.action_ploggingTabsFragment_to_statsFragment);
+            } catch (IllegalArgumentException e) {
+                // Fallback to direct fragment navigation
+                Navigation.findNavController(requireView()).navigate(R.id.statsFragment);
+            }
         }
-    }    private void navigateToRanking() {
+    }    
+
+    private void navigateToRanking() {
         // Navigate to dedicated Ranking fragment
         if (getActivity() != null) {
-            Navigation.findNavController(requireView()).navigate(R.id.rankingFragment);
+            try {
+                // First try the tabs fragment action
+                Navigation.findNavController(requireView()).navigate(R.id.action_ploggingTabsFragment_to_rankingFragment);
+            } catch (IllegalArgumentException e) {
+                // Fallback to direct fragment navigation
+                Navigation.findNavController(requireView()).navigate(R.id.rankingFragment);
+            }
         }
     }
 
@@ -2320,9 +2354,7 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
         if (getActivity() != null) {
             Navigation.findNavController(requireView()).navigate(R.id.trashMapFragment);
         }
-    }
-
-    private void navigateToProfile() {
+    }    private void navigateToProfile() {
         // Check authentication and network for Profile feature
         AuthGuard.checkFeatureAccess(getActivity(), "profile", new AuthGuard.AuthCheckCallback() {
             @Override
@@ -2335,7 +2367,13 @@ public class PloggingFragment extends Fragment implements OnMapReadyCallback {
             public void onProceedWithFeature() {
                 // User is authenticated, navigate to profile
                 if (getActivity() != null) {
-                    Navigation.findNavController(requireView()).navigate(R.id.profileFragment);
+                    try {
+                        // First try the tabs fragment action
+                        Navigation.findNavController(requireView()).navigate(R.id.action_ploggingTabsFragment_to_profileFragment);
+                    } catch (IllegalArgumentException e) {
+                        // Fallback to direct fragment navigation
+                        Navigation.findNavController(requireView()).navigate(R.id.profileFragment);
+                    }
                 }
             }
             
