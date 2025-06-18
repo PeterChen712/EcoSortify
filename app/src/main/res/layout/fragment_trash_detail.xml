@@ -8,20 +8,19 @@
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-
-        <!-- Header -->
+        android:layout_height="wrap_content">        <!-- Header -->
         <LinearLayout
             android:id="@+id/layout_header"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="56dp"
             android:orientation="horizontal"
-            android:padding="16dp"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="8dp"
             android:gravity="center_vertical"
             android:background="#4CAF50"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent">            <ImageButton
+            app:layout_constraintTop_toTopOf="parent"><ImageButton
                 android:id="@+id/btn_back"
                 android:layout_width="48dp"
                 android:layout_height="48dp"

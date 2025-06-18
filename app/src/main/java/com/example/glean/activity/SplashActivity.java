@@ -20,20 +20,10 @@ public class SplashActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         binding = ActivitySplashBinding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());
-
-        // Determine if the user is logged in
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        boolean isLoggedIn = prefs.getInt("USER_ID", -1) != -1;
-
-        // Delay for splash screen
+        setContentView(binding.getRoot());        // Always go to MainActivity in guest mode by default
+        // No forced login required on first launch
         new Handler().postDelayed(() -> {
-            Intent intent;
-            if (isLoggedIn) {
-                intent = new Intent(SplashActivity.this, MainActivity.class);
-            } else {
-                intent = new Intent(SplashActivity.this, AuthActivity.class);
-            }
+            Intent intent = new Intent(SplashActivity.this, MainActivity.class);
             startActivity(intent);
             finish();
         }, SPLASH_DELAY);

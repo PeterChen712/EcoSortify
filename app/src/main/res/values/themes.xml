@@ -42,4 +42,29 @@
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:statusBarColor">@color/background_light</item>
     </style>
+
+    <!-- Standard Header Style - 56dp height -->
+    <style name="AppBarLayout" parent="Widget.Material3.AppBarLayout">
+        <item name="android:layout_height">56dp</item>
+        <item name="android:elevation">4dp</item>
+    </style>
+
+    <style name="MaterialToolbar" parent="Widget.Material3.Toolbar">
+        <item name="android:layout_height">56dp</item>
+        <item name="android:minHeight">56dp</item>
+        <item name="titleTextAppearance">@style/ToolbarTitleStyle</item>
+    </style>
+
+    <style name="ToolbarTitleStyle" parent="TextAppearance.Material3.HeadlineSmall">
+        <item name="android:textSize">20sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- Header Layout Style -->
+    <style name="HeaderLayout">
+        <item name="android:layout_height">56dp</item>
+        <item name="android:paddingHorizontal">16dp</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:orientation">horizontal</item>
+    </style>
 </resources>

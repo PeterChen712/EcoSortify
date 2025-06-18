@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- Header dimensions -->
-    <dimen name="header_height">140dp</dimen>
+<resources>    <!-- Header dimensions - Standard AppBar height 56dp -->
+    <dimen name="header_height">56dp</dimen>
+    <dimen name="app_bar_height">56dp</dimen>
+    <dimen name="action_bar_height">56dp</dimen>
     <dimen name="header_corner_radius">32dp</dimen>
     <dimen name="header_padding_horizontal">24dp</dimen>
     <dimen name="header_padding_vertical">20dp</dimen>
@@ -21,4 +22,13 @@
     <dimen name="nav_header_vertical_spacing">8dp</dimen>
     <dimen name="activity_horizontal_margin">16dp</dimen>
     <dimen name="activity_vertical_margin">16dp</dimen>
+
+    <!-- Standard Material Design dimensions -->
+    <dimen name="standard_toolbar_height">56dp</dimen>
+    <dimen name="standard_app_bar_height">56dp</dimen>
+    <dimen name="standard_header_height">56dp</dimen>
+    
+    <!-- Consistent padding for headers -->
+    <dimen name="header_padding_horizontal_standard">16dp</dimen>
+    <dimen name="header_padding_vertical_standard">8dp</dimen>
 </resources>

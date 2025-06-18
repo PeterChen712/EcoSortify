@@ -414,6 +414,32 @@ public class FirebaseAuthManager {
     }
     
     /**
+     * Get current Firebase user ID
+     */
+    public String getCurrentUserId() {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user != null) {
+            return user.getUid();
+        }
+        // Fallback to local user ID for development mode
+        return prefs.getString(KEY_USER_ID, "");
+    }
+    
+    /**
+     * Get current local user ID (for database operations)
+     */
+    public int getCurrentLocalUserId() {
+        // Get local user ID from SharedPreferences
+        String userIdStr = prefs.getString(KEY_USER_ID, "-1");
+        try {
+            return Integer.parseInt(userIdStr);
+        } catch (NumberFormatException e) {
+            Log.w(TAG, "Invalid user ID format: " + userIdStr);
+            return -1;
+        }
+    }
+    
+    /**
      * Logout user
      */
     public void logout() {

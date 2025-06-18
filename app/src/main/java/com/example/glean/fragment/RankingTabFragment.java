@@ -23,6 +23,7 @@ import com.example.glean.util.NetworkUtil;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
+import com.example.glean.service.FirebaseDataManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,10 +32,10 @@ public class RankingTabFragment extends Fragment {
     
     private static final String TAG = "RankingTabFragment";
     private static final String ARG_IS_POINTS_RANKING = "is_points_ranking";
-    
-    private FragmentRankingTabBinding binding;
+      private FragmentRankingTabBinding binding;
     private FirebaseFirestore firestore;
     private FirebaseAuthManager authManager;
+    private FirebaseDataManager dataManager;
     private RankingAdapter adapter;
     private List<RankingUser> rankingList = new ArrayList<>();
     private boolean isPointsRanking;
@@ -54,9 +55,9 @@ public class RankingTabFragment extends Fragment {
         if (getArguments() != null) {
             isPointsRanking = getArguments().getBoolean(ARG_IS_POINTS_RANKING, true);
         }
-        
-        firestore = FirebaseFirestore.getInstance();
+          firestore = FirebaseFirestore.getInstance();
         authManager = FirebaseAuthManager.getInstance(requireContext());
+        dataManager = FirebaseDataManager.getInstance(requireContext());
         
         // Get current user ID
         SharedPreferences prefs = requireContext().getSharedPreferences("USER_PREFS", 0);
@@ -87,7 +88,7 @@ public class RankingTabFragment extends Fragment {
             return;
         }
         
-        loadRankingData();
+        loadRankingDataWithFirebase();
     }
     
     private void showNetworkError() {
@@ -311,9 +312,104 @@ public class RankingTabFragment extends Fragment {
         Log.e(TAG, message);
     }
     
-    @Override
+    private void loadRankingDataWithFirebase() {
+        showLoading(true);
+        
+        // Subscribe to real-time ranking updates
+        dataManager.subscribeToRanking(new FirebaseDataManager.RankingDataCallback() {
+            @Override
+            public void onRankingLoaded(List<FirebaseDataManager.RankingUser> ranking) {
+                requireActivity().runOnUiThread(() -> {
+                    // Convert Firebase ranking data to local ranking data
+                    List<RankingUser> localRanking = convertFirebaseRankingToLocal(ranking);
+                      // Sort based on current tab
+                    if (isPointsRanking) {
+                        localRanking.sort((a, b) -> Integer.compare(b.getTotalPoints(), a.getTotalPoints()));
+                    } else {
+                        localRanking.sort((a, b) -> Double.compare(b.getTotalDistance(), a.getTotalDistance()));
+                    }
+                    
+                    rankingList.clear();
+                    rankingList.addAll(localRanking);
+                    adapter.notifyDataSetChanged();
+                    
+                    showLoading(false);
+                    
+                    // Update current user position
+                    updateCurrentUserPosition();
+                });
+            }
+            
+            @Override
+            public void onError(String error) {
+                requireActivity().runOnUiThread(() -> {
+                    Log.e(TAG, "Firebase ranking error: " + error);
+                    showLoading(false);
+                    Toast.makeText(requireContext(), 
+                        "Gagal memuat data ranking: " + error, 
+                        Toast.LENGTH_SHORT).show();
+                });
+            }
+        });
+        
+        // Also sync local data to Firebase
+        dataManager.syncAllUserData(new FirebaseDataManager.DataSyncCallback() {
+            @Override
+            public void onSuccess() {
+                Log.d(TAG, "User data synced to Firebase for ranking");
+            }
+            
+            @Override
+            public void onError(String error) {
+                Log.w(TAG, "Failed to sync user data: " + error);
+            }
+        });
+    }
+    
+    private List<RankingUser> convertFirebaseRankingToLocal(List<FirebaseDataManager.RankingUser> firebaseRanking) {
+        List<RankingUser> localRanking = new ArrayList<>();
+        
+        for (FirebaseDataManager.RankingUser fbUser : firebaseRanking) {            RankingUser localUser = new RankingUser(
+                fbUser.getUserId(),
+                fbUser.getUsername(),
+                "", // avatar URL - can be added later
+                fbUser.getTotalPoints(),
+                fbUser.getTotalDistance(),
+                fbUser.getTotalTrashCollected(),
+                0 // badge count - can be calculated later
+            );
+            localRanking.add(localUser);
+        }
+        
+        return localRanking;
+    }
+    
+    private void updateCurrentUserPosition() {
+        // Find current user position in ranking
+        int currentUserPosition = -1;
+        for (int i = 0; i < rankingList.size(); i++) {
+            if (currentUserId.equals(rankingList.get(i).getUserId())) {
+                currentUserPosition = i + 1; // Position is 1-based
+                break;
+            }
+        }
+          // Update UI with current user position
+        if (currentUserPosition > 0) {
+            // Use existing UI components to show current position
+            binding.tvMyPosition.setText("#" + currentUserPosition);
+            binding.myRankingCard.setVisibility(View.VISIBLE);
+        } else {
+            binding.tvMyPosition.setText("#--");
+        }
+    }    @Override
     public void onDestroyView() {
         super.onDestroyView();
+        
+        // Stop Firebase listeners to prevent memory leaks
+        if (dataManager != null) {
+            dataManager.stopAllListeners();
+        }
+        
         binding = null;
     }
 }

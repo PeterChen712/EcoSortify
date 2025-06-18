@@ -26,6 +26,7 @@ import com.example.glean.db.AppDatabase;
 import com.example.glean.model.RecordEntity;
 import com.example.glean.model.TrashEntity;
 import com.example.glean.model.UserEntity;
+import com.example.glean.service.FirebaseDataManager;
 import com.example.glean.util.NetworkUtil;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.Description;
@@ -47,7 +48,9 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class StatsFragment extends Fragment {    private FragmentStatsBinding binding;
+public class StatsFragment extends Fragment {
+
+    private FragmentStatsBinding binding;
     private AppDatabase db;
     private ExecutorService executor;
     private int userId = -1;
@@ -55,12 +58,14 @@ public class StatsFragment extends Fragment {    private FragmentStatsBinding bi
     private List<RecordEntity> recordList = new ArrayList<>();
     private List<TrashEntity> trashList = new ArrayList<>();
     private boolean dataLoaded = false;
-    private FirebaseAuthManager authManager;    @Override
+    private FirebaseAuthManager authManager;
+    private FirebaseDataManager dataManager;    @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         db = AppDatabase.getInstance(requireContext());
         executor = Executors.newSingleThreadExecutor();
         authManager = FirebaseAuthManager.getInstance(requireContext());
+        dataManager = FirebaseDataManager.getInstance(requireContext());
         
         // Get user ID from SharedPreferences using correct method
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
@@ -101,9 +106,8 @@ public class StatsFragment extends Fragment {    private FragmentStatsBinding bi
                     "Fitur riwayat akan segera hadir!", 
                     android.widget.Toast.LENGTH_SHORT).show();
             }
-        });
-          // Load data
-        loadData();
+        });        // Load data with Firebase sync
+        loadDataWithFirebaseSync();
     }
     
     private void showNetworkError() {
@@ -514,6 +518,96 @@ public class StatsFragment extends Fragment {    private FragmentStatsBinding bi
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        binding = null; // Prevent memory leaks
+        
+        // Stop Firebase listeners to prevent memory leaks
+        if (dataManager != null) {
+            dataManager.stopAllListeners();
+        }
+        
+        if (binding != null) {
+            binding = null;
+        }
+    }
+
+    private void loadDataWithFirebaseSync() {
+        binding.progressIndicator.setVisibility(View.VISIBLE);
+        
+        // First, load local data
+        loadData();
+        
+        // Then, sync with Firebase if user is logged in
+        if (authManager.isLoggedIn()) {
+            // Subscribe to real-time stats updates
+            dataManager.subscribeToUserStats(new FirebaseDataManager.StatsDataCallback() {
+                @Override
+                public void onStatsLoaded(FirebaseDataManager.UserStats stats) {
+                    requireActivity().runOnUiThread(() -> {
+                        updateUIWithFirebaseStats(stats);
+                        binding.progressIndicator.setVisibility(View.GONE);
+                    });
+                }
+                
+                @Override
+                public void onError(String error) {
+                    requireActivity().runOnUiThread(() -> {
+                        Log.w("StatsFragment", "Firebase stats error: " + error);
+                        // Continue with local data
+                        binding.progressIndicator.setVisibility(View.GONE);
+                    });
+                }
+            });
+            
+            // Sync local data to Firebase
+            dataManager.syncAllUserData(new FirebaseDataManager.DataSyncCallback() {
+                @Override
+                public void onSuccess() {
+                    Log.d("StatsFragment", "Data synced to Firebase successfully");
+                }
+                
+                @Override
+                public void onError(String error) {
+                    Log.w("StatsFragment", "Firebase sync error: " + error);
+                }
+            });
+        } else {
+            // Just load local data for guest users
+            binding.progressIndicator.setVisibility(View.GONE);
+        }
+    }
+    
+    private void updateUIWithFirebaseStats(FirebaseDataManager.UserStats stats) {
+        // Update UI with Firebase stats data
+        binding.tvTotalPoints.setText(String.valueOf(stats.getTotalPoints()));
+        binding.tvTotalDistance.setText(stats.getTotalDistance() > 0 ? 
+            String.format(Locale.getDefault(), "%.2f", stats.getTotalDistance() / 1000) : "0,00");
+        
+        // Update other stats
+        binding.tvTotalRuns.setText(String.valueOf(stats.getTotalSessions()));
+        
+        // Calculate and display achievements/badges count based on points
+        int badgeCount = calculateBadgeCount(stats.getTotalPoints());
+        binding.tvAchievements.setText(String.valueOf(badgeCount));
+        
+        // Update progress bars and other UI elements based on Firebase data
+        updateProgressBars(stats);
+    }
+    
+    private void updateProgressBars(FirebaseDataManager.UserStats stats) {
+        // Update distance progress (example: target 100km per month)
+        float targetDistance = 100000; // 100km in meters
+        float progressDistance = Math.min((float)stats.getTotalDistance() / targetDistance * 100, 100);
+        
+        // Update points progress (example: target 10000 points)
+        int targetPoints = 10000;
+        float progressPoints = Math.min((float)stats.getTotalPoints() / targetPoints * 100, 100);
+        
+        // Update sessions progress (example: target 50 sessions)
+        int targetSessions = 50;
+        float progressSessions = Math.min((float)stats.getTotalSessions() / targetSessions * 100, 100);
+        
+        // Update UI with progress values
+        // Note: You may need to add progress bars to your layout if they don't exist
+        Log.d("StatsFragment", "Progress - Distance: " + progressDistance + "%, Points: " + 
+              progressPoints + "%, Sessions: " + progressSessions + "%");
     }
 }
