@@ -3,6 +3,7 @@ package com.example.glean.service;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
+import android.preference.PreferenceManager;
 import android.util.Log;
 
 import com.example.glean.auth.FirebaseAuthManager;
@@ -302,12 +303,11 @@ public class FirebaseDataManager {
             
             // Try multiple ways to get correct user ID
             int currentUserId = getCurrentLocalUserId();
-            
-            // If getCurrentLocalUserId returns -1, try getting from SharedPreferences directly
+              // If getCurrentLocalUserId returns -1, try getting from SharedPreferences directly
             if (currentUserId == -1) {
-                android.content.SharedPreferences prefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE);
-                currentUserId = prefs.getInt("USER_ID", -1);
-                Log.w(TAG, "🔍 FirebaseAuthManager returned -1, trying USER_ID from SharedPreferences: " + currentUserId);
+                android.content.SharedPreferences defaultPrefs = PreferenceManager.getDefaultSharedPreferences(context);
+                currentUserId = defaultPrefs.getInt("USER_ID", -1);
+                Log.w(TAG, "🔍 FirebaseAuthManager returned -1, trying USER_ID from default SharedPreferences: " + currentUserId);
             }
             
             Log.d(TAG, "🔍 Using currentUserId: " + currentUserId + " to calculate stats");
@@ -316,9 +316,16 @@ public class FirebaseDataManager {
                 Log.e(TAG, "❌ CRITICAL: Cannot find valid user ID! Stats will be zero.");
                 return new UserStats(0, 0.0, 0, 0, 0, System.currentTimeMillis());
             }
-            
-            List<RecordEntity> records = localDb.recordDao().getRecordsByUserIdSync(currentUserId);
+              List<RecordEntity> records = localDb.recordDao().getRecordsByUserIdSync(currentUserId);
             Log.d(TAG, "🔍 Found " + records.size() + " records for userId: " + currentUserId);
+              // Log each record for debugging
+            for (int i = 0; i < records.size(); i++) {
+                RecordEntity record = records.get(i);
+                int trashCount = localDb.trashDao().getTrashCountByRecordIdSync(record.getId());                Log.d(TAG, "🔍 Record " + (i+1) + "/" + records.size() + ": ID=" + record.getId() + 
+                          ", points=" + record.getPoints() + ", distance=" + record.getDistance() + 
+                          ", duration=" + record.getDuration() + ", trash=" + trashCount + 
+                          ", userId=" + record.getUserId() + ", createdAt=" + record.getCreatedAt());
+            }
             
             if (records.isEmpty()) {
                 Log.w(TAG, "⚠️ No records found for user ID: " + currentUserId + " - stats will be zero");
@@ -968,9 +975,27 @@ public class FirebaseDataManager {
                 
                 Log.d(TAG, "🔍 Force update Firebase for user: " + userId + " (local ID: " + localUserId + ")");
                 Log.d(TAG, "🔍 After saving record ID: " + recordId);
-                
-                // Wait a moment to ensure database transaction is complete
+                  // Wait a moment to ensure database transaction is complete
                 Thread.sleep(500);
+                  // Add detailed logging for debugging
+                Log.d(TAG, "🔍 === DEBUGGING STATS CALCULATION ===");
+                Log.d(TAG, "🔍 Current User ID (Firebase): " + userId);
+                Log.d(TAG, "🔍 Current Local User ID: " + localUserId);
+                Log.d(TAG, "🔍 Record ID that just completed: " + recordId);
+                
+                // Verify the specific record exists and has data
+                RecordEntity specificRecord = localDb.recordDao().getRecordByIdSync(recordId);
+                if (specificRecord != null) {
+                    Log.d(TAG, "🔍 SPECIFIC RECORD verification:");
+                    Log.d(TAG, "   Record ID: " + specificRecord.getId());
+                    Log.d(TAG, "   User ID: " + specificRecord.getUserId()); 
+                    Log.d(TAG, "   Points: " + specificRecord.getPoints());
+                    Log.d(TAG, "   Distance: " + specificRecord.getDistance());
+                    Log.d(TAG, "   Duration: " + specificRecord.getDuration());
+                    Log.d(TAG, "   Trash count: " + localDb.trashDao().getTrashCountByRecordIdSync(recordId));
+                } else {
+                    Log.e(TAG, "❌ CRITICAL: Specific record " + recordId + " not found!");
+                }
                 
                 // Calculate fresh stats from local data including the new record
                 UserStats freshStats = calculateUserStats();
