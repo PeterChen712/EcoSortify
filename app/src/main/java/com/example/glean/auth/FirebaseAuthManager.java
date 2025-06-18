@@ -21,6 +21,8 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -34,7 +36,9 @@ public class FirebaseAuthManager {
     private static final String KEY_IS_LOGGED_IN = "is_logged_in";
     private static final String KEY_USER_ID = "user_id";
     private static final String KEY_USER_EMAIL = "user_email";
-    private static final String KEY_USER_NAME = "user_name";
+    private static final String KEY_USER_NAME = "user_name";    // Development mode flag - set to false for Firebase production mode
+    private static final boolean DEVELOPMENT_MODE = false;
+    private static final String DEV_MODE_TAG = "DevMode";
     
     private static FirebaseAuthManager instance;
     private FirebaseAuth mAuth;
@@ -51,7 +55,9 @@ public class FirebaseAuthManager {
     public interface UserDataCallback {
         void onSuccess();
         void onFailure(String error);
-    }    private FirebaseAuthManager(Context context) {
+    }
+
+    private FirebaseAuthManager(Context context) {
         this.context = context.getApplicationContext();
         
         // Force initialize Firebase if not already done
@@ -67,6 +73,16 @@ public class FirebaseAuthManager {
         try {
             this.mAuth = FirebaseAuth.getInstance();
             this.db = FirebaseFirestore.getInstance();
+            
+            // Disable reCAPTCHA for development to avoid API key issues
+            try {
+                // Set language code to avoid locale issues
+                mAuth.setLanguageCode("en");
+                Log.d(TAG, "Firebase language set to English");
+            } catch (Exception e) {
+                Log.w(TAG, "Could not set Firebase language", e);
+            }
+            
             Log.d(TAG, "Firebase instances obtained successfully");
         } catch (Exception e) {
             Log.e(TAG, "Error getting Firebase instances", e);
@@ -75,11 +91,13 @@ public class FirebaseAuthManager {
         
         this.prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         
-        // Configure Google Sign-In with dummy client ID for development
+        // Disable Google Sign-In for development to avoid configuration errors
+        // Only use email/password authentication
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestIdToken("123456789-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com") // Dummy client ID
                 .requestEmail()
                 .build();
+        
+        Log.d(TAG, "Google Sign-In initialized in development mode (email only)");
         
         googleSignInClient = GoogleSignIn.getClient(context, gso);
     }
@@ -92,19 +110,65 @@ public class FirebaseAuthManager {
     }
     
     /**
-     * Register with email and password
+     * Local-only registration for development mode
+     */
+    private void registerLocalOnly(String email, String password, String fullName, AuthCallback callback) {
+        try {
+            Log.d(DEV_MODE_TAG, "Attempting local-only registration for: " + email);
+            
+            // Check if user already exists locally
+            SharedPreferences userPrefs = context.getSharedPreferences("local_users", Context.MODE_PRIVATE);
+            if (userPrefs.contains(email)) {
+                callback.onFailure("Email address is already registered. Please use login instead.");
+                return;
+            }
+            
+            // Create local user data
+            String userId = "local_" + Math.abs(email.hashCode());
+            
+            // Save user credentials locally (in real app, hash the password!)
+            SharedPreferences.Editor editor = userPrefs.edit();
+            editor.putString(email + "_password", password); // WARNING: Not secure, for dev only
+            editor.putString(email + "_fullname", fullName);
+            editor.putString(email + "_userid", userId);
+            editor.putLong(email + "_created", System.currentTimeMillis());
+            editor.apply();
+            
+            // Save login state
+            SharedPreferences.Editor authEditor = prefs.edit();
+            authEditor.putBoolean(KEY_IS_LOGGED_IN, true);
+            authEditor.putString(KEY_USER_ID, userId);
+            authEditor.putString(KEY_USER_EMAIL, email);
+            authEditor.putString(KEY_USER_NAME, fullName);
+            authEditor.apply();
+            
+            Log.d(DEV_MODE_TAG, "Local registration successful for: " + email);
+            
+            // Create a mock FirebaseUser for compatibility
+            // For now, we'll just call success without a real FirebaseUser
+            // The app should handle null user gracefully
+            callback.onSuccess(null);
+            
+        } catch (Exception e) {
+            Log.e(DEV_MODE_TAG, "Local registration failed", e);
+            callback.onFailure("Registration failed: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Register with email and password (with development mode fallback)
      */
     public void registerWithEmail(String email, String password, String fullName, AuthCallback callback) {
         if (email.isEmpty() || password.isEmpty() || fullName.isEmpty()) {
             callback.onFailure("Please fill all fields");
             return;
         }
-        
-        if (password.length() < 6) {
+          if (password.length() < 6) {
             callback.onFailure("Password must be at least 6 characters");
             return;
         }
         
+        // Firebase registration
         mAuth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
@@ -129,22 +193,89 @@ public class FirebaseAuthManager {
                                 });
                         }
                     } else {
-                        String error = task.getException() != null ? 
-                            task.getException().getMessage() : "Registration failed";
+                        Exception exception = task.getException();
+                        String error = "Registration failed";
+                          if (exception != null) {
+                            String errorMessage = exception.getMessage();
+                            Log.e(TAG, "Firebase registration error: " + errorMessage, exception);
+                            
+                            // Handle specific error cases
+                            if (errorMessage != null) {
+                                if (errorMessage.contains("API key not valid")) {
+                                    error = "Firebase configuration error. Please check google-services.json file.";
+                                } else if (errorMessage.contains("reCAPTCHA")) {
+                                    error = "Security verification failed. Please try again.";
+                                } else if (errorMessage.contains("internal error")) {
+                                    error = "Firebase service error. Please try again later.";
+                                } else if (errorMessage.contains("email address is already in use")) {
+                                    error = "Email address is already registered. Please use login instead.";
+                                } else if (errorMessage.contains("weak password")) {
+                                    error = "Password is too weak. Please use a stronger password.";
+                                } else if (errorMessage.contains("invalid email")) {
+                                    error = "Please enter a valid email address.";
+                                } else {
+                                    error = "Registration failed: " + errorMessage;
+                                }
+                            }
+                        }
+                        
                         callback.onFailure(error);
                     }
                 });
     }
     
     /**
+     * Local-only login for development mode
+     */
+    private void loginLocalOnly(String email, String password, AuthCallback callback) {
+        try {
+            Log.d(DEV_MODE_TAG, "Attempting local-only login for: " + email);
+            
+            SharedPreferences userPrefs = context.getSharedPreferences("local_users", Context.MODE_PRIVATE);
+            
+            // Check if user exists
+            if (!userPrefs.contains(email + "_password")) {
+                callback.onFailure("No account found with this email address.");
+                return;
+            }
+            
+            // Check password
+            String storedPassword = userPrefs.getString(email + "_password", "");
+            if (!storedPassword.equals(password)) {
+                callback.onFailure("Incorrect password.");
+                return;
+            }
+            
+            // Get user data
+            String userId = userPrefs.getString(email + "_userid", "");
+            String fullName = userPrefs.getString(email + "_fullname", "");
+            
+            // Save login state
+            SharedPreferences.Editor authEditor = prefs.edit();
+            authEditor.putBoolean(KEY_IS_LOGGED_IN, true);
+            authEditor.putString(KEY_USER_ID, userId);
+            authEditor.putString(KEY_USER_EMAIL, email);
+            authEditor.putString(KEY_USER_NAME, fullName);
+            authEditor.apply();
+            
+            Log.d(DEV_MODE_TAG, "Local login successful for: " + email);
+            callback.onSuccess(null); // Pass null for local mode
+            
+        } catch (Exception e) {
+            Log.e(DEV_MODE_TAG, "Local login failed", e);
+            callback.onFailure("Login failed: " + e.getMessage());
+        }
+    }
+    
+    /**
      * Login with email and password
      */
-    public void loginWithEmail(String email, String password, AuthCallback callback) {
-        if (email.isEmpty() || password.isEmpty()) {
+    public void loginWithEmail(String email, String password, AuthCallback callback) {        if (email.isEmpty() || password.isEmpty()) {
             callback.onFailure("Please fill all fields");
             return;
         }
         
+        // Firebase login
         mAuth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
@@ -162,77 +293,58 @@ public class FirebaseAuthManager {
     }
     
     /**
+     * Check if Google Sign-In is properly configured
+     * Currently disabled for development - always returns false
+     */
+    public boolean isGoogleSignInAvailable() {
+        // Disable Google Sign-In for development to avoid configuration issues
+        return false;
+    }
+    
+    /**
      * Get Google Sign-In Intent
+     * Currently disabled for development
      */
     public Intent getGoogleSignInIntent() {
-        return googleSignInClient.getSignInIntent();
+        Log.w(TAG, "Google Sign-In is disabled for development");
+        return new Intent(); // Return empty intent to prevent crashes
     }
     
     /**
      * Handle Google Sign-In result
+     * Currently disabled for development
      */
     public void handleGoogleSignInResult(Task<GoogleSignInAccount> completedTask, AuthCallback callback) {
-        try {
-            GoogleSignInAccount account = completedTask.getResult(ApiException.class);
-            if (account != null) {
-                firebaseAuthWithGoogle(account.getIdToken(), callback);
-            }
-        } catch (ApiException e) {
-            Log.w(TAG, "Google sign in failed", e);
-            callback.onFailure("Google sign in failed: " + e.getMessage());
-        }
+        // Google Sign-In is disabled for development
+        callback.onFailure("Google Sign-In saat ini tidak tersedia. Silakan gunakan login dengan email dan password.");
     }
-    
+
     private void firebaseAuthWithGoogle(String idToken, AuthCallback callback) {
-        AuthCredential credential = GoogleAuthProvider.getCredential(idToken, null);
-        mAuth.signInWithCredential(credential)
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        FirebaseUser user = mAuth.getCurrentUser();
-                        if (user != null) {
-                            // Save user data to Firestore if it's a new user
-                            saveUserDataToFirestore(user.getUid(), 
-                                user.getDisplayName() != null ? user.getDisplayName() : "User", 
-                                user.getEmail() != null ? user.getEmail() : "",
-                                new UserDataCallback() {
-                                    @Override
-                                    public void onSuccess() {
-                                        saveLoginState(user);
-                                        callback.onSuccess(user);
-                                    }
-                                    
-                                    @Override
-                                    public void onFailure(String error) {
-                                        Log.e(TAG, "Failed to save user data: " + error);
-                                        saveLoginState(user);
-                                        callback.onSuccess(user);
-                                    }
-                                });
-                        }
-                    } else {
-                        String error = task.getException() != null ? 
-                            task.getException().getMessage() : "Authentication failed";
-                        callback.onFailure(error);
-                    }
-                });
+        // Google Sign-In with Firebase is disabled for development
+        Log.w(TAG, "Firebase Google Auth is disabled for development");
+        callback.onFailure("Google Sign-In saat ini tidak tersedia untuk development. Silakan gunakan email/password.");
     }
     
     /**
      * Save user data to Firestore
      */
     private void saveUserDataToFirestore(String userId, String fullName, String email, UserDataCallback callback) {
-        Map<String, Object> userData = new HashMap<>();
-        userData.put("fullName", fullName);
-        userData.put("email", email);
-        userData.put("createdAt", System.currentTimeMillis());
-        userData.put("totalPloggingDistance", 0.0);
-        userData.put("totalPloggingTime", 0L);
-        userData.put("totalTrashCollected", 0);
-        userData.put("currentLevel", 1);
-        userData.put("currentPoints", 0);
+        // Create user data map with new structure for "Jalan A" approach
+        Map<String, Object> user = new HashMap<>();
+        user.put("fullName", fullName); // dari parameter
+        user.put("email", email); // dari parameter
+        user.put("createdAt", new Date());
+        user.put("currentLevel", 1);
+        user.put("currentPoints", 0);
+        user.put("totalPloggingDistance", 0.0);
+        user.put("totalTrashCollected", 0);
+        user.put("profileImagePath", "");
+        user.put("ownedSkins", Arrays.asList("default_skin_id"));
+        user.put("selectedSkin", "default_skin_id");
+        user.put("selectedBadges", Arrays.asList());
         
         db.collection("users").document(userId)
-                .set(userData)
+                .set(user)
                 .addOnSuccessListener(aVoid -> {
                     Log.d(TAG, "User data saved successfully");
                     callback.onSuccess();
@@ -266,12 +378,11 @@ public class FirebaseAuthManager {
         editor.remove(KEY_USER_NAME);
         editor.apply();
     }
-    
-    /**
+      /**
      * Check if user is logged in
      */
     public boolean isLoggedIn() {
-        return prefs.getBoolean(KEY_IS_LOGGED_IN, false) && getCurrentUser() != null;
+        return prefs.getBoolean(KEY_IS_LOGGED_IN, false);
     }
     
     /**

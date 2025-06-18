@@ -106,18 +106,18 @@ public class RegisterFragment extends Fragment {
         if (!passwordValidation.isValid()) {
             Toast.makeText(requireContext(), passwordValidation.getErrorMessage(), Toast.LENGTH_LONG).show();
             return;
-        }
-
-        // Show loading
+        }        // Show loading
         binding.btnRegister.setEnabled(false);
         binding.progressBar.setVisibility(View.VISIBLE);
 
         // Firebase registration
-        authManager.registerWithEmail(email, password, name, new FirebaseAuthManager.AuthCallback() {
-            @Override
+        authManager.registerWithEmail(email, password, name, new FirebaseAuthManager.AuthCallback() {            @Override
             public void onSuccess(FirebaseUser user) {
                 if (isAdded() && getActivity() != null) {
-                    // Simpan data user ke Firestore
+                    binding.progressBar.setVisibility(View.GONE);
+                    binding.btnRegister.setEnabled(true);
+                    
+                    // Firebase mode - save to Firestore
                     com.google.firebase.firestore.FirebaseFirestore mStore = com.google.firebase.firestore.FirebaseFirestore.getInstance();
                     String userID = user.getUid();
                     com.google.firebase.firestore.DocumentReference documentReference = mStore.collection("users").document(userID);

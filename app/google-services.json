@@ -1,36 +1,26 @@
 {
   "project_info": {
-    "project_number": "123456789",
-    "project_id": "ecosortify-dev",
-    "storage_bucket": "ecosortify-dev.appspot.com"
+    "project_number": "256973508561",
+    "project_id": "glean-7bf84",
+    "storage_bucket": "glean-7bf84.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:123456789:android:abcdef123456789",
+        "mobilesdk_app_id": "1:256973508561:android:83c52af89177a97b0fdaf0",
         "android_client_info": {
           "package_name": "com.example.glean"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "123456789-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDummy-Key-For-Development-Only"
+          "current_key": "AIzaSyBh353ZT5ydR_wwYv9QgOtOtBOtzwIdDjY"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "123456789-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }

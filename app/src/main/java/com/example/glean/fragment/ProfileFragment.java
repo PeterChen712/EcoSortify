@@ -38,6 +38,7 @@ import com.example.glean.R;
 import com.example.glean.activity.SkinSelectionActivity;
 import com.example.glean.adapter.BadgeAdapter;
 import com.example.glean.adapter.ProfileBadgeAdapter;
+import com.example.glean.auth.FirebaseAuthManager;
 import com.example.glean.databinding.FragmentProfileBinding;
 import com.example.glean.databinding.DialogEditProfileBinding;
 import com.example.glean.databinding.DialogSettingsBinding;
@@ -47,6 +48,7 @@ import com.example.glean.model.UserEntity;
 import com.example.glean.util.PasswordValidator;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.yalantis.ucrop.UCrop;
 
 import java.io.File;
@@ -63,9 +65,11 @@ public class ProfileFragment extends Fragment {    private static final String T
     private static final int CAMERA_REQUEST = 1002;
     private static final int REQUEST_STORAGE_PERMISSION = 1003;
     private static final int REQUEST_CAMERA_PERMISSION = 1004;
-    private static final int SKIN_SELECTION_REQUEST = 1005;
-
-    private FragmentProfileBinding binding;
+    private static final int SKIN_SELECTION_REQUEST = 1005;    private FragmentProfileBinding binding;
+    
+    // Firebase components
+    private FirebaseAuthManager authManager;
+    private FirebaseFirestore firestore;
     
     private AppDatabase db;
     private int userId;
@@ -73,11 +77,14 @@ public class ProfileFragment extends Fragment {    private static final String T
     private ExecutorService executor;
     private Uri selectedImageUri;
     private Uri cameraImageUri;
-    private String profileImagePath;
-
-    @Override
+    private String profileImagePath;    @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        
+        // Initialize Firebase
+        authManager = FirebaseAuthManager.getInstance(requireContext());
+        firestore = FirebaseFirestore.getInstance();
+        
         db = AppDatabase.getInstance(requireContext());
         
         // Get user ID from SharedPreferences with better error handling
@@ -93,7 +100,8 @@ public class ProfileFragment extends Fragment {    private static final String T
         executor = Executors.newSingleThreadExecutor();
         
         Log.d(TAG, "ProfileFragment created with userId: " + userId);
-    }    @Nullable
+        Log.d(TAG, "Firebase user ID: " + (authManager.isLoggedIn() ? authManager.getUserId() : "Not logged in"));
+    }@Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         try {
@@ -274,8 +282,34 @@ public class ProfileFragment extends Fragment {    private static final String T
         }
         return null;
     }
+      private void loadUserData() {
+        // First try to load from Firebase if user is logged in
+        if (authManager.isLoggedIn()) {
+            String firebaseUserId = authManager.getUserId();
+            Log.d(TAG, "Loading user data from Firebase for userId: " + firebaseUserId);
+            
+            firestore.collection("users").document(firebaseUserId)
+                    .get()
+                    .addOnSuccessListener(documentSnapshot -> {
+                        if (documentSnapshot.exists()) {
+                            Log.d(TAG, "Firebase user data found, updating UI");
+                            updateUIWithFirebaseData(documentSnapshot);
+                        } else {
+                            Log.d(TAG, "No Firebase data found, loading from local database");
+                            loadUserDataFromLocal();
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e(TAG, "Failed to load from Firebase, using local data", e);
+                        loadUserDataFromLocal();
+                    });
+        } else {
+            Log.d(TAG, "User not logged in with Firebase, loading from local database");
+            loadUserDataFromLocal();
+        }
+    }
     
-    private void loadUserData() {
+    private void loadUserDataFromLocal() {
         if (userId == -1) {
             Log.e(TAG, "Invalid user ID, cannot load user data");
             Toast.makeText(requireContext(), "User not found. Please login again.", Toast.LENGTH_LONG).show();
@@ -1220,4 +1254,56 @@ public class ProfileFragment extends Fragment {    private static final String T
         }
     }
   
+    private void updateUIWithFirebaseData(com.google.firebase.firestore.DocumentSnapshot document) {
+        try {
+            // Get data from Firebase document
+            String fullName = document.getString("nama");
+            String email = document.getString("email");
+            Long totalPoints = document.getLong("totalPoints");
+            Double totalKm = document.getDouble("totalKm");
+            String photoURL = document.getString("photoURL");
+            
+            Log.d(TAG, "Firebase data - Name: " + fullName + ", Email: " + email + ", Points: " + totalPoints);
+            
+            // Update UI with Firebase data
+            if (binding.tvName != null) {
+                binding.tvName.setText(fullName != null ? fullName : "Unknown User");
+            }
+            
+            if (binding.tvEmail != null) {
+                binding.tvEmail.setText(email != null ? email : "No email");
+            }
+            
+            // Display points
+            if (binding.tvTotalPoints != null) {
+                int points = totalPoints != null ? totalPoints.intValue() : 0;
+                binding.tvTotalPoints.setText(String.valueOf(points));
+            }
+              // Display distance
+            if (binding.tvTotalDistance != null) {
+                double km = totalKm != null ? totalKm : 0.0;
+                binding.tvTotalDistance.setText(String.format(Locale.getDefault(), "%.2f km", km));
+            }
+            
+            // Set member since date
+            if (binding.tvMemberSince != null) {
+                binding.tvMemberSince.setText("Member since: Recently joined");
+            }
+              // Load profile image if available
+            if (binding.ivProfilePic != null && photoURL != null && !photoURL.isEmpty()) {
+                com.bumptech.glide.Glide.with(this)
+                        .load(photoURL)
+                        .placeholder(R.drawable.ic_profile)
+                        .error(R.drawable.ic_profile)
+                        .circleCrop()
+                        .into(binding.ivProfilePic);            }
+            
+            Log.d(TAG, "UI successfully updated with Firebase data");
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error updating UI with Firebase data", e);
+            // Fallback to local data if Firebase UI update fails
+            loadUserDataFromLocal();
+        }
+    }
 }

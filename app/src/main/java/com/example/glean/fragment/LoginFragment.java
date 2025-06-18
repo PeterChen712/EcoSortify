@@ -60,12 +60,19 @@ public class LoginFragment extends Fragment {
             return;
         }
 
+        // Hide Google Sign-In if not available
+        if (!authManager.isGoogleSignInAvailable()) {
+            binding.btnGoogleSignIn.setVisibility(View.GONE);
+            binding.divider.setVisibility(View.GONE);
+            binding.tvOr.setVisibility(View.GONE);
+        }
+
         // Set click listeners
         binding.btnLogin.setOnClickListener(v -> attemptLogin());
         binding.btnGoogleSignIn.setOnClickListener(v -> signInWithGoogle());
         binding.tvRegister.setOnClickListener(v -> navigateToRegister());
         binding.tvForgotPassword.setOnClickListener(v -> showForgotPasswordDialog());
-    }    private void attemptLogin() {
+    }private void attemptLogin() {
         String email = binding.etEmail.getText().toString().trim();
         String password = binding.etPassword.getText().toString().trim();
 
