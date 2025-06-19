@@ -16,15 +16,15 @@ import java.io.InputStream;
  * Utility class for handling local profile image storage
  * Since Firebase Storage is not available in Spark Plan, profile images are stored locally
  */
-public class LocalProfileImageUtil {
-    private static final String TAG = "LocalProfileImageUtil";
+public class LocalProfileImageUtil {    private static final String TAG = "LocalProfileImageUtil";
     private static final String PROFILE_IMAGES_DIR = "profile_images";
     private static final String DEFAULT_PROFILE_IMAGE_URL = "https://via.placeholder.com/150/CCCCCC/FFFFFF?text=User";
     private static final int MAX_IMAGE_SIZE = 512; // Maximum size in pixels
     private static final int JPEG_QUALITY = 85; // JPEG compression quality
 
     /**
-     * Save profile image to local storage
+     * Save profile image to local storage and return the local file path
+     * This path should be saved to SQLite database, NOT to Firestore
      * @param context Application context
      * @param userId User ID to create unique filename
      * @param imageUri URI of the image to save

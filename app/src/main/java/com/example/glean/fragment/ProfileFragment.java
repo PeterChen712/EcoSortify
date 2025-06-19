@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -69,7 +70,8 @@ public class ProfileFragment extends Fragment {    private static final String T
     private static final int CAMERA_REQUEST = 1002;
     private static final int REQUEST_STORAGE_PERMISSION = 1003;
     private static final int REQUEST_CAMERA_PERMISSION = 1004;
-    private static final int SKIN_SELECTION_REQUEST = 1005;    private FragmentProfileBinding binding;
+    private static final int SKIN_SELECTION_REQUEST = 1005;
+    private static final int UCROP_REQUEST = 1006;private FragmentProfileBinding binding;
       // Firebase components
     private FirebaseAuthManager authManager;
     private FirebaseFirestore firestore;
@@ -1367,9 +1369,7 @@ public class ProfileFragment extends Fragment {    private static final String T
         } else {
             showImageSourceDialog();
         }
-    }
-
-    private void showImageSourceDialog() {
+    }    private void showImageSourceDialog() {
         String[] options = {"Pilih dari Galeri", "Ambil Foto Baru"};
         new MaterialAlertDialogBuilder(requireContext())
                 .setTitle("Ganti Foto Profil")
@@ -1388,6 +1388,7 @@ public class ProfileFragment extends Fragment {    private static final String T
                         }
                     }
                 })
+                .setNegativeButton("Batal", null)
                 .show();
     }
 
@@ -1409,9 +1410,7 @@ public class ProfileFragment extends Fragment {    private static final String T
                 startActivityForResult(intent, CAMERA_REQUEST);
             }
         }
-    }
-
-    @Override
+    }    @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == SKIN_SELECTION_REQUEST && resultCode == Activity.RESULT_OK) {
@@ -1419,17 +1418,92 @@ public class ProfileFragment extends Fragment {    private static final String T
             Log.d(TAG, "Profile customization updated, refreshing badges");
             if (currentUser != null) {
                 setupBadges(currentUser);
-            }        } else if (requestCode == PICK_IMAGE_REQUEST && resultCode == Activity.RESULT_OK && data != null && data.getData() != null) {
+            }
+        } else if (requestCode == PICK_IMAGE_REQUEST && resultCode == Activity.RESULT_OK && data != null && data.getData() != null) {
             selectedImageUri = data.getData();
-            // Save image locally instead of uploading to Firebase Storage
-            saveProfileImageLocally(selectedImageUri);
+            // Start image cropping
+            startImageCropping(selectedImageUri);
         } else if (requestCode == CAMERA_REQUEST && resultCode == Activity.RESULT_OK) {
             if (cameraImageUri != null) {
-                // Save image locally instead of uploading to Firebase Storage
-                saveProfileImageLocally(cameraImageUri);
+                // Start image cropping
+                startImageCropping(cameraImageUri);
             }
+        } else if (requestCode == UCROP_REQUEST) {
+            handleCropResult(resultCode, data);
         }
-    }    private void saveProfileImageLocally(Uri imageUri) {
+    }
+    
+    /**
+     * Start image cropping with uCrop
+     */
+    private void startImageCropping(Uri sourceUri) {
+        try {
+            // Create destination file for cropped image
+            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+            String imageFileName = "CROP_" + timeStamp + ".jpg";
+            File cropDir = new File(requireContext().getCacheDir(), "crop");
+            if (!cropDir.exists()) {
+                cropDir.mkdirs();
+            }
+            File destinationFile = new File(cropDir, imageFileName);
+            Uri destinationUri = Uri.fromFile(destinationFile);
+            
+            // Configure uCrop options
+            UCrop.Options options = new UCrop.Options();
+            options.setCompressionFormat(Bitmap.CompressFormat.JPEG);
+            options.setCompressionQuality(85);
+            options.setMaxBitmapSize(1024);
+            options.setHideBottomControls(false);
+            options.setFreeStyleCropEnabled(false);
+            options.setShowCropFrame(true);
+            options.setShowCropGrid(true);
+            options.setCircleDimmedLayer(true); // Circular crop overlay
+            options.setCropGridStrokeWidth(2);
+            options.setCropFrameStrokeWidth(4);
+            options.setToolbarTitle("Crop Profile Picture");
+            
+            // Set colors to match app theme
+            options.setToolbarColor(ContextCompat.getColor(requireContext(), R.color.primary));
+            options.setStatusBarColor(ContextCompat.getColor(requireContext(), R.color.primary_dark));
+            options.setActiveControlsWidgetColor(ContextCompat.getColor(requireContext(), R.color.accent));
+            
+            // Start uCrop with 1:1 aspect ratio for profile pictures
+            UCrop.of(sourceUri, destinationUri)
+                    .withAspectRatio(1, 1)
+                    .withMaxResultSize(512, 512)
+                    .withOptions(options)
+                    .start(requireContext(), this, UCROP_REQUEST);
+                    
+        } catch (Exception e) {
+            Log.e(TAG, "Error starting image cropping", e);
+            Toast.makeText(requireContext(), "Gagal memulai crop gambar", Toast.LENGTH_SHORT).show();
+        }
+    }
+    
+    /**
+     * Handle result from uCrop
+     */
+    private void handleCropResult(int resultCode, Intent data) {
+        if (resultCode == Activity.RESULT_OK && data != null) {
+            // Get cropped image URI
+            Uri croppedImageUri = UCrop.getOutput(data);
+            if (croppedImageUri != null) {
+                // Save the cropped image locally
+                saveProfileImageLocally(croppedImageUri);
+            } else {
+                Toast.makeText(requireContext(), "Gagal mendapatkan hasil crop", Toast.LENGTH_SHORT).show();
+            }
+        } else if (resultCode == UCrop.RESULT_ERROR && data != null) {
+            // Handle crop error
+            Throwable cropError = UCrop.getError(data);
+            Log.e(TAG, "Crop error", cropError);
+            Toast.makeText(requireContext(), "Error saat crop gambar: " + 
+                (cropError != null ? cropError.getMessage() : "Unknown error"), Toast.LENGTH_SHORT).show();
+        } else {
+            // User cancelled cropping
+            Log.d(TAG, "Image cropping cancelled by user");
+        }
+    }private void saveProfileImageLocally(Uri imageUri) {
         if (imageUri == null) {
             Toast.makeText(requireContext(), "Gambar tidak valid", Toast.LENGTH_SHORT).show();
             return;
@@ -1458,17 +1532,15 @@ public class ProfileFragment extends Fragment {    private static final String T
                     updateUserProfileImagePath(localImagePath);
                     
                     // Update Firestore with placeholder URL (not the local path)
-                    updateUserPhotoUrlInFirestore(currentUserId, LocalProfileImageUtil.getDefaultProfileImageUrl());
-                      requireActivity().runOnUiThread(() -> {
-                        Toast.makeText(requireContext(), "Foto profil berhasil disimpan!", Toast.LENGTH_SHORT).show();
+                    updateUserPhotoUrlInFirestore(currentUserId, LocalProfileImageUtil.getDefaultProfileImageUrl());                    requireActivity().runOnUiThread(() -> {
+                        Toast.makeText(requireContext(), "Foto profil berhasil disimpan! Gambar disimpan secara lokal.", Toast.LENGTH_LONG).show();
                         // Refresh the profile image display
                         if (currentUser != null) {
                             loadProfileImage(currentUser);
                         }
                     });
-                } else {
-                    requireActivity().runOnUiThread(() -> 
-                        Toast.makeText(requireContext(), "Gagal menyimpan foto profil", Toast.LENGTH_SHORT).show()
+                } else {                    requireActivity().runOnUiThread(() -> 
+                        Toast.makeText(requireContext(), "Gagal menyimpan foto profil ke storage lokal", Toast.LENGTH_SHORT).show()
                     );
                 }
                 
@@ -1480,9 +1552,9 @@ public class ProfileFragment extends Fragment {    private static final String T
             }
         });
     }
-    
-    /**
-     * Update user's profile image path in local database
+      /**
+     * Update user's profile image path in local SQLite database
+     * This saves the local file path to the database, NOT to Firestore
      */
     private void updateUserProfileImagePath(String localImagePath) {
         if (currentUser != null) {
