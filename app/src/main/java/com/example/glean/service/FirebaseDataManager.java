@@ -679,6 +679,10 @@ public class FirebaseDataManager {
     }    /**
      * Hitung statistik user dari data lokal - ONLY for local users
      * For Firebase users, this should NOT be called - use Firebase data directly
+     * 
+     * WARNING: This method returns ZERO stats for Firebase users to prevent overwriting Firebase data.
+     * DO NOT use this method's result to update Firebase for logged-in users.
+     * Instead, fetch current Firebase stats and increment them with new session data.
      */
     private UserStats calculateUserStats() {
         try {
@@ -690,6 +694,7 @@ public class FirebaseDataManager {
                 Log.w(TAG, "⚠️ WARNING: calculateUserStats() called for Firebase user: " + firebaseUserId);
                 Log.w(TAG, "⚠️ For Firebase users, stats should be fetched from Firebase directly, not calculated from local DB");
                 Log.w(TAG, "⚠️ Returning zero stats to prevent overwriting Firebase data");
+                Log.w(TAG, "⚠️ CRITICAL: DO NOT send this zero result to Firebase - it will reset user's statistics!");
                 return new UserStats(0, 0.0, 0, 0, 0, System.currentTimeMillis());
             }
             
@@ -1163,8 +1168,7 @@ public class FirebaseDataManager {
             }
         });
     }
-    
-    /**
+      /**
      * Update Firebase stats setelah sesi plogging selesai
      * Menggunakan increment untuk menghindari race condition
      */    public void updateUserStatsAfterPloggingSession(DataSyncCallback callback) {
@@ -1182,33 +1186,94 @@ public class FirebaseDataManager {
                 int localUserId = getCurrentLocalUserId();
                 Log.d(TAG, "🔄 Starting Firebase stats update for user: " + userId + " (local ID: " + localUserId + ")");
                 
-                // Calculate fresh stats from local data
-                UserStats freshStats = calculateUserStats();
-                
-                // Log the stats we're about to send to Firebase
-                Log.d(TAG, "🔄 Stats to be sent to Firebase:");
-                Log.d(TAG, "   Points: " + freshStats.getTotalPoints());
-                Log.d(TAG, "   Distance: " + freshStats.getTotalDistance() + " meters");
-                Log.d(TAG, "   Trash: " + freshStats.getTotalTrashCollected());
-                Log.d(TAG, "   Sessions: " + freshStats.getTotalSessions());
-                Log.d(TAG, "   Duration: " + freshStats.getTotalDuration() + " ms");
-                
-                // Validate that we have meaningful data before sending to Firebase
-                if (freshStats.getTotalSessions() == 0) {
-                    Log.w(TAG, "⚠️ WARNING: No sessions found, Firebase update may not be meaningful");
-                }
-                
-                // Update Firebase with latest data
+                // For Firebase users, we need to increment existing Firebase data, not overwrite with local calculation                // First, fetch current Firebase stats
                 firestore.collection(COLLECTION_STATS)
                         .document(userId)
-                        .set(freshStats)
-                        .addOnSuccessListener(aVoid -> {
-                            Log.d(TAG, "✅ Firebase user stats updated successfully after plogging session");
-                            Log.d(TAG, "   Updated stats: " + freshStats.toString());
-                            callback.onSuccess();
+                        .get()
+                        .addOnSuccessListener(documentSnapshot -> {
+                            // Make the variable effectively final for lambda use
+                            final UserStats currentFirebaseStats;
+                            if (documentSnapshot.exists()) {
+                                UserStats temp = documentSnapshot.toObject(UserStats.class);
+                                if (temp == null) {
+                                    currentFirebaseStats = new UserStats(0, 0.0, 0, 0, 0, System.currentTimeMillis());
+                                } else {
+                                    currentFirebaseStats = temp;
+                                }
+                            } else {
+                                // Create default stats if no document exists
+                                currentFirebaseStats = new UserStats(0, 0.0, 0, 0, 0, System.currentTimeMillis());
+                            }
+                            
+                            Log.d(TAG, "📊 Current Firebase stats:");
+                            Log.d(TAG, "   Points: " + currentFirebaseStats.getTotalPoints());
+                            Log.d(TAG, "   Distance: " + currentFirebaseStats.getTotalDistance() + " meters");
+                            Log.d(TAG, "   Trash: " + currentFirebaseStats.getTotalTrashCollected());
+                            Log.d(TAG, "   Sessions: " + currentFirebaseStats.getTotalSessions());
+                            
+                            // Calculate increment from the latest plogging session
+                            executor.execute(() -> {
+                                try {
+                                    // Get the latest record to increment stats
+                                    List<RecordEntity> records = localDb.recordDao().getRecordsByUserIdSync(localUserId);
+                                    if (records.isEmpty()) {
+                                        Log.w(TAG, "⚠️ No records found for increment calculation");
+                                        callback.onError("No records found");
+                                        return;
+                                    }
+                                    
+                                    // Get the latest (most recent) record
+                                    RecordEntity latestRecord = records.get(records.size() - 1);
+                                    int sessionPoints = latestRecord.getPoints();
+                                    double sessionDistance = latestRecord.getDistance();
+                                    long sessionDuration = latestRecord.getDuration();
+                                    int sessionTrash = localDb.trashDao().getTrashCountByRecordIdSync(latestRecord.getId());
+                                    
+                                    Log.d(TAG, "📊 Latest session increment:");
+                                    Log.d(TAG, "   Session Points: " + sessionPoints);
+                                    Log.d(TAG, "   Session Distance: " + sessionDistance + " meters");
+                                    Log.d(TAG, "   Session Trash: " + sessionTrash);
+                                    Log.d(TAG, "   Session Duration: " + sessionDuration + " ms");
+                                    
+                                    // Create updated stats by adding session data to existing Firebase data
+                                    UserStats updatedStats = new UserStats(
+                                        currentFirebaseStats.getTotalPoints() + sessionPoints,
+                                        currentFirebaseStats.getTotalDistance() + sessionDistance,
+                                        currentFirebaseStats.getTotalTrashCollected() + sessionTrash,
+                                        currentFirebaseStats.getTotalSessions() + 1, // increment session count
+                                        currentFirebaseStats.getTotalDuration() + sessionDuration,
+                                        System.currentTimeMillis()
+                                    );
+                                    
+                                    Log.d(TAG, "📊 Updated stats to be sent to Firebase:");
+                                    Log.d(TAG, "   Points: " + updatedStats.getTotalPoints() + " (+" + sessionPoints + ")");
+                                    Log.d(TAG, "   Distance: " + updatedStats.getTotalDistance() + " meters (+" + sessionDistance + ")");
+                                    Log.d(TAG, "   Trash: " + updatedStats.getTotalTrashCollected() + " (+" + sessionTrash + ")");
+                                    Log.d(TAG, "   Sessions: " + updatedStats.getTotalSessions() + " (+1)");
+                                    Log.d(TAG, "   Duration: " + updatedStats.getTotalDuration() + " ms (+" + sessionDuration + ")");
+                                    
+                                    // Update Firebase with incremented data
+                                    firestore.collection(COLLECTION_STATS)
+                                            .document(userId)
+                                            .set(updatedStats)
+                                            .addOnSuccessListener(aVoid -> {
+                                                Log.d(TAG, "✅ Firebase user stats incremented successfully after plogging session");
+                                                Log.d(TAG, "   Final stats: " + updatedStats.toString());
+                                                callback.onSuccess();
+                                            })
+                                            .addOnFailureListener(e -> {
+                                                Log.e(TAG, "❌ Error updating Firebase user stats after plogging session", e);
+                                                callback.onError(e.getMessage());
+                                            });
+                                            
+                                } catch (Exception e) {
+                                    Log.e(TAG, "❌ Error calculating session increment", e);
+                                    callback.onError(e.getMessage());
+                                }
+                            });
                         })
                         .addOnFailureListener(e -> {
-                            Log.e(TAG, "❌ Error updating Firebase user stats after plogging session", e);
+                            Log.e(TAG, "❌ Error fetching current Firebase stats", e);
                             callback.onError(e.getMessage());
                         });
                         
@@ -1830,9 +1895,7 @@ public class FirebaseDataManager {
                 }
             });
         }
-    }
-
-    /**
+    }    /**
      * Manual method to force update Firebase stats immediately after plogging session
      * This ensures Firebase is updated with latest data
      */
@@ -1860,8 +1923,7 @@ public class FirebaseDataManager {
                 Log.d(TAG, "🔍 Current User ID (Firebase): " + userId);
                 Log.d(TAG, "🔍 Current Local User ID: " + localUserId);
                 Log.d(TAG, "🔍 Record ID that just completed: " + recordId);
-                
-                // Verify the specific record exists and has data
+                  // Verify the specific record exists and has data
                 RecordEntity specificRecord = localDb.recordDao().getRecordByIdSync(recordId);
                 if (specificRecord != null) {
                     Log.d(TAG, "🔍 SPECIFIC RECORD verification:");
@@ -1873,40 +1935,96 @@ public class FirebaseDataManager {
                     Log.d(TAG, "   Trash count: " + localDb.trashDao().getTrashCountByRecordIdSync(recordId));
                 } else {
                     Log.e(TAG, "❌ CRITICAL: Specific record " + recordId + " not found!");
-                }
-                
-                // Calculate fresh stats from local data including the new record
-                UserStats freshStats = calculateUserStats();
-                
-                if (freshStats == null) {
-                    Log.e(TAG, "❌ Failed to calculate stats");
-                    callback.onError("Failed to calculate stats");
+                    callback.onError("Record not found");
                     return;
                 }
                 
-                Log.d(TAG, "🚀 FORCE UPDATING Firebase with fresh stats:");
-                Log.d(TAG, "   Points: " + freshStats.getTotalPoints());
-                Log.d(TAG, "   Distance: " + String.format("%.2f km", freshStats.getTotalDistance()/1000));
-                Log.d(TAG, "   Trash: " + freshStats.getTotalTrashCollected());
-                Log.d(TAG, "   Sessions: " + freshStats.getTotalSessions());
-                Log.d(TAG, "   Duration: " + freshStats.getTotalDuration() + " ms");
+                // Make specificRecord effectively final for lambda use
+                final RecordEntity finalSpecificRecord = specificRecord;
                 
-                // Force update Firebase with latest data
+                // For Firebase users, fetch current Firebase data and increment with this session's data
                 firestore.collection(COLLECTION_STATS)
                         .document(userId)
-                        .set(freshStats)
-                        .addOnSuccessListener(aVoid -> {
-                            Log.d(TAG, "✅ FORCE UPDATE SUCCESS! Firebase stats updated after record " + recordId);
-                            Log.d(TAG, "   Final stats in Firebase: " + freshStats.toString());
+                        .get()
+                        .addOnSuccessListener(documentSnapshot -> {
+                            // Make the variable effectively final for lambda use
+                            final UserStats currentFirebaseStats;
+                            if (documentSnapshot.exists()) {
+                                UserStats temp = documentSnapshot.toObject(UserStats.class);
+                                if (temp == null) {
+                                    currentFirebaseStats = new UserStats(0, 0.0, 0, 0, 0, System.currentTimeMillis());
+                                } else {
+                                    currentFirebaseStats = temp;
+                                }
+                            } else {
+                                // Create default stats if no document exists
+                                currentFirebaseStats = new UserStats(0, 0.0, 0, 0, 0, System.currentTimeMillis());
+                            }
                             
-                            // Also update ranking data
-                            updateUserRankingInFirebase(userId, freshStats);
+                            Log.d(TAG, "📊 Current Firebase stats before increment:");
+                            Log.d(TAG, "   Points: " + currentFirebaseStats.getTotalPoints());
+                            Log.d(TAG, "   Distance: " + currentFirebaseStats.getTotalDistance() + " meters");
+                            Log.d(TAG, "   Trash: " + currentFirebaseStats.getTotalTrashCollected());
+                            Log.d(TAG, "   Sessions: " + currentFirebaseStats.getTotalSessions());
                             
-                            callback.onSuccess();
+                            executor.execute(() -> {
+                                try {
+                                    // Get data from the specific record to increment
+                                    int sessionPoints = finalSpecificRecord.getPoints();
+                                    double sessionDistance = finalSpecificRecord.getDistance();
+                                    long sessionDuration = finalSpecificRecord.getDuration();
+                                    int sessionTrash = localDb.trashDao().getTrashCountByRecordIdSync(recordId);
+                                    
+                                    Log.d(TAG, "📊 Session data to increment:");
+                                    Log.d(TAG, "   Session Points: " + sessionPoints);
+                                    Log.d(TAG, "   Session Distance: " + sessionDistance + " meters");
+                                    Log.d(TAG, "   Session Trash: " + sessionTrash);
+                                    Log.d(TAG, "   Session Duration: " + sessionDuration + " ms");
+                                    
+                                    // Create updated stats by adding session data to existing Firebase data
+                                    UserStats updatedStats = new UserStats(
+                                        currentFirebaseStats.getTotalPoints() + sessionPoints,
+                                        currentFirebaseStats.getTotalDistance() + sessionDistance,
+                                        currentFirebaseStats.getTotalTrashCollected() + sessionTrash,
+                                        currentFirebaseStats.getTotalSessions() + 1, // increment session count
+                                        currentFirebaseStats.getTotalDuration() + sessionDuration,
+                                        System.currentTimeMillis()
+                                    );
+                                    
+                                    Log.d(TAG, "🚀 FORCE UPDATING Firebase with incremented stats:");
+                                    Log.d(TAG, "   Points: " + updatedStats.getTotalPoints() + " (+" + sessionPoints + ")");
+                                    Log.d(TAG, "   Distance: " + String.format("%.2f km", updatedStats.getTotalDistance()/1000) + " (+" + String.format("%.2f km", sessionDistance/1000) + ")");
+                                    Log.d(TAG, "   Trash: " + updatedStats.getTotalTrashCollected() + " (+" + sessionTrash + ")");
+                                    Log.d(TAG, "   Sessions: " + updatedStats.getTotalSessions() + " (+1)");
+                                    Log.d(TAG, "   Duration: " + updatedStats.getTotalDuration() + " ms (+" + sessionDuration + ")");
+                                    
+                                    // Force update Firebase with incremented data
+                                    firestore.collection(COLLECTION_STATS)
+                                            .document(userId)
+                                            .set(updatedStats)
+                                            .addOnSuccessListener(aVoid -> {
+                                                Log.d(TAG, "✅ FORCE UPDATE SUCCESS! Firebase stats incremented after record " + recordId);
+                                                Log.d(TAG, "   Final stats in Firebase: " + updatedStats.toString());
+                                                
+                                                // Also update ranking data
+                                                updateUserRankingInFirebase(userId, updatedStats);
+                                                
+                                                callback.onSuccess();
+                                            })
+                                            .addOnFailureListener(e -> {
+                                                Log.e(TAG, "❌ FORCE UPDATE FAILED! Error updating Firebase stats after record " + recordId, e);
+                                                callback.onError("Firebase update failed: " + e.getMessage());
+                                            });
+                                            
+                                } catch (Exception e) {
+                                    Log.e(TAG, "❌ Error calculating session increment in force update", e);
+                                    callback.onError(e.getMessage());
+                                }
+                            });
                         })
                         .addOnFailureListener(e -> {
-                            Log.e(TAG, "❌ FORCE UPDATE FAILED! Error updating Firebase stats after record " + recordId, e);
-                            callback.onError("Firebase update failed: " + e.getMessage());
+                            Log.e(TAG, "❌ Error fetching current Firebase stats in force update", e);
+                            callback.onError(e.getMessage());
                         });
                         
             } catch (Exception e) {
@@ -1914,7 +2032,7 @@ public class FirebaseDataManager {
                 callback.onError(e.getMessage());
             }
         });
-    }    /**
+    }/**
      * Update ranking data in Firebase
      */
     private void updateUserRankingInFirebase(String userId, UserStats stats) {
