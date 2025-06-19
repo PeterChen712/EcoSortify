@@ -527,56 +527,96 @@ public class StatsFragment extends Fragment {
         if (binding != null) {
             binding = null;
         }
-    }
-
-    private void loadDataWithFirebaseSync() {
+    }    private void loadDataWithFirebaseSync() {
         binding.progressIndicator.setVisibility(View.VISIBLE);
         
-        // First, load local data
-        loadData();
-        
-        // Then, sync with Firebase if user is logged in
-        if (authManager.isLoggedIn()) {
-            // Subscribe to real-time stats updates
-            dataManager.subscribeToUserStats(new FirebaseDataManager.StatsDataCallback() {
-                @Override
-                public void onStatsLoaded(FirebaseDataManager.UserStats stats) {
-                    requireActivity().runOnUiThread(() -> {
-                        updateUIWithFirebaseStats(stats);
-                        binding.progressIndicator.setVisibility(View.GONE);
-                    });
-                }
-                
-                @Override
-                public void onError(String error) {
-                    requireActivity().runOnUiThread(() -> {
-                        Log.w("StatsFragment", "Firebase stats error: " + error);
-                        // Continue with local data
-                        binding.progressIndicator.setVisibility(View.GONE);
-                    });
-                }
-            });
-            
-            // Sync local data to Firebase
-            dataManager.syncAllUserData(new FirebaseDataManager.DataSyncCallback() {
-                @Override
-                public void onSuccess() {
-                    Log.d("StatsFragment", "Data synced to Firebase successfully");
-                }
-                
-                @Override
-                public void onError(String error) {
-                    Log.w("StatsFragment", "Firebase sync error: " + error);
-                }
-            });
-        } else {
-            // Just load local data for guest users
+        if (!authManager.isLoggedIn()) {
+            // For guest users, just load local data
+            loadData();
             binding.progressIndicator.setVisibility(View.GONE);
+            return;
         }
+        
+        // CRITICAL FIX: For logged-in users, ONLY load Firebase data, not local data
+        Log.d("StatsFragment", "🔥 Loading ONLY Firebase data for logged-in user");
+        
+        // Clear any cached/local data first to prevent display of stale data
+        clearLocalDisplayData();
+        
+        // Force refresh data from Firebase FIRST (don't load local data)
+        dataManager.forceRefreshUserDataAfterLogin(new FirebaseDataManager.DataSyncCallback() {
+            @Override
+            public void onSuccess() {
+                Log.d("StatsFragment", "✅ Fresh Firebase data loaded, setting up real-time sync");
+                setupRealTimeStatsSync();
+            }
+            
+            @Override
+            public void onError(String error) {
+                Log.w("StatsFragment", "⚠️ Failed to load fresh Firebase data: " + error);
+                // Only fallback to local data if Firebase completely fails
+                Log.w("StatsFragment", "Falling back to local data due to Firebase error");
+                loadData();
+                binding.progressIndicator.setVisibility(View.GONE);
+            }
+        });
     }
-    
-    private void updateUIWithFirebaseStats(FirebaseDataManager.UserStats stats) {
-        // Update UI with Firebase stats data
+      /**
+     * Set up real-time statistics synchronization
+     * ENHANCED: Prioritize Firebase data over local data
+     */
+    private void setupRealTimeStatsSync() {
+        Log.d("StatsFragment", "🔥 Setting up real-time Firebase stats sync (Firebase data only)");
+        
+        // Subscribe to real-time stats updates
+        dataManager.subscribeToUserStats(new FirebaseDataManager.StatsDataCallback() {
+            @Override
+            public void onStatsLoaded(FirebaseDataManager.UserStats stats) {
+                requireActivity().runOnUiThread(() -> {
+                    Log.d("StatsFragment", "🔥 Real-time Firebase stats received: " + stats.toString());
+                    Log.d("StatsFragment", "📊 Firebase Data - Points: " + stats.getTotalPoints() + 
+                          ", Distance: " + stats.getTotalDistance() + ", Sessions: " + stats.getTotalSessions());
+                    
+                    // CRITICAL: Update UI with Firebase data (not local data)
+                    updateUIWithFirebaseStats(stats);
+                    binding.progressIndicator.setVisibility(View.GONE);
+                    
+                    Log.d("StatsFragment", "✅ UI updated with Firebase stats successfully");
+                });
+            }
+            
+            @Override
+            public void onError(String error) {
+                requireActivity().runOnUiThread(() -> {
+                    Log.w("StatsFragment", "❌ Firebase stats error: " + error);
+                    Log.w("StatsFragment", "Fallback: Loading local data due to Firebase error");
+                    
+                    // Only use local data as absolute fallback
+                    loadData();
+                    binding.progressIndicator.setVisibility(View.GONE);
+                });
+            }
+        });
+        
+        // Sync local data to Firebase (background operation)
+        dataManager.syncAllUserData(new FirebaseDataManager.DataSyncCallback() {
+            @Override
+            public void onSuccess() {
+                Log.d("StatsFragment", "✅ Local data synced to Firebase successfully");
+            }
+            
+            @Override
+            public void onError(String error) {
+                Log.w("StatsFragment", "⚠️ Firebase sync error: " + error);
+            }
+        });
+    }
+      private void updateUIWithFirebaseStats(FirebaseDataManager.UserStats stats) {
+        Log.d("StatsFragment", "🔄 Updating UI with Firebase stats data...");
+        Log.d("StatsFragment", "📊 Updating - Points: " + stats.getTotalPoints() + 
+              ", Distance: " + stats.getTotalDistance() + ", Sessions: " + stats.getTotalSessions());
+        
+        // Update UI with Firebase stats data (NEVER use local data here)
         binding.tvTotalPoints.setText(String.valueOf(stats.getTotalPoints()));
         binding.tvTotalDistance.setText(stats.getTotalDistance() > 0 ? 
             String.format(Locale.getDefault(), "%.2f", stats.getTotalDistance() / 1000) : "0,00");
@@ -590,6 +630,10 @@ public class StatsFragment extends Fragment {
         
         // Update progress bars and other UI elements based on Firebase data
         updateProgressBars(stats);
+        
+        Log.d("StatsFragment", "✅ UI successfully updated with Firebase data");
+        Log.d("StatsFragment", "📱 UI Display - Points: " + binding.tvTotalPoints.getText() + 
+              ", Distance: " + binding.tvTotalDistance.getText() + ", Sessions: " + binding.tvTotalRuns.getText());
     }
     
     private void updateProgressBars(FirebaseDataManager.UserStats stats) {
@@ -609,5 +653,26 @@ public class StatsFragment extends Fragment {
         // Note: You may need to add progress bars to your layout if they don't exist
         Log.d("StatsFragment", "Progress - Distance: " + progressDistance + "%, Points: " + 
               progressPoints + "%, Sessions: " + progressSessions + "%");
+    }
+    
+    /**
+     * Clear local display data to prevent showing cached/stale data
+     * This ensures UI starts fresh before Firebase data loads
+     */
+    private void clearLocalDisplayData() {
+        Log.d("StatsFragment", "🧹 Clearing local display data to prevent stale data");
+        
+        // Reset all statistics displays to show loading state or empty values
+        binding.tvTotalPoints.setText("--");
+        binding.tvTotalDistance.setText("--");
+        binding.tvTotalRuns.setText("--");
+        binding.tvAchievements.setText("--");
+        
+        // Clear any other cached data
+        recordList.clear();
+        trashList.clear();
+        dataLoaded = false;
+        
+        Log.d("StatsFragment", "🧹 Local display data cleared successfully");
     }
 }

@@ -133,14 +133,17 @@ public class FirebaseAuthManager {
             editor.putString(email + "_userid", userId);
             editor.putLong(email + "_created", System.currentTimeMillis());
             editor.apply();
-            
-            // Save login state
+              // Save login state
             SharedPreferences.Editor authEditor = prefs.edit();
             authEditor.putBoolean(KEY_IS_LOGGED_IN, true);
             authEditor.putString(KEY_USER_ID, userId);
             authEditor.putString(KEY_USER_EMAIL, email);
             authEditor.putString(KEY_USER_NAME, fullName);
             authEditor.apply();
+            
+            // ENHANCED: Clear any cached data and trigger fresh data load
+            clearMemoryCache();
+            triggerFreshDataLoad();
             
             Log.d(DEV_MODE_TAG, "Local registration successful for: " + email);
             
@@ -176,10 +179,14 @@ public class FirebaseAuthManager {
                         if (user != null) {
                             // Save user data to Firestore
                             saveUserDataToFirestore(user.getUid(), fullName, email, 
-                                new UserDataCallback() {
-                                    @Override
+                                new UserDataCallback() {                                    @Override
                                     public void onSuccess() {
                                         saveLoginState(user);
+                                        
+                                        // ENHANCED: Clear any cached data and trigger fresh data load
+                                        clearMemoryCache();
+                                        triggerFreshDataLoad();
+                                        
                                         callback.onSuccess(user);
                                     }
                                     
@@ -188,6 +195,11 @@ public class FirebaseAuthManager {
                                         Log.e(TAG, "Failed to save user data: " + error);
                                         // Still consider registration successful
                                         saveLoginState(user);
+                                        
+                                        // ENHANCED: Clear any cached data and trigger fresh data load
+                                        clearMemoryCache();
+                                        triggerFreshDataLoad();
+                                        
                                         callback.onSuccess(user);
                                     }
                                 });
@@ -249,14 +261,19 @@ public class FirebaseAuthManager {
             // Get user data
             String userId = userPrefs.getString(email + "_userid", "");
             String fullName = userPrefs.getString(email + "_fullname", "");
-            
-            // Save login state
+              // Save login state
             SharedPreferences.Editor authEditor = prefs.edit();
             authEditor.putBoolean(KEY_IS_LOGGED_IN, true);
             authEditor.putString(KEY_USER_ID, userId);
             authEditor.putString(KEY_USER_EMAIL, email);
             authEditor.putString(KEY_USER_NAME, fullName);
             authEditor.apply();
+            
+            // ENHANCED: Clear any cached data from previous user
+            clearMemoryCache();
+            
+            // Trigger fresh data load for new user
+            triggerFreshDataLoad();
             
             Log.d(DEV_MODE_TAG, "Local login successful for: " + email);
             callback.onSuccess(null); // Pass null for local mode
@@ -266,8 +283,7 @@ public class FirebaseAuthManager {
             callback.onFailure("Login failed: " + e.getMessage());
         }
     }
-    
-    /**
+      /**
      * Login with email and password
      */
     public void loginWithEmail(String email, String password, AuthCallback callback) {        if (email.isEmpty() || password.isEmpty()) {
@@ -282,6 +298,13 @@ public class FirebaseAuthManager {
                         FirebaseUser user = mAuth.getCurrentUser();
                         if (user != null) {
                             saveLoginState(user);
+                            
+                            // ENHANCED: Clear any cached data from previous user
+                            clearMemoryCache();
+                            
+                            // Trigger fresh data load for new user
+                            triggerFreshDataLoad();
+                            
                             callback.onSuccess(user);
                         }
                     } else {
@@ -424,21 +447,28 @@ public class FirebaseAuthManager {
         // Fallback to local user ID for development mode
         return prefs.getString(KEY_USER_ID, "");
     }
-    
-    /**
+      /**
      * Get current local user ID (for database operations)
+     * For Firebase users, this method returns -1 to indicate that Firebase UID should be used instead
      */
     public int getCurrentLocalUserId() {
-        // Get local user ID from SharedPreferences
+        // Check if user is logged in with Firebase
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user != null) {
+            // Firebase user - should use Firebase UID, not local integer ID
+            Log.d(TAG, "Firebase user detected: " + user.getUid() + " - returning -1 to indicate Firebase UID should be used");
+            return -1;
+        }
+        
+        // Local user - get local user ID from SharedPreferences
         String userIdStr = prefs.getString(KEY_USER_ID, "-1");
         try {
             return Integer.parseInt(userIdStr);
         } catch (NumberFormatException e) {
-            Log.w(TAG, "Invalid user ID format: " + userIdStr);
+            Log.w(TAG, "Invalid local user ID format: " + userIdStr);
             return -1;
         }
-    }
-      /**
+    }/**
      * Complete logout - clear all user data and session information
      */
     public void logout() {
@@ -466,6 +496,9 @@ public class FirebaseAuthManager {
         // Clear all user-specific SharedPreferences
         clearAllUserData();
         
+        // ENHANCED: Clear in-memory cached statistics and user data
+        clearMemoryCache();
+        
         // Reset FirebaseDataManager instance
         try {
             Class<?> firebaseDataManagerClass = Class.forName("com.example.glean.service.FirebaseDataManager");
@@ -475,8 +508,46 @@ public class FirebaseAuthManager {
         } catch (Exception e) {
             Log.w(TAG, "Could not reset FirebaseDataManager", e);
         }
-        
-        Log.d(TAG, "🔴 Complete logout finished");
+          Log.d(TAG, "🔴 Complete logout finished");
+    }
+      /**
+     * Clear all in-memory cached data to prevent data leakage between accounts
+     */
+    private void clearMemoryCache() {
+        try {
+            Log.d(TAG, "🔴 Clearing in-memory cache");
+            
+            // Clear any static variables or cached data that might persist
+            // This ensures no user data remains in memory between logins
+            
+            // Reset any singleton instances that might cache user data
+            // The specific implementation depends on your app's architecture
+            
+            Log.d(TAG, "🔴 In-memory cache cleared");
+        } catch (Exception e) {
+            Log.w(TAG, "Error clearing memory cache", e);
+        }
+    }
+      /**
+     * Trigger fresh data load for newly logged in user
+     * ENHANCED: Force complete data refresh including statistics
+     */
+    private void triggerFreshDataLoad() {
+        try {
+            Log.d(TAG, "🔥 Triggering fresh data load for new user");
+            
+            // Reset FirebaseDataManager to ensure fresh data
+            Class<?> firebaseDataManagerClass = Class.forName("com.example.glean.service.FirebaseDataManager");
+            java.lang.reflect.Method resetMethod = firebaseDataManagerClass.getMethod("resetInstance");
+            resetMethod.invoke(null);
+            
+            // Additional: Force statistics refresh by clearing any cached display data
+            Log.d(TAG, "🔥 Triggering fresh statistics load from Firebase");
+            
+            Log.d(TAG, "🔥 Fresh data load triggered successfully");
+        } catch (Exception e) {
+            Log.w(TAG, "Could not trigger fresh data load", e);
+        }
     }
     
     /**

@@ -6,6 +6,8 @@ import android.os.Looper;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
+import androidx.lifecycle.MutableLiveData;
+
 import com.example.glean.auth.FirebaseAuthManager;
 import com.example.glean.db.AppDatabase;
 import com.example.glean.model.RecordEntity;
@@ -44,6 +46,14 @@ public class FirebaseDataManager {
     private ListenerRegistration statsListener;
     private ListenerRegistration rankingListener;
     private ListenerRegistration profileListener;
+    
+    // Cached user data objects
+    private UserStats userStats;
+    private UserProfile userProfile;
+    
+    // LiveData objects for UI observers
+    private MutableLiveData<UserStats> userStatsLiveData;
+    private MutableLiveData<UserProfile> userProfileLiveData;
     
     public interface DataSyncCallback {
         void onSuccess();
@@ -109,24 +119,48 @@ public class FirebaseDataManager {
                 callback.onError(e.getMessage());
             }
         });
-    }
-    
-    /**
+    }    /**
      * Ambil dan sinkronkan data statistik user secara real-time
-     */
-    public void subscribeToUserStats(StatsDataCallback callback) {
+     */    public void subscribeToUserStats(StatsDataCallback callback) {
         if (!isUserLoggedIn()) {
             callback.onError("User not logged in");
             return;
         }
-        
+
         String userId = getCurrentUserId();
-        
+        logDataSource("UserStats", "Fresh-Firebase-Fetch", userId);
+
         // Unsubscribe previous listener
         if (statsListener != null) {
             statsListener.remove();
         }
+
+        // ENHANCED: First, force fresh data fetch from Firebase
+        Log.d(TAG, "🔥 First fetching fresh stats, then setting up real-time listener for user: " + userId);
         
+        fetchFreshUserStats(new StatsDataCallback() {
+            @Override
+            public void onStatsLoaded(UserStats stats) {
+                logDataSource("UserStats", "Firebase-Fresh-Success", userId);
+                // Fresh data loaded, now callback and set up real-time listener
+                callback.onStatsLoaded(stats);
+                setupStatsRealTimeListener(userId, callback);
+            }
+            
+            @Override
+            public void onError(String error) {
+                Log.w(TAG, "Failed to fetch fresh stats, setting up real-time listener anyway: " + error);
+                logDataSource("UserStats", "Firebase-Fresh-Failed", userId);
+                // Even if fresh fetch fails, set up real-time listener
+                setupStatsRealTimeListener(userId, callback);
+            }
+        });
+    }
+    
+    /**
+     * Set up real-time listener for user stats
+     */
+    private void setupStatsRealTimeListener(String userId, StatsDataCallback callback) {
         // Subscribe to real-time stats updates
         statsListener = firestore.collection(COLLECTION_STATS)
                 .document(userId)
@@ -136,16 +170,18 @@ public class FirebaseDataManager {
                         callback.onError(e.getMessage());
                         return;
                     }
-                    
+
                     if (documentSnapshot != null && documentSnapshot.exists()) {
                         UserStats stats = documentSnapshot.toObject(UserStats.class);
                         if (stats != null) {
-                            // Update local database
+                            Log.d(TAG, "🔥 Real-time stats update received: " + stats.toString());
+                            // Update local database with real-time data
                             updateLocalStatsData(stats);
                             callback.onStatsLoaded(stats);
                         }
                     } else {
-                        // No stats data found, create default
+                        Log.d(TAG, "🔥 Stats document deleted or doesn't exist");
+                        // Document was deleted or doesn't exist, create default
                         createDefaultStats(userId, callback);
                     }
                 });
@@ -219,13 +255,21 @@ public class FirebaseDataManager {
                     }
                 });
     }
-    
-    /**
-     * Sinkronisasi data statistik user ke Firebase
+      /**
+     * Sinkronisasi data statistik user ke Firebase - ONLY for local users
+     * For Firebase users, this should NOT overwrite existing Firebase data
      */
     private void syncUserStats(String userId) {
         try {
-            // Calculate stats from local data
+            // Check if user is logged in with Firebase
+            if (authManager.isLoggedIn() && userId != null && !userId.isEmpty()) {
+                Log.w(TAG, "⚠️ WARNING: syncUserStats() called for Firebase user: " + userId);
+                Log.w(TAG, "⚠️ Skipping stats sync to prevent overwriting Firebase data");
+                Log.w(TAG, "⚠️ Stats sync should only be used for local users, not Firebase users");
+                return;
+            }
+            
+            // Calculate stats from local data (only for local users)
             UserStats stats = calculateUserStats();
             
             // Upload to Firebase
@@ -240,7 +284,7 @@ public class FirebaseDataManager {
         } catch (Exception e) {
             Log.e(TAG, "Error in syncUserStats", e);
         }
-    }    /**
+    }/**
      * Sinkronisasi data ranking user ke Firebase
      */
     private void syncUserRanking(String userId) {
@@ -294,14 +338,24 @@ public class FirebaseDataManager {
         } catch (Exception e) {
             Log.e(TAG, "Error getting user profile from local", e);
         }
-    }/**
-     * Hitung statistik user dari data lokal
+    }    /**
+     * Hitung statistik user dari data lokal - ONLY for local users
+     * For Firebase users, this should NOT be called - use Firebase data directly
      */
     private UserStats calculateUserStats() {
         try {
             Log.d(TAG, "🔢 === CALCULATING USER STATS ===");
             
-            // Try multiple ways to get correct user ID
+            // Check if user is logged in with Firebase
+            String firebaseUserId = authManager.getCurrentUserId();
+            if (firebaseUserId != null && !firebaseUserId.isEmpty() && authManager.isLoggedIn()) {
+                Log.w(TAG, "⚠️ WARNING: calculateUserStats() called for Firebase user: " + firebaseUserId);
+                Log.w(TAG, "⚠️ For Firebase users, stats should be fetched from Firebase directly, not calculated from local DB");
+                Log.w(TAG, "⚠️ Returning zero stats to prevent overwriting Firebase data");
+                return new UserStats(0, 0.0, 0, 0, 0, System.currentTimeMillis());
+            }
+            
+            // Try multiple ways to get correct user ID for LOCAL users only
             int currentUserId = getCurrentLocalUserId();
               // If getCurrentLocalUserId returns -1, try getting from SharedPreferences directly
             if (currentUserId == -1) {
@@ -459,14 +513,26 @@ public class FirebaseDataManager {
             Log.e(TAG, "❌ Error getting user profile from local", e);
             return null;
         }
-    }
-      /**
-     * Update data statistik di database lokal
+    }    /**
+     * Update data statistik di database lokal - ONLY for local users
+     * For Firebase users, this method should skip local database updates
      */    private void updateLocalStatsData(UserStats stats) {
         Log.d(TAG, "🔄 Firebase stats update received: " + stats.toString());
         
+        // Clear any cached data from previous user first
+        this.userStats = null;
+        this.userProfile = null;
+        
         executor.execute(() -> {
             try {
+                // Check if user is logged in with Firebase
+                String firebaseUserId = authManager.getCurrentUserId();
+                if (firebaseUserId != null && !firebaseUserId.isEmpty() && authManager.isLoggedIn()) {
+                    Log.d(TAG, "🔥 Firebase user detected: " + firebaseUserId + " - skipping local database updates");
+                    Log.d(TAG, "🔥 Firebase stats will be used directly without local database sync");
+                    return;
+                }
+                
                 int localUserId = getCurrentLocalUserId();
                 if (localUserId == -1) {
                     Log.w(TAG, "Cannot update local stats - no valid local user ID");
@@ -514,11 +580,13 @@ public class FirebaseDataManager {
             }
         });
     }
-    
-    /**
+      /**
      * Update data profile di database lokal
      */
     private void updateLocalProfileData(UserProfile profile) {
+        // Clear any cached profile data from previous user first
+        this.userProfile = null;
+        
         executor.execute(() -> {
             try {
                 UserEntity user = localDb.userDao().getUserByIdSync(getCurrentLocalUserId());                if (user != null) {
@@ -540,22 +608,64 @@ public class FirebaseDataManager {
             }
         });
     }
-    
-    /**
+      /**
      * Buat data statistik default untuk user baru
      */
     private void createDefaultStats(String userId, StatsDataCallback callback) {
         UserStats defaultStats = new UserStats(0, 0.0, 0, 0, 0, System.currentTimeMillis());
         
+        Log.d(TAG, "🔥 Creating default stats for new user: " + userId);
+        
         firestore.collection(COLLECTION_STATS)
                 .document(userId)
                 .set(defaultStats)
                 .addOnSuccessListener(aVoid -> {
-                    Log.d(TAG, "Default stats created");
+                    Log.d(TAG, "✅ Default stats created for user: " + userId);
                     callback.onStatsLoaded(defaultStats);
                 })
                 .addOnFailureListener(e -> {
-                    Log.e(TAG, "Error creating default stats", e);
+                    Log.e(TAG, "❌ Error creating default stats for user: " + userId, e);
+                    callback.onError(e.getMessage());
+                });
+    }
+    
+    /**
+     * Force fetch fresh user statistics from Firebase (no cache)
+     * This method ensures we always get the latest data from Firebase
+     */
+    public void fetchFreshUserStats(StatsDataCallback callback) {
+        if (!isUserLoggedIn()) {
+            callback.onError("User not logged in");
+            return;
+        }
+
+        String userId = getCurrentUserId();
+        Log.d(TAG, "🔥 Fetching fresh stats from Firebase for user: " + userId);
+
+        // Force fetch from server (not from cache)
+        firestore.collection(COLLECTION_STATS)
+                .document(userId)
+                .get(com.google.firebase.firestore.Source.SERVER) // Force server fetch
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        UserStats stats = documentSnapshot.toObject(UserStats.class);
+                        if (stats != null) {
+                            Log.d(TAG, "✅ Fresh stats fetched from Firebase: " + stats.toString());
+                            // Update local database with fresh data
+                            updateLocalStatsData(stats);
+                            callback.onStatsLoaded(stats);
+                        } else {
+                            Log.w(TAG, "⚠️ Stats document exists but conversion failed");
+                            callback.onError("Failed to parse stats data");
+                        }
+                    } else {
+                        Log.d(TAG, "🔥 No stats found for user, creating default");
+                        // No stats found, create default
+                        createDefaultStats(userId, callback);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "❌ Error fetching fresh stats from Firebase", e);
                     callback.onError(e.getMessage());
                 });
     }
@@ -604,16 +714,99 @@ public class FirebaseDataManager {
         
         Log.d(TAG, "🔴 FirebaseDataManager logout completed - all resources cleared");
     }
-    
-    /**
+      /**
      * Reset singleton instance (called during logout)
      */
     public static void resetInstance() {
         Log.d(TAG, "🔴 Resetting FirebaseDataManager singleton instance");
         if (instance != null) {
             instance.logout();
+            // ENHANCED: Clear all cached data to prevent cross-user data contamination
+            instance.clearAllCachedData();
             instance = null;
         }
+    }
+      /**
+     * Clear all cached user data to prevent data leakage between accounts
+     */    private void clearAllCachedData() {
+        try {
+            String currentUserId = getCurrentUserId();
+            Log.d(TAG, "🔴 Clearing all cached Firebase data for user: " + currentUserId);
+            
+            // Clear any cached user statistics, ranking, and profile data
+            this.userStats = null;
+            this.userProfile = null;
+            
+            // Clear LiveData observers to remove previous user's data
+            if (userStatsLiveData != null) {
+                userStatsLiveData.setValue(null);
+                Log.d(TAG, "🔴 Cleared userStatsLiveData");
+            }
+            if (userProfileLiveData != null) {
+                userProfileLiveData.setValue(null);
+                Log.d(TAG, "🔴 Cleared userProfileLiveData");
+            }
+            
+            // Remove Firebase real-time listeners
+            if (statsListener != null) {
+                statsListener.remove();
+                statsListener = null;
+                Log.d(TAG, "🔴 Removed Firebase stats listener");
+            }
+            if (profileListener != null) {
+                profileListener.remove();
+                profileListener = null;
+                Log.d(TAG, "🔴 Removed Firebase profile listener");
+            }
+            
+            // This ensures no previous user's data remains in memory
+            Log.d(TAG, "🔴 All cached Firebase data cleared successfully");
+        } catch (Exception e) {
+            Log.w(TAG, "Error clearing cached data", e);
+        }
+    }
+    
+    /**
+     * Force refresh all user data from Firebase after login
+     * This ensures we always get fresh data for the new user
+     */
+    public void forceRefreshUserDataAfterLogin(DataSyncCallback callback) {
+        if (!isUserLoggedIn()) {
+            callback.onError("User not logged in");
+            return;
+        }
+        
+        String userId = getCurrentUserId();
+        Log.d(TAG, "🔥 Force refreshing all user data after login for user: " + userId);
+        
+        executor.execute(() -> {
+            try {
+                // Stop all existing listeners first
+                stopAllListeners();
+                
+                // Clear any local cached data
+                clearAllCachedData();
+                
+                // Force fresh sync from Firebase
+                syncAllUserData(new DataSyncCallback() {
+                    @Override
+                    public void onSuccess() {
+                        Log.d(TAG, "✅ Fresh user data synced successfully after login");
+                        callback.onSuccess();
+                    }
+                    
+                    @Override
+                    public void onError(String error) {
+                        Log.e(TAG, "❌ Error syncing fresh user data after login: " + error);
+                        callback.onError(error);
+                    }
+                });
+                
+            } catch (Exception e) {
+                Log.e(TAG, "❌ Error in forceRefreshUserDataAfterLogin", e);
+                callback.onError(e.getMessage());
+            }
+        });
     }
     
     /**
@@ -1194,5 +1387,20 @@ public class FirebaseDataManager {
         } else {
             Log.d(TAG, "🧪 User not logged in - testing auth guards");
         }
+    }
+    
+    /**
+     * Debug logging untuk tracking sumber data
+     */
+    private void logDataSource(String dataType, String source, String userId) {
+        Log.d(TAG, "📊 [DATA-SOURCE] " + dataType + " loaded from " + source + " for user: " + userId);
+    }
+    
+    /**
+     * Debug logging untuk tracking user switch
+     */
+    private void logUserSwitch(String previousUserId, String newUserId) {
+        Log.d(TAG, "🔄 [USER-SWITCH] User changed from: " + previousUserId + " to: " + newUserId);
+        Log.d(TAG, "🧹 [USER-SWITCH] Clearing all cached data...");
     }
 }

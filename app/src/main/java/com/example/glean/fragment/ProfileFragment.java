@@ -360,11 +360,43 @@ public class ProfileFragment extends Fragment {    private static final String T
             Log.d(TAG, "User not logged in with Firebase, using local data only");
         }
     }
-    
-    /**
+      /**
      * Set up real-time Firebase data synchronization
      */
     private void setupFirebaseRealTimeSync() {
+        try {
+            Log.d(TAG, "🔥 Setting up real-time Firebase synchronization");
+              // ENHANCED: Force refresh data from Firebase for new user
+            if (firebaseDataManager != null) {
+                // First, force refresh to ensure we get fresh data
+                firebaseDataManager.forceRefreshUserDataAfterLogin(new com.example.glean.service.FirebaseDataManager.DataSyncCallback() {
+                    @Override
+                    public void onSuccess() {
+                        Log.d(TAG, "✅ Fresh data loaded successfully");
+                        // Now set up real-time listeners
+                        setupRealTimeListeners();
+                    }
+                    
+                    @Override
+                    public void onError(String error) {
+                        Log.w(TAG, "⚠️ Failed to load fresh data, continuing with real-time setup: " + error);
+                        // Continue with real-time setup even if refresh fails
+                        setupRealTimeListeners();
+                    }
+                });
+            } else {
+                // Fallback if dataManager is null
+                setupRealTimeListeners();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error setting up Firebase real-time sync", e);
+        }
+    }
+    
+    /**
+     * Set up real-time listeners after fresh data is loaded
+     */
+    private void setupRealTimeListeners() {
         try {
             // Subscribe to real-time user stats updates
             firebaseDataManager.subscribeToUserStats(new com.example.glean.service.FirebaseDataManager.StatsDataCallback() {
