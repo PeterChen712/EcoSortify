@@ -220,24 +220,7 @@ public class Article {
             return false;
         }
         
-        return true;
-    }
-    
-    // Convert to NewsItem for local database storage
-    public NewsItem toNewsItem() {
-        NewsItem newsItem = new NewsItem();
-        newsItem.setTitle(cleanedTitle != null ? cleanedTitle : title);
-        newsItem.setPreview(cleanedDescription != null ? cleanedDescription : description);
-        newsItem.setFullContent(content);
-        newsItem.setUrl(url);
-        newsItem.setImageUrl(urlToImage);
-        newsItem.setSource(getSourceName());
-        newsItem.setDate(formattedDate != null ? formattedDate : publishedAt);
-        newsItem.setTimestamp(publishedDate != null ? publishedDate.getTime() : System.currentTimeMillis());
-        newsItem.setCategory(detectCategory());
-        
-        return newsItem;
-    }
+        return true;    }
     
     // Detect article category based on content
     private String detectCategory() {

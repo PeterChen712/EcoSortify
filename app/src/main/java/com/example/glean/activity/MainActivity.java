@@ -111,13 +111,13 @@ public class MainActivity extends AppCompatActivity {
                         navController.navigate(R.id.ploggingTabsFragment);
                     }
                 });
-                return true;
-            } else if (itemId == R.id.aiChatFragment) {
+                return true;            } else if (itemId == R.id.aiChatFragment) {
                 navController.navigate(R.id.aiChatFragment);
                 return true;
-            } else if (itemId == R.id.eksplorasiFragment) {
-                navController.navigate(R.id.eksplorasiFragment);
-                return true;            } else if (itemId == R.id.gameFragment) {
+            } else if (itemId == R.id.classifyFragment) {
+                navController.navigate(R.id.classifyFragment);
+                return true;
+            } else if (itemId == R.id.gameFragment) {
                 navController.navigate(R.id.gameFragment);
                 return true;
             }
@@ -134,15 +134,9 @@ public class MainActivity extends AppCompatActivity {
                 navController.navigate(R.id.action_homeFragment_to_ploggingTabsFragment);
             }
         }
-    }
-
-    public void navigateToStats() {
+    }    public void navigateToStats() {
         if (navController != null) {
             navController.navigate(R.id.ploggingTabsFragment);
-        }
-    }    public void navigateToCommunity() {
-        if (navController != null) {
-            navController.navigate(R.id.eksplorasiFragment);
         }
     }
 

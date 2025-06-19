@@ -4,33 +4,28 @@ import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 
-import com.example.glean.fragment.NewsFragment;
 import com.example.glean.fragment.RankingFragment;
 
 /**
  * Community Section Adapter for main app sections
- * Contains: News, Ranking
- * No social posting features - just informational content
+ * Contains: Ranking only
+ * Removed news features per app requirements
  */
 public class CommunitySectionAdapter extends FragmentStateAdapter {
 
     public CommunitySectionAdapter(@NonNull Fragment fragment) {
         super(fragment);
-    }    @NonNull
+    }
+
+    @NonNull
     @Override
     public Fragment createFragment(int position) {
-        switch (position) {
-            case 0:
-                return new NewsFragment();
-            case 1:
-                return new RankingFragment();
-            default:
-                return new NewsFragment();
-        }
+        // Only Ranking fragment now
+        return new RankingFragment();
     }
 
     @Override
     public int getItemCount() {
-        return 2; // News, Ranking
+        return 1; // Only Ranking
     }
 }

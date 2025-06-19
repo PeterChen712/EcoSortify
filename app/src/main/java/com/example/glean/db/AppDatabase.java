@@ -14,9 +14,7 @@ import com.example.glean.db.DaoRecord;
 import com.example.glean.db.DaoTrash;
 import com.example.glean.db.UserDao;
 import com.example.glean.db.LocationPointDao;
-import com.example.glean.db.NewsDao;
 import com.example.glean.model.LocationPointEntity;
-import com.example.glean.model.NewsItem;
 import com.example.glean.model.RecordEntity;
 import com.example.glean.model.TrashEntity;
 import com.example.glean.model.UserEntity;
@@ -27,10 +25,9 @@ import com.example.glean.util.Converters;
         UserEntity.class, 
         RecordEntity.class, 
         TrashEntity.class,
-        LocationPointEntity.class,
-        NewsItem.class
+        LocationPointEntity.class
     },
-    version = 17, // Increment version after removing community entities
+    version = 18, // Increment version after removing news entities
     exportSchema = false
 )
 @TypeConverters({Converters.class})
@@ -41,7 +38,6 @@ public abstract class AppDatabase extends RoomDatabase {
     public abstract DaoRecord recordDao();
     public abstract DaoTrash trashDao();
     public abstract LocationPointDao locationPointDao();
-    public abstract NewsDao newsDao();
     
     public static AppDatabase getInstance(Context context) {
         if (INSTANCE == null) {

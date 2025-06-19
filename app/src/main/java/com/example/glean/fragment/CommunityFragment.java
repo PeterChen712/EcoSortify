@@ -17,8 +17,8 @@ import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 
 /**
- * Simplified Community Fragment without social posting features
- * Contains only: News, Ranking
+ * Simplified Community Fragment without news features
+ * Contains only: Ranking
  */
 public class CommunityFragment extends Fragment {
 
@@ -41,21 +41,12 @@ public class CommunityFragment extends Fragment {
 
     private void setupViewPager() {
         sectionAdapter = new CommunitySectionAdapter(this);
-        binding.viewPager.setAdapter(sectionAdapter);
-
-        // Setup tabs
+        binding.viewPager.setAdapter(sectionAdapter);        // Setup tabs
         new TabLayoutMediator(binding.tabLayout, binding.viewPager,
                 (tab, position) -> {
-                    switch (position) {
-                        case 0:
-                            tab.setText("News");
-                            tab.setIcon(R.drawable.ic_news);
-                            break;
-                        case 1:
-                            tab.setText("Ranking");
-                            tab.setIcon(R.drawable.ic_ranking);
-                            break;
-                    }
+                    // Only Ranking tab now
+                    tab.setText("Ranking");
+                    tab.setIcon(R.drawable.ic_ranking);
                 }).attach();
     }
 

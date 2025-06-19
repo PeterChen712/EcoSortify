@@ -20,14 +20,13 @@
             app:destination="@id/historyFragment" />
         <action
             android:id="@+id/action_homeFragment_to_trashMapFragment"
-            app:destination="@id/trashMapFragment" />
-              <!-- Additional actions for quick buttons -->        <action
+            app:destination="@id/trashMapFragment" />        <action
             android:id="@+id/action_homeFragment_to_ploggingTabsFragment"
-            app:destination="@id/ploggingTabsFragment" />        <action
-            android:id="@+id/action_homeFragment_to_eksplorasiFragment"
-            app:destination="@id/eksplorasiFragment" />        <action
+            app:destination="@id/ploggingTabsFragment" />
+        <action
             android:id="@+id/action_homeFragment_to_aboutFragment"
-            app:destination="@id/aboutFragment" />        <action
+            app:destination="@id/aboutFragment" />
+        <action
             android:id="@+id/action_homeFragment_to_aiChatFragment"
             app:destination="@id/aiChatFragment" />
         <action
@@ -164,33 +163,14 @@
         <action
             android:id="@+id/action_ploggingTabsFragment_to_rankingFragment"
             app:destination="@id/rankingFragment" />
-    </fragment>
-
-    <!-- New Eksplorasi Fragment -->
-    <fragment
-        android:id="@+id/eksplorasiFragment"
-        android:name="com.example.glean.fragment.EksplorasiFragment"
-        android:label="Eksplorasi"
-        tools:layout="@layout/fragment_eksplorasi" />
-
-    <!-- New Game Fragment -->
+    </fragment>    <!-- New Game Fragment -->
     <fragment
         android:id="@+id/gameFragment"
         android:name="com.example.glean.fragment.GameFragment"
         android:label="Game"
         tools:layout="@layout/fragment_game" />
     
-    <!-- News Detail Fragment -->
     <fragment
-        android:id="@+id/newsDetailFragment"
-        android:name="com.example.glean.fragment.NewsDetailFragment"
-        android:label="News Details"
-        tools:layout="@layout/fragment_news_detail">
-        
-        <argument
-            android:name="NEWS_ID"
-            app:argType="integer" />
-    </fragment>    <fragment
         android:id="@+id/profileFragment"
         android:name="com.example.glean.fragment.ProfileFragment"
         android:label="Profile"

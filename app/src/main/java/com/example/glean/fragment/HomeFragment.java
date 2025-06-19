@@ -170,11 +170,14 @@ public class HomeFragment extends Fragment {
                     }
                 });
             }            if (binding.btnQuickAction3 != null) {
-                binding.btnQuickAction3.setText(getString(R.string.home_view_community));
+                binding.btnQuickAction3.setText("Klasifikasi Sampah");
                 binding.btnQuickAction3.setVisibility(View.VISIBLE);
                 binding.btnQuickAction3.setOnClickListener(v -> {
-                    if (getActivity() instanceof MainActivity) {
-                        ((MainActivity) getActivity()).navigateToCommunity();
+                    try {
+                        NavController navController = Navigation.findNavController(requireView());
+                        navController.navigate(R.id.action_homeFragment_to_classifyFragment);
+                    } catch (Exception e) {
+                        android.util.Log.e("HomeFragment", "Navigation error: " + e.getMessage());
                     }
                 });
             }

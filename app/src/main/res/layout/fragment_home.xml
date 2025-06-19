@@ -401,14 +401,14 @@
                         android:layout_height="60dp"
                         android:layout_weight="1"
                         android:layout_marginEnd="8dp"
-                        android:text="Berita Lingkungan"
+                        android:text="Klasifikasi Sampah"
                         android:textSize="12sp"
                         android:textStyle="bold"
                         app:cornerRadius="12dp"
                         app:strokeColor="@color/environmental_green"
                         android:textColor="@color/environmental_green"
                         app:strokeWidth="2dp"
-                        app:icon="@drawable/ic_news"
+                        app:icon="@drawable/ic_classification"
                         app:iconTint="@color/environmental_green"
                         app:iconGravity="start" />
                     <com.google.android.material.button.MaterialButton

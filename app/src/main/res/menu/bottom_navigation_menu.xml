@@ -11,14 +11,14 @@
         android:title="Plogging" />
 
     <item
+        android:id="@+id/classifyFragment"
+        android:icon="@drawable/ic_classification"
+        android:title="Klasifikasi" />
+
+    <item
         android:id="@+id/aiChatFragment"
         android:icon="@drawable/ic_chat"
         android:title="EcoBot" />
-
-    <item
-        android:id="@+id/eksplorasiFragment"
-        android:icon="@drawable/ic_explore"
-        android:title="Eksplorasi" />
 
     <item
         android:id="@+id/gameFragment"

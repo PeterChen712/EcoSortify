@@ -172,17 +172,9 @@
     <string name="eco_tip_5">Plogging membakar 300-400 kalori per 30 menit!</string>
     <string name="eco_tip_6">Gunakan sarung tangan saat memungut sampah untuk keamanan!</string>
     <string name="eco_tip_7">Foto sampah sebelum dipungut untuk dokumentasi yang baik!</string>
-    
-    <!-- CommunityPagerAdapter tab titles -->
+      <!-- CommunityPagerAdapter tab titles -->
     <string name="tab_social">Sosial</string>
     <string name="tab_ranking">Ranking</string>
-    <string name="tab_news">News</string>
-    
-    <!-- NewsFragment strings -->
-    <string name="added_to_favorites">💝 Ditambah ke favorit</string>
-    <string name="removed_from_favorites">💔 Dihapus dari favorit</string>
-    <string name="marked_as_read">✅ Ditandai sudah dibaca</string>
-    <string name="marked_as_unread">👁️ Ditandai belum dibaca</string>
     
     <!-- LoginFragment strings -->
     <string name="please_fill_all_fields">Tolong isi semua field</string>
@@ -207,11 +199,9 @@
       <!-- CustomizeProfileActivity error fix -->
     <string name="tab_badges">Lencana</string>
     <string name="tab_backgrounds">Background</string>
-    
-    <!-- Community Fragment strings -->
+      <!-- Community Fragment strings -->
     <string name="community_social_tab">Sosial</string>
     <string name="community_ranking_tab">Ranking</string>
-    <string name="community_news_tab">News</string>
     
     <!-- Login Fragment strings -->
     <string name="login_fill_all_fields">Isi semua field dulu ya</string>
@@ -249,63 +239,6 @@
     <string name="community_create_profile_to_post">Bikin profil user dulu buat posting konten</string>
     <string name="community_unknown_user">User Gak Dikenal</string>
     <string name="community_loading_user">Loading...</string>
-    <string name="community_sign_in_to_like">Login dulu buat like postingan</string>
-    <string name="community_error_updating_like">Error update like</string>
-      <!-- News Fragment strings -->
-    <string name="news_marked_favorite">Ditandai sebagai favorit</string>
-    <string name="news_removed_favorite">Dihapus dari favorit</string>
-    <string name="news_marked_read">Ditandai udah dibaca</string>
-    <string name="news_error_loading">Error loading berita</string>
-    <string name="news_already_loading">Tunggu sebentar, lagi loading berita...</string>
-    <string name="news_already_refreshing">Udah lagi refresh berita...</string>
-    <string name="news_failed_load_cached">Gagal load berita yang tersimpan</string>
-    <string name="news_new_articles_loaded">🆕 %d artikel baru dimuat!</string>
-    <string name="news_no_new_articles">📡 Gak ada artikel baru</string>    <string name="news_check_internet">🌐 Cek koneksi internet kamu</string>
-    <string name="news_content_not_available">📰 Konten artikel gak tersedia</string>
-    <string name="news_no_link_available">🔗 Gak ada link tersedia</string>
-    <string name="news_failed_share">📤 Gagal share artikel</string>
-    
-    <!-- Missing News Fragment strings -->
-    <string name="news_loading">Sedang memuat berita...</string>
-    <string name="news_refreshing">Sedang refresh berita...</string>
-    <string name="news_api_not_configured">NewsAPI key tidak dikonfigurasi. Gunakan artikel sample.</string>
-    <string name="news_no_new_articles_found">Tidak ada artikel baru ditemukan</string>
-    <string name="news_showing_sample_offline">Menampilkan artikel sample offline</string>
-    <string name="news_error_loading_sample">Error loading sample news: %s</string>
-    <string name="news_error_loading_cached">Error loading cached news: %s</string>
-    <string name="news_empty_message">Pull down to refresh and load environmental news articles</string>
-    <string name="news_invalid_data">Data berita tidak valid</string>
-      <!-- Additional missing News strings -->
-    <string name="news_failed_open_article">Gagal membuka berita</string>
-    <string name="news_cannot_open_link">Tidak dapat membuka link</string>
-    <string name="news_link_not_available">Link tidak tersedia untuk artikel ini</string>
-    <string name="news_failed_share_article">Gagal membagikan artikel</string>
-    <string name="news_added_to_favorites">💝 Ditambah ke favorit</string>
-    <string name="news_removed_from_favorites">💔 Dihapus dari favorit</string>
-    <string name="news_marked_as_read">✅ Ditandai sudah dibaca</string>
-    <string name="news_marked_as_unread">👁️ Ditandai belum dibaca</string>
-      <!-- Enhanced URL Validation strings -->
-    <string name="news_validation_success" formatted="false">✅ %d artikel valid dimuat (%d divalidasi)</string>
-    <string name="news_validation_progress" formatted="false">🔍 Memvalidasi artikel %d/%d...</string>
-    <string name="news_validation_failed">❌ Validasi artikel gagal, menggunakan validasi cepat</string>
-    <string name="news_quick_validation_success">⚡ %d artikel dimuat (validasi cepat)</string>
-    <string name="news_no_valid_articles_found">❌ Tidak ada artikel valid ditemukan. Silakan coba refresh.</string>
-    <string name="news_validated_cache_loaded" formatted="false">📚 %d artikel valid dari cache (%s)</string>
-    
-    <!-- URL Error Handling strings -->
-    <string name="news_url_might_be_invalid">⚠️ URL artikel mungkin tidak valid</string>
-    <string name="news_url_might_be_broken">⚠️ Link artikel mungkin rusak, tetapi tetap akan dibuka</string>
-    <string name="news_invalid_url_format">❌ Format URL tidak valid</string>
-    <string name="news_article_access_failed">❌ Artikel tidak dapat diakses, silakan pilih berita lain</string>
-    
-    <!-- Validation Error Messages -->
-    <string name="news_url_validation_timeout">⏱️ Validasi URL timeout</string>
-    <string name="news_content_not_relevant">📰 Konten tidak relevan dengan lingkungan</string>
-    <string name="news_format_validation_failed">📋 Validasi format artikel gagal</string>
-    <string name="news_cache_cleanup_success">🧹 Cache dibersihkan dari artikel tidak valid</string>
-    
-    <!-- Empty State Messages -->
-    <string name="news_empty_state_no_valid_articles">Tidak ada berita valid tersedia.\n\nSilakan:\n• Coba refresh\n• Periksa koneksi internet\n• Kembali lagi nanti</string>
-    <string name="news_empty_state_validation_failed">Validasi artikel gagal.\n\nMencoba memuat dari cache...</string>
+    <string name="community_sign_in_to_like">Login dulu buat like postingan</string>    <string name="community_error_updating_like">Error update like</string>
     
 </resources>
