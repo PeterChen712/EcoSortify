@@ -123,6 +123,7 @@ dependencies {
     implementation 'com.google.firebase:firebase-firestore'
     implementation 'com.google.firebase:firebase-analytics'
     implementation 'com.google.android.gms:play-services-auth:21.0.0'
+    implementation 'com.google.firebase:firebase-storage' // Firebase Storage for profile image upload
     
     // Testing
     testImplementation 'junit:junit:4.13.2'

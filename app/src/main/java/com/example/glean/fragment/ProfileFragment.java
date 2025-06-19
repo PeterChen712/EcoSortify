@@ -47,6 +47,8 @@ import com.example.glean.db.AppDatabase;
 import com.example.glean.model.Badge;
 import com.example.glean.model.UserEntity;
 import com.example.glean.util.NetworkUtil;
+import com.example.glean.util.LocalProfileImageUtil;
+import com.example.glean.util.ProfileImageLoader;
 import com.example.glean.service.FirebaseDataManager;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -908,44 +910,12 @@ public class ProfileFragment extends Fragment {    private static final String T
         } catch (Exception e) {
             Log.e(TAG, "Error setting default UI values", e);
         }
-    }
-    
-    private void loadProfileImage(UserEntity user) {
-        profileImagePath = user.getProfileImagePath();
+    }    private void loadProfileImage(UserEntity user) {
+        if (binding.ivProfilePic == null || user == null) return;
         
-        if (binding.ivProfilePic != null) {
-            if (profileImagePath != null && !profileImagePath.isEmpty()) {
-                // Load from file path
-                File imageFile = new File(profileImagePath);
-                if (imageFile.exists()) {
-                    Glide.with(this)
-                            .load(imageFile)
-                            .placeholder(android.R.drawable.ic_menu_camera)
-                            .error(android.R.drawable.ic_menu_camera)
-                            .circleCrop()
-                            .diskCacheStrategy(DiskCacheStrategy.ALL)
-                            .into(binding.ivProfilePic);
-                } else {
-                    // File doesn't exist, load default
-                    loadDefaultProfileImage();
-                }
-            } else {
-                // No profile image set, load default
-                loadDefaultProfileImage();
-            }
-        }
-    }
-    
-    private void loadDefaultProfileImage() {
-        if (binding.ivProfilePic != null) {
-            Glide.with(this)
-                    .load(android.R.drawable.ic_menu_camera)
-                    .circleCrop()
-                    .into(binding.ivProfilePic);
-        }
-    }
-    
-    private String getDisplayName(UserEntity user) {
+        // Use the utility class to handle all profile image loading logic
+        ProfileImageLoader.loadProfileImage(requireContext(), binding.ivProfilePic, user);
+    }private String getDisplayName(UserEntity user) {
         if (user.getFirstName() != null && !user.getFirstName().isEmpty()) {
             String fullName = user.getFirstName();
             if (user.getLastName() != null && !user.getLastName().isEmpty()) {
@@ -1279,15 +1249,21 @@ public class ProfileFragment extends Fragment {    private static final String T
         }
         
         binding = null;
-    }
-
-    @Override
+    }    @Override
     public void onDestroy() {
         super.onDestroy();
         if (executor != null) {
             executor.shutdown();
         }
-    }    // Missing essential methods that are called by the UI
+        
+        // Optional: Clean up old profile images periodically
+        // This is done in background and won't block the UI
+        try {
+            LocalProfileImageUtil.cleanupOldProfileImages(requireContext());
+        } catch (Exception e) {
+            // Ignore cleanup errors during destroy
+        }
+    }// Missing essential methods that are called by the UI
     private void showEditProfileDialog() {
         if (currentUser == null) {
             Toast.makeText(requireContext(), "User data not loaded", Toast.LENGTH_SHORT).show();
@@ -1351,10 +1327,15 @@ public class ProfileFragment extends Fragment {    private static final String T
                 .setPositiveButton("Logout", (dialog, which) -> logout())
                 .setNegativeButton("Cancel", null)
                 .show();
-    }
-
-    private void logout() {
+    }    private void logout() {
         try {
+            // Clean up local profile image for current user before logout
+            String currentUserId = getCurrentUserIdForStorage();
+            if (currentUserId != null) {
+                boolean deleted = LocalProfileImageUtil.deleteLocalProfileImage(requireContext(), currentUserId);
+                Log.d(TAG, "Profile image cleanup during logout: " + (deleted ? "successful" : "failed"));
+            }
+            
             // Clear user session
             SharedPreferences prefs = requireActivity().getSharedPreferences("USER_PREFS", 0);
             prefs.edit().clear().apply();
@@ -1389,271 +1370,244 @@ public class ProfileFragment extends Fragment {    private static final String T
     }
 
     private void showImageSourceDialog() {
-        // Placeholder implementation
-        Toast.makeText(requireContext(), "Image selection feature coming soon", Toast.LENGTH_SHORT).show();
+        String[] options = {"Pilih dari Galeri", "Ambil Foto Baru"};
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Ganti Foto Profil")
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) {
+                        // Pilih dari galeri
+                        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                        intent.setType("image/*");
+                        startActivityForResult(intent, PICK_IMAGE_REQUEST);
+                    } else if (which == 1) {
+                        // Ambil foto baru
+                        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                            ActivityCompat.requestPermissions(requireActivity(), new String[]{Manifest.permission.CAMERA}, REQUEST_CAMERA_PERMISSION);
+                        } else {
+                            captureImageFromCamera();
+                        }
+                    }
+                })
+                .show();
     }
 
     private void captureImageFromCamera() {
-        // Placeholder implementation
-        Toast.makeText(requireContext(), "Camera feature coming soon", Toast.LENGTH_SHORT).show();
-    }    private void setupBadges(UserEntity user) {
-        if (binding == null || binding.rvBadges == null) {
-            Log.w(TAG, "Cannot setup badges - binding or RecyclerView is null");
-            return;
-        }
-        
-        Log.d(TAG, "Setting up badges for user: " + user.getUsername());
-        
-        // Load badges from Firebase first, then fallback to SharedPreferences
-        FirebaseDataManager firebaseDataManager = FirebaseDataManager.getInstance(requireContext());
-        
-        firebaseDataManager.loadProfileCustomization(new FirebaseDataManager.ProfileDataCallback() {
-            @Override
-            public void onProfileLoaded(FirebaseDataManager.UserProfile profile) {
-                List<String> selectedBadgeIds = profile.getSelectedBadges();
-                
-                // Ensure we have at least one badge
-                if (selectedBadgeIds.isEmpty()) {
-                    selectedBadgeIds.add("starter");
-                }
-                
-                Log.d(TAG, "Loaded selected badges from Firebase: " + selectedBadgeIds);
-                
-                List<Badge> selectedBadges = new ArrayList<>();
-                for (String badgeId : selectedBadgeIds) {
-                    Badge badge = createBadgeFromId(badgeId, user);
-                    if (badge != null) {
-                        selectedBadges.add(badge);
-                    }
-                }
-                
-                // Update UI with selected badges
-                updateBadgeDisplay(selectedBadges);
-            }
-            
-            @Override
-            public void onError(String error) {
-                Log.w(TAG, "Failed to load badges from Firebase: " + error + ". Falling back to SharedPreferences.");
-                
-                // Fallback to SharedPreferences
-                loadBadgesFromSharedPreferences(user);
-            }
-        });
-    }
-    
-    private void loadBadgesFromSharedPreferences(UserEntity user) {
-        SharedPreferences prefs = requireActivity().getSharedPreferences("profile_settings", 0);
-        String selectedBadgesStr = prefs.getString("selected_badges", "");
-        
-        List<String> selectedBadgeIds = new ArrayList<>();
-        
-        if (selectedBadgesStr.isEmpty()) {
-            // Try legacy single badge system
-            String legacyBadge = prefs.getString("active_badge", "starter");
-            selectedBadgeIds.add(legacyBadge);
-        } else {
-            // Parse comma-separated badges
-            String[] badgeArray = selectedBadgesStr.split(",");
-            for (String badgeId : badgeArray) {
-                if (!badgeId.trim().isEmpty()) {
-                    selectedBadgeIds.add(badgeId.trim());
-                }
-            }
-        }
-        
-        // Ensure we have at least one badge
-        if (selectedBadgeIds.isEmpty()) {
-            selectedBadgeIds.add("starter");
-        }
-        
-        Log.d(TAG, "Loaded selected badges from SharedPreferences: " + selectedBadgeIds);
-        
-        List<Badge> selectedBadges = new ArrayList<>();
-        for (String badgeId : selectedBadgeIds) {
-            Badge badge = createBadgeFromId(badgeId, user);
-            if (badge != null) {
-                selectedBadges.add(badge);
-            }
-        }
-        
-        updateBadgeDisplay(selectedBadges);
-    }
-    
-    private void updateBadgeDisplay(List<Badge> selectedBadges) {
-        if (binding == null || binding.rvBadges == null) {
-            Log.w(TAG, "Cannot update badge display - binding or RecyclerView is null");
-            return;
-        }
-        
-        if (selectedBadges.isEmpty()) {
-            Log.w(TAG, "No badges to display");
-            return;
-        }
-        
-        try {
-            requireActivity().runOnUiThread(() -> {
-                ProfileBadgeAdapter adapter = new ProfileBadgeAdapter(requireContext(), selectedBadges);
-                binding.rvBadges.setAdapter(adapter);
-                
-                // Set layout manager with proper column count
-                int columns = Math.min(selectedBadges.size(), 3);
-                binding.rvBadges.setLayoutManager(new GridLayoutManager(requireContext(), columns));
-                
-                Log.d(TAG, "Badge display updated with " + selectedBadges.size() + " badges in " + columns + " columns");
-            });
-        } catch (Exception e) {
-            Log.e(TAG, "Error updating badge display", e);
-        }
-    }
-    
-    private Badge createBadgeFromId(String badgeId, UserEntity user) {
-        switch (badgeId) {
-            case "starter":
-                Badge starter = new Badge(1, "Starter", "Your first badge", "starter", 1, true);
-                starter.setIconResource(R.drawable.ic_star);
-                return starter;
-            case "green_helper":
-                Badge greenHelper = new Badge(2, "Green Helper", "Eco-friendly contributor", "green_helper", 1, true);
-                greenHelper.setIconResource(R.drawable.ic_leaf);
-                return greenHelper;
-            case "eco_warrior":
-                Badge ecoWarrior = new Badge(3, "Eco Warrior", "Environmental champion", "eco_warrior", 2, true);
-                ecoWarrior.setIconResource(R.drawable.ic_award);
-                return ecoWarrior;
-            case "green_champion":
-                Badge greenChampion = new Badge(4, "Green Champion", "Green environmental champion", "green_champion", 2, true);
-                greenChampion.setIconResource(R.drawable.ic_award);
-                return greenChampion;
-            case "earth_guardian":
-                Badge earthGuardian = new Badge(5, "Earth Guardian", "Protector of the environment", "earth_guardian", 3, true);
-                earthGuardian.setIconResource(R.drawable.ic_globe);
-                return earthGuardian;
-            case "expert_plogger":
-                Badge expertPlogger = new Badge(6, "Expert Plogger", "Master of plogging", "expert_plogger", 3, true);
-                expertPlogger.setIconResource(R.drawable.ic_crown);
-                return expertPlogger;
-            case "eco_legend":
-                Badge ecoLegend = new Badge(7, "Eco Legend", "Legendary environmental hero", "eco_legend", 3, true);
-                ecoLegend.setIconResource(R.drawable.ic_crown);
-                return ecoLegend;
-            case "master_cleaner":
-                Badge masterCleaner = new Badge(8, "Master Cleaner", "Expert in cleanup activities", "master_cleaner", 3, true);
-                masterCleaner.setIconResource(R.drawable.ic_cleaning);
-                return masterCleaner;
-            default:
-                return null;
-        }
-    }private void updateProfileDecorations(UserEntity user) {
-        // Placeholder implementation for profile decorations
-        Log.d(TAG, "Updating profile decorations for user: " + user.getUsername());
-    }
-
-    private void createDefaultUserIfNeeded() {
-        // Placeholder implementation to create default user
-        Log.w(TAG, "Creating default user - this should be properly implemented");
-    }
-
-    private String formatMemberSince(long createdAt) {
-        try {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("MMM yyyy", Locale.getDefault());
-            return dateFormat.format(new Date(createdAt));
-        } catch (Exception e) {
-            Log.e(TAG, "Error formatting member since date", e);
-            return "Unknown";
-        }
-    }
-
-    private void loadUserStatistics() {
-        // Load user statistics from database
-        if (currentUser == null) {
-            Log.w(TAG, "Cannot load statistics - no current user");
-            return;
-        }
-        
-        executor.execute(() -> {
+        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        if (intent.resolveActivity(requireActivity().getPackageManager()) != null) {
+            File photoFile = null;
             try {
-                // This could be expanded to load various statistics
-                // For now, just ensure points are displayed correctly
-                if (getActivity() != null) {
-                    getActivity().runOnUiThread(() -> {
-                        if (binding != null && binding.tvTotalPoints != null) {
-                            binding.tvTotalPoints.setText(String.valueOf(currentUser.getPoints()));
-                        }
-                    });
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "Error loading user statistics", e);
+                String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+                String imageFileName = "JPEG_" + timeStamp + "_";
+                File storageDir = requireActivity().getExternalFilesDir(null);
+                photoFile = File.createTempFile(imageFileName, ".jpg", storageDir);
+                cameraImageUri = FileProvider.getUriForFile(requireContext(), requireContext().getPackageName() + ".provider", photoFile);
+            } catch (Exception ex) {
+                Toast.makeText(requireContext(), "Gagal membuat file foto", Toast.LENGTH_SHORT).show();
             }
-        });
-    }
-    
-    private void updateUserProfile(String newName, String newPassword, BottomSheetDialog dialog) {
-        // Show loading state
-        dialog.setCancelable(false);
-        
-        executor.execute(() -> {
-            try {
-                // Update local database
-                currentUser.setUsername(newName);
-                
-                // Update password if provided
-                if (!newPassword.isEmpty()) {
-                    // In a real app, you'd hash the password
-                    currentUser.setPassword(newPassword);
-                }
-                
-                db.userDao().update(currentUser);
-                  // Update Firebase if logged in
-                if (authManager.isLoggedIn() && NetworkUtil.isNetworkAvailable(requireContext())) {
-                    // For now, just sync all user data since there's no specific profile update method
-                    firebaseDataManager.syncAllUserData(new FirebaseDataManager.DataSyncCallback() {
-                        @Override
-                        public void onSuccess() {
-                            requireActivity().runOnUiThread(() -> {
-                                Toast.makeText(requireContext(), "Profile updated successfully", Toast.LENGTH_SHORT).show();
-                                dialog.dismiss();
-                                loadUserData(); // Refresh UI
-                            });
-                        }
-                        
-                        @Override
-                        public void onError(String error) {
-                            requireActivity().runOnUiThread(() -> {
-                                Log.w(TAG, "Failed to sync profile to Firebase: " + error);
-                                Toast.makeText(requireContext(), "Profile updated locally", Toast.LENGTH_SHORT).show();
-                                dialog.dismiss();
-                                loadUserData(); // Refresh UI
-                            });
-                        }
-                    });
-                } else {
-                    requireActivity().runOnUiThread(() -> {
-                        Toast.makeText(requireContext(), "Profile updated", Toast.LENGTH_SHORT).show();
-                        dialog.dismiss();
-                        loadUserData(); // Refresh UI
-                    });
-                }
-                
-            } catch (Exception e) {
-                Log.e(TAG, "Error updating profile", e);
-                requireActivity().runOnUiThread(() -> {
-                    Toast.makeText(requireContext(), "Error updating profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    dialog.setCancelable(true);
-                });
+            if (photoFile != null) {
+                intent.putExtra(MediaStore.EXTRA_OUTPUT, cameraImageUri);
+                startActivityForResult(intent, CAMERA_REQUEST);
             }
-        });
+        }
     }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        
         if (requestCode == SKIN_SELECTION_REQUEST && resultCode == Activity.RESULT_OK) {
             // Profile customization was updated, refresh badges
             Log.d(TAG, "Profile customization updated, refreshing badges");
             if (currentUser != null) {
                 setupBadges(currentUser);
+            }        } else if (requestCode == PICK_IMAGE_REQUEST && resultCode == Activity.RESULT_OK && data != null && data.getData() != null) {
+            selectedImageUri = data.getData();
+            // Save image locally instead of uploading to Firebase Storage
+            saveProfileImageLocally(selectedImageUri);
+        } else if (requestCode == CAMERA_REQUEST && resultCode == Activity.RESULT_OK) {
+            if (cameraImageUri != null) {
+                // Save image locally instead of uploading to Firebase Storage
+                saveProfileImageLocally(cameraImageUri);
             }
         }
+    }    private void saveProfileImageLocally(Uri imageUri) {
+        if (imageUri == null) {
+            Toast.makeText(requireContext(), "Gambar tidak valid", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        // Show loading indicator
+        Toast.makeText(requireContext(), "Menyimpan foto profil...", Toast.LENGTH_SHORT).show();
+        
+        // Execute in background thread
+        executor.execute(() -> {
+            try {
+                String currentUserId = getCurrentUserIdForStorage();
+                if (currentUserId == null) {
+                    requireActivity().runOnUiThread(() -> 
+                        Toast.makeText(requireContext(), "User ID tidak ditemukan", Toast.LENGTH_SHORT).show()
+                    );
+                    return;
+                }
+                
+                // Save image locally
+                String localImagePath = LocalProfileImageUtil.saveProfileImageLocally(
+                    requireContext(), currentUserId, imageUri);
+                
+                if (localImagePath != null) {
+                    // Update user's profile image path in local database
+                    updateUserProfileImagePath(localImagePath);
+                    
+                    // Update Firestore with placeholder URL (not the local path)
+                    updateUserPhotoUrlInFirestore(currentUserId, LocalProfileImageUtil.getDefaultProfileImageUrl());
+                      requireActivity().runOnUiThread(() -> {
+                        Toast.makeText(requireContext(), "Foto profil berhasil disimpan!", Toast.LENGTH_SHORT).show();
+                        // Refresh the profile image display
+                        if (currentUser != null) {
+                            loadProfileImage(currentUser);
+                        }
+                    });
+                } else {
+                    requireActivity().runOnUiThread(() -> 
+                        Toast.makeText(requireContext(), "Gagal menyimpan foto profil", Toast.LENGTH_SHORT).show()
+                    );
+                }
+                
+            } catch (Exception e) {
+                Log.e(TAG, "Error saving profile image locally", e);
+                requireActivity().runOnUiThread(() -> 
+                    Toast.makeText(requireContext(), "Gagal menyimpan foto: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+                );
+            }
+        });
+    }
+    
+    /**
+     * Update user's profile image path in local database
+     */
+    private void updateUserProfileImagePath(String localImagePath) {
+        if (currentUser != null) {
+            executor.execute(() -> {
+                try {
+                    currentUser.setProfileImagePath(localImagePath);
+                    db.userDao().update(currentUser);
+                    Log.d(TAG, "Updated user profile image path in local database: " + localImagePath);
+                } catch (Exception e) {
+                    Log.e(TAG, "Error updating user profile image path in database", e);
+                }
+            });
+        }
+    }
+    
+    /**
+     * Get current user ID for storage purposes
+     */
+    private String getCurrentUserIdForStorage() {
+        if (authManager != null && authManager.isLoggedIn()) {
+            return authManager.getUserId();
+        } else if (currentUser != null) {
+            return String.valueOf(currentUser.getId());
+        }
+        return null;
+    }    private void updateUserPhotoUrlInFirestore(String userId, String photoUrl) {
+        if (!NetworkUtil.isNetworkAvailable(requireContext())) {
+            // No network, skip Firestore update
+            Log.d(TAG, "No network available, skipping Firestore photo URL update");
+            return;
+        }
+        
+        FirebaseFirestore firestore = FirebaseFirestore.getInstance();
+        firestore.collection("users").document(userId)
+            .update("photoURL", photoUrl)
+            .addOnSuccessListener(aVoid -> {
+                Log.d(TAG, "Photo URL updated in Firestore (placeholder): " + photoUrl);
+                // Don't show toast for placeholder updates to avoid confusion
+            })
+            .addOnFailureListener(e -> {
+                Log.w(TAG, "Failed to update photo URL in Firestore: " + e.getMessage());
+                // Don't show error toast for placeholder updates
+            });
+    }
+    
+    // Create a default user in the local database if none exists
+    private void createDefaultUserIfNeeded() {
+        executor.execute(() -> {
+            if (db.userDao().getUserCount() == 0) {
+                UserEntity defaultUser = new UserEntity();
+                defaultUser.setUsername("User");
+                defaultUser.setEmail("user@example.com");
+                defaultUser.setPassword("password");
+                defaultUser.setFirstName("User");
+                defaultUser.setLastName("");
+                defaultUser.setPoints(0);
+                defaultUser.setCreatedAt(System.currentTimeMillis());
+                db.userDao().insert(defaultUser);
+                Log.d(TAG, "Default user created");
+            }
+        });
+    }
+
+    // Format the member since date as a readable string
+    private String formatMemberSince(long createdAt) {
+        SimpleDateFormat sdf = new SimpleDateFormat("MMM yyyy", Locale.getDefault());
+        return sdf.format(new Date(createdAt));
+    }
+
+    // Load user statistics (e.g., total plogs, distance, etc.)
+    private void loadUserStatistics() {
+        if (currentUser == null) return;
+        // Example: set dummy stats, replace with real queries if available
+        if (binding.tvTotalPlogs != null) binding.tvTotalPlogs.setText("0");
+        if (binding.tvTotalDistance != null) binding.tvTotalDistance.setText("0 km");
+    }
+
+    // Setup badges for the user and display them in the RecyclerView
+    private void setupBadges(UserEntity user) {
+        if (binding.rvBadges == null) return;
+        // Example: create dummy badges, replace with real badge logic if available
+        List<Badge> badges = new ArrayList<>();
+        badges.add(new Badge(1, "Eco Starter", "Join the app", "milestone", 1, true));
+        badges.add(new Badge(2, "First Plog", "Complete your first plogging", "activity", 1, user.getPoints() > 0));
+        badges.add(new Badge(3, "Eco Warrior", "Reach 100 points", "points", 2, user.getPoints() >= 100));
+        ProfileBadgeAdapter adapter = new ProfileBadgeAdapter(requireContext(), badges);
+        binding.rvBadges.setAdapter(adapter);
+    }
+
+    // Update profile decorations (e.g., frame, background) based on user data
+    private void updateProfileDecorations(UserEntity user) {
+        if (binding == null) return;
+        String decoration = user.getActiveDecoration();
+        // Example: set a background or frame, replace with real logic if needed
+        if (binding.profileSkinBackground != null) {
+            if ("gold".equals(decoration)) {
+                binding.profileSkinBackground.setBackgroundResource(R.drawable.gold_frame);
+            } else if ("silver".equals(decoration)) {
+                binding.profileSkinBackground.setBackgroundResource(R.drawable.silver_frame);
+            } else if ("bronze".equals(decoration)) {
+                binding.profileSkinBackground.setBackgroundResource(R.drawable.bronze_frame);
+            } else {
+                binding.profileSkinBackground.setBackgroundResource(0); // Default
+            }
+        }
+    }
+
+    // Update user profile (name and password) in the database
+    private void updateUserProfile(String newName, String newPassword, BottomSheetDialog dialog) {
+        if (currentUser == null) return;
+        executor.execute(() -> {
+            currentUser.setUsername(newName);
+            currentUser.setFirstName(newName.split(" ")[0]);
+            if (newName.split(" ").length > 1) {
+                currentUser.setLastName(newName.substring(newName.indexOf(' ') + 1));
+            }
+            if (!newPassword.isEmpty()) {
+                currentUser.setPassword(newPassword);
+            }
+            db.userDao().update(currentUser);
+            requireActivity().runOnUiThread(() -> {
+                Toast.makeText(requireContext(), getString(R.string.profile_updated_success), Toast.LENGTH_SHORT).show();
+                dialog.dismiss();
+                loadUserData();
+            });
+        });
     }
 }
