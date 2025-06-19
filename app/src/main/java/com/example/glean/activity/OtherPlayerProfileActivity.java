@@ -79,49 +79,29 @@ public class OtherPlayerProfileActivity extends AppCompatActivity {
         }
 
         Log.d(TAG, "Player ID: " + playerId + ", Username: " + playerUsername);
-    }
-
-    private void setupUI() {
+    }    private void setupUI() {
         // Setup back button
         binding.btnBack.setOnClickListener(v -> finish());
         
         // Hide all edit controls - this is read-only profile
         hideEditControls();
         
-        // Set initial title
-        binding.tvTitle.setText(playerUsername != null ? playerUsername + "'s Profile" : "Player Profile");
+        // Set initial title in header (no separate tvTitle in new layout)
+        // The title is now part of the header layout directly
         
         // Setup badges RecyclerView
         if (binding.rvBadges != null) {
             binding.rvBadges.setLayoutManager(new GridLayoutManager(this, 3));
         }
-    }
-
-    private void hideEditControls() {
-        // Hide all editing/settings elements
-        if (binding.btnEditProfile != null) {
-            binding.btnEditProfile.setVisibility(View.GONE);
-        }
-        if (binding.btnSettings != null) {
-            binding.btnSettings.setVisibility(View.GONE);
-        }
-        if (binding.btnLogout != null) {
-            binding.btnLogout.setVisibility(View.GONE);
-        }
-        if (binding.btnCustomize != null) {
-            binding.btnCustomize.setVisibility(View.GONE);
-        }
+    }    private void hideEditControls() {
+        // These elements don't exist in the new layout, so no need to hide them
+        // The new layout is designed to not have edit controls for other players
         
         // Make profile picture non-clickable
         if (binding.ivProfilePic != null) {
             binding.ivProfilePic.setClickable(false);
             binding.ivProfilePic.setOnClickListener(null);
         }
-          // Hide profile settings section if exists
-        // View profileSettingsCard = findViewById(R.id.cardProfileSettings);
-        // if (profileSettingsCard != null) {
-        //     profileSettingsCard.setVisibility(View.GONE);
-        // }
     }
 
     private void loadPlayerData() {
@@ -134,10 +114,11 @@ public class OtherPlayerProfileActivity extends AppCompatActivity {
         } else {
             showError("Invalid player data");
         }
-    }
-
-    private void loadFromFirebase() {
-        binding.progressBar.setVisibility(View.VISIBLE);
+    }    private void loadFromFirebase() {
+        // Show loading state
+        if (binding.progressBar != null) {
+            binding.progressBar.setVisibility(View.VISIBLE);
+        }
         
         firestore.collection("users")
                 .document(playerId)
@@ -145,13 +126,16 @@ public class OtherPlayerProfileActivity extends AppCompatActivity {
                 .addOnSuccessListener(this::handleFirebaseData)
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "Error loading player data", e);
-                    binding.progressBar.setVisibility(View.GONE);
+                    if (binding.progressBar != null) {
+                        binding.progressBar.setVisibility(View.GONE);
+                    }
                     showError("Gagal memuat data pemain");
                 });
-    }
-
-    private void handleFirebaseData(DocumentSnapshot document) {
-        binding.progressBar.setVisibility(View.GONE);
+    }    private void handleFirebaseData(DocumentSnapshot document) {
+        // Hide loading state
+        if (binding.progressBar != null) {
+            binding.progressBar.setVisibility(View.GONE);
+        }
         
         if (document.exists()) {
             try {
@@ -181,9 +165,7 @@ public class OtherPlayerProfileActivity extends AppCompatActivity {
         } else {
             showError("Player not found");
         }
-    }
-
-    private void displayPlayerData(RankingUser user) {
+    }private void displayPlayerData(RankingUser user) {
         try {
             // Display basic info
             String displayName = user.getUsername();
@@ -192,7 +174,7 @@ public class OtherPlayerProfileActivity extends AppCompatActivity {
             }
             
             binding.tvName.setText(displayName);
-            binding.tvTitle.setText(displayName + "'s Profile");
+            // No separate tvTitle in new layout - title is static in header
             
             // Display statistics
             binding.tvTotalPoints.setText(String.valueOf(user.getTotalPoints()));
@@ -206,12 +188,12 @@ public class OtherPlayerProfileActivity extends AppCompatActivity {
             // Generate and display badges based on points
             generateAndDisplayBadges(user.getTotalPoints());
             
-            // Hide email and member since for privacy
+            // Show email and member since in new layout (they exist and are visible)
             if (binding.tvEmail != null) {
-                binding.tvEmail.setVisibility(View.GONE);
+                binding.tvEmail.setText("Email not available for other players");
             }
             if (binding.tvMemberSince != null) {
-                binding.tvMemberSince.setVisibility(View.GONE);
+                binding.tvMemberSince.setText("Member info private");
             }
             
         } catch (Exception e) {
