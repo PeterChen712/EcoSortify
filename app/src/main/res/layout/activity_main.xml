@@ -17,9 +17,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:navGraph="@navigation/main_navigation" />
-
-    <!-- Bottom Navigation -->
+        app:navGraph="@navigation/main_navigation" />    <!-- Bottom Navigation -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNavigation"
         android:layout_width="0dp"
@@ -29,7 +27,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:menu="@menu/bottom_navigation_menu"
-        app:labelVisibilityMode="unlabeled"
+        app:labelVisibilityMode="labeled"
         style="@style/Widget.Material3.BottomNavigationView"
         android:background="?attr/colorSurface"
         app:itemIconTint="@color/bottom_nav_item_color"

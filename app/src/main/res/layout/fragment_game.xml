@@ -4,18 +4,28 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
-
-    <!-- Header -->
+    android:orientation="vertical">    <!-- Header -->
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar_game"
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
+        android:layout_height="56dp"
         android:background="?attr/colorPrimary"
         android:elevation="4dp"
         app:title="🎮 Game Eco Sorting"
         app:titleTextColor="?attr/colorOnPrimary"
-        style="@style/Widget.Material3.Toolbar" />
+        style="@style/Widget.Material3.Toolbar">
+
+        <ImageButton
+            android:id="@+id/btn_help_game"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="end"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_help_24"
+            android:contentDescription="Help"
+            android:layout_marginEnd="8dp" />
+
+    </com.google.android.material.appbar.MaterialToolbar>
 
     <!-- Content Container -->
     <LinearLayout
@@ -39,20 +49,6 @@
                 android:textAppearance="?attr/textAppearanceSubtitle1"
                 tools:text="Skor Tertinggi: 250" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/help_button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:minWidth="48dp"
-                android:minHeight="48dp"
-                app:icon="@drawable/ic_help_24"
-                app:iconGravity="textStart"
-                app:iconPadding="0dp"
-                android:insetLeft="0dp"
-                android:insetTop="0dp"
-                android:insetRight="0dp"
-                android:insetBottom="0dp"
-                style="?attr/materialIconButtonStyle" />
         </LinearLayout>
 
         <!-- Game instructions -->

@@ -15,6 +15,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -24,6 +25,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.cardview.widget.CardView;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
@@ -32,9 +34,7 @@ import androidx.fragment.app.Fragment;
 import com.example.glean.R;
 import com.example.glean.db.AppDatabase;
 import com.example.glean.ml.ClassificationHelper;
-import com.example.glean.model.ClassificationFeedback;
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.progressindicator.CircularProgressIndicator;
 
@@ -51,15 +51,11 @@ public class ClassifyFragment extends Fragment {
     private static final String TAG = "ClassifyFragment";
     
     // UI components
-    private ImageView imagePreview;
-    private MaterialCardView cardCamera;
+    private ImageView imagePreview;    private MaterialCardView cardCamera;
     private MaterialCardView cardGallery;
     private LinearLayout emptyState;
     private LinearLayout resultContainer;
     private CircularProgressIndicator progressIndicator;
-    private LinearLayout feedbackContainer;
-    private MaterialButtonToggleGroup feedbackToggleGroup;
-    private MaterialButton submitFeedbackButton;
     
     private TextView resultType;
     private TextView resultTitle;
@@ -73,7 +69,6 @@ public class ClassifyFragment extends Fragment {
     private Uri photoUri;
     private String classificationResult;
     private String classificationDescription;
-    private String selectedFeedback;
     
     // Permission launchers
     private ActivityResultLauncher<String> requestCameraPermissionLauncher;
@@ -96,14 +91,10 @@ public class ClassifyFragment extends Fragment {
         
         // Initialize UI components
         imagePreview = view.findViewById(R.id.image_preview);
-        cardCamera = view.findViewById(R.id.card_camera);
-        cardGallery = view.findViewById(R.id.card_gallery);
+        cardCamera = view.findViewById(R.id.card_camera);        cardGallery = view.findViewById(R.id.card_gallery);
         emptyState = view.findViewById(R.id.empty_state);
         resultContainer = view.findViewById(R.id.result_container);
         progressIndicator = view.findViewById(R.id.progress_indicator);
-        feedbackContainer = view.findViewById(R.id.feedback_container);
-        feedbackToggleGroup = view.findViewById(R.id.feedback_toggle_group);
-        submitFeedbackButton = view.findViewById(R.id.btn_submit_feedback);
         
         resultType = view.findViewById(R.id.result_type);
         resultTitle = view.findViewById(R.id.result_title);
@@ -121,28 +112,13 @@ public class ClassifyFragment extends Fragment {
         // Setup click listeners
         cardCamera.setOnClickListener(v -> checkCameraPermission());
         cardGallery.setOnClickListener(v -> checkStoragePermission());
-        shareButton.setOnClickListener(v -> shareResults());
-        
-        // Setup feedback buttons
-        feedbackToggleGroup.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
-            if (isChecked) {
-                if (checkedId == R.id.btn_organik) {
-                    selectedFeedback = "ORGANIK";
-                } else if (checkedId == R.id.btn_anorganik) {
-                    selectedFeedback = "ANORGANIK";
-                } else if (checkedId == R.id.btn_b3) {
-                    selectedFeedback = "B3";
-                }
+        shareButton.setOnClickListener(v -> shareResults());        // Setup help button
+        androidx.appcompat.widget.Toolbar toolbar = view.findViewById(R.id.toolbar_classification);
+        if (toolbar != null) {
+            ImageButton helpButton = toolbar.findViewById(R.id.btn_help_classification);
+            if (helpButton != null) {                helpButton.setOnClickListener(v -> showHelpDialog());
             }
-        });
-        
-        submitFeedbackButton.setOnClickListener(v -> {
-            if (selectedFeedback != null && classificationResult != null && selectedImage != null) {
-                submitFeedback(classificationResult, selectedFeedback, selectedImage);
-            } else {
-                Toast.makeText(requireContext(), "Pilih kategori sampah yang benar", Toast.LENGTH_SHORT).show();
-            }
-        });
+        }
         
         // Initial UI state
         showEmptyState();
@@ -360,21 +336,13 @@ public class ClassifyFragment extends Fragment {
         
         // Set title based on waste type
         String title = getTitleForWasteType(wasteType);
-        resultTitle.setText(title);
-        
+        resultTitle.setText(title);        
         // Set description
         resultDescription.setText(description);
         
         // Set tips based on waste type
         String tips = getTipsForWasteType(wasteType);
         resultTips.setText(tips);
-        
-        // Also show feedback container
-        feedbackContainer.setVisibility(View.VISIBLE);
-        
-        // Reset feedback selection
-        feedbackToggleGroup.clearChecked();
-        selectedFeedback = null;
     }
     
     private int getColorForWasteType(String wasteType) {
@@ -458,66 +426,7 @@ public class ClassifyFragment extends Fragment {
                 Toast.makeText(requireContext(), 
                         "Gagal membagikan hasil", Toast.LENGTH_SHORT).show();
             }
-        }
-    }
-
-    private void submitFeedback(String originalClassification, String correctedClassification, Bitmap image) {
-        // Save image to local storage
-        String imagePath = saveFeedbackImage(image);
-          if (imagePath != null) {
-            // Create feedback object
-            ClassificationFeedback feedback = new ClassificationFeedback(
-                    originalClassification,
-                    correctedClassification,
-                    imagePath,
-                    "user@example.com" // Using placeholder for userEmail
-            );
-              // Save to database in background thread
-            new Thread(() -> {
-                try {
-                    AppDatabase db = AppDatabase.getInstance(requireContext());
-                    // For now, just save feedback locally or log it                    // TODO: Add feedbackDao() to AppDatabase when available
-                    
-                    requireActivity().runOnUiThread(() -> {
-                        Toast.makeText(requireContext(), "Terima kasih atas feedback Anda", Toast.LENGTH_SHORT).show();
-                        feedbackContainer.setVisibility(View.GONE);
-                    });
-                } catch (Exception e) {
-                    requireActivity().runOnUiThread(() -> {
-                        Toast.makeText(requireContext(), "Feedback disimpan secara lokal", Toast.LENGTH_SHORT).show();
-                        feedbackContainer.setVisibility(View.GONE);
-                    });
-                }
-            }).start();
-        } else {
-            Toast.makeText(requireContext(), "Gagal menyimpan feedback", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private String saveFeedbackImage(Bitmap image) {
-        try {
-            // Create directory for feedback images if it doesn't exist
-            File dir = new File(requireContext().getFilesDir(), "feedback");
-            if (!dir.exists()) {
-                dir.mkdirs();
-            }
-            
-            // Create file for the image
-            String fileName = "feedback_" + System.currentTimeMillis() + ".jpg";
-            File file = new File(dir, fileName);
-            
-            // Save image to file
-            FileOutputStream fos = new FileOutputStream(file);
-            image.compress(Bitmap.CompressFormat.JPEG, 90, fos);
-            fos.flush();
-            fos.close();
-            
-            return file.getAbsolutePath();
-        } catch (IOException e) {
-            Log.e(TAG, "Error saving feedback image", e);
-            return null;
-        }
-    }
+        }    }
 
     /**
      * Clean up temporary image data and cache after classification
@@ -583,5 +492,24 @@ public class ClassifyFragment extends Fragment {
         if (classificationHelper != null) {
             classificationHelper.release();
         }
+    }
+    
+    /**
+     * Show help dialog for classification
+     */
+    private void showHelpDialog() {
+        new AlertDialog.Builder(requireContext())
+            .setTitle("Bantuan Klasifikasi Sampah")
+            .setMessage("Aplikasi ini membantu Anda mengklasifikasikan jenis sampah berdasarkan gambar.\n\n" +
+                    "📷 Cara menggunakan:\n" +
+                    "1. Ambil foto sampah dengan kamera atau pilih dari galeri\n" +
+                    "2. Aplikasi akan menganalisis dan memberikan klasifikasi\n" +
+                    "3. Ikuti saran pengelolaan yang diberikan\n\n" +
+                    "🗂️ Jenis klasifikasi:\n" +
+                    "• Organik: Sisa makanan, daun kering\n" +
+                    "• Anorganik: Plastik, kaleng, kertas\n" +
+                    "• B3: Baterai, lampu, elektronik")
+            .setPositiveButton("Mengerti", (dialog, which) -> dialog.dismiss())
+            .show();
     }
 }

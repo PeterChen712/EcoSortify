@@ -241,4 +241,12 @@
     <string name="community_loading_user">Loading...</string>
     <string name="community_sign_in_to_like">Login dulu buat like postingan</string>    <string name="community_error_updating_like">Error update like</string>
     
+    <!-- Help Dialog Strings -->
+    <string name="help_classification_title">Bantuan Klasifikasi Sampah</string>
+    <string name="help_classification_content">Aplikasi ini membantu Anda mengklasifikasikan jenis sampah berdasarkan gambar.\n\n📷 Cara menggunakan:\n1. Ambil foto sampah dengan kamera atau pilih dari galeri\n2. Aplikasi akan menganalisis dan memberikan klasifikasi\n3. Ikuti saran pengelolaan yang diberikan\n\n🗂️ Jenis klasifikasi:\n• Organik: Sisa makanan, daun kering\n• Anorganik: Plastik, kaleng, kertas\n• B3: Baterai, lampu, elektronik</string>
+    <string name="help_game_title">🎮 Cara Bermain Eco Sorting</string>
+    <string name="help_game_content">Seret sampah ke tempat sampah yang sesuai dengan jenisnya:\n\n🟢 ORGANIK (Hijau):\n• Sisa makanan, kulit buah\n• Daun kering, ranting\n\n🟡 ANORGANIK (Kuning):\n• Plastik, botol, kaleng\n• Kertas, kardus\n\n🔴 B3 (Merah):\n• Baterai, lampu\n• Obat-obatan, elektronik\n\n🎯 Tujuan: Raih poin sebanyak-banyaknya!\n❌ Hati-hati: Salah sortir mengurangi poin</string>
+    <string name="help_understand">Mengerti</string>
+    <string name="help_start_playing">Mulai Bermain</string>
+    
 </resources>

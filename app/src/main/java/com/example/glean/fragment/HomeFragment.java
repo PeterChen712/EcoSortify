@@ -59,41 +59,23 @@ public class HomeFragment extends Fragment {
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
-          try {
+        super.onViewCreated(view, savedInstanceState);        try {
             initializeDashboardContent();
-            setupStartPloggingButton();
-            setupQuickActionButtons();
+            setupAboutCard();
             loadUserData();
-            updateDashboardStats();        } catch (Exception e) {
+            updateDashboardStats();} catch (Exception e) {
             showErrorMessage(getString(R.string.error_loading_home, e.getMessage()));
-        }
-    }
+        }    }
 
-    private void setupStartPloggingButton() {
-        if (binding.btnStartPlogging != null) {
-            binding.btnStartPlogging.setVisibility(View.VISIBLE);
-            binding.btnStartPlogging.setOnClickListener(v -> {
-                if (getActivity() instanceof MainActivity) {
-                    ((MainActivity) getActivity()).navigateToPlgging();                } else {
-                    Toast.makeText(requireContext(), getString(R.string.navigation_not_available), Toast.LENGTH_SHORT).show();
-                }
-            });
-        }
-    }
-
-    private void initializeDashboardContent() {        try {
+    private void initializeDashboardContent() {try {
             // Date and motivation text are now part of the simple header
-            // No longer needed as we removed the large greeting container
-
-            // Set daily tip
+            // No longer needed as we removed the large greeting container            // Set daily tip
             if (binding.tvDailyTip != null) {
                 String dailyTip = getDailyTip();
                 binding.tvDailyTip.setText(dailyTip);
                 binding.tvDailyTip.setVisibility(View.VISIBLE);
             }
             
-            updateQuickStatsUI();
             updateWeeklyChallengeUI();
             
         } catch (Exception e) {
@@ -109,93 +91,18 @@ public class HomeFragment extends Fragment {
             getString(R.string.eco_tip_5),
             getString(R.string.eco_tip_6),
             getString(R.string.eco_tip_7)
-        };
-        
+        };        
         int dayOfWeek = Calendar.getInstance().get(Calendar.DAY_OF_WEEK);
         return ecoTips[dayOfWeek % ecoTips.length];
     }
 
-    private void updateQuickStatsUI() {        try {
-            if (binding.tvQuickStatsTitle != null) {
-                binding.tvQuickStatsTitle.setText(getString(R.string.home_statistics_title));
-                binding.tvQuickStatsTitle.setVisibility(View.VISIBLE);
-            }
-            
-            if (binding.tvQuickStatsDistance != null) {
-                binding.tvQuickStatsDistance.setVisibility(View.VISIBLE);
-            }
-            
-            if (binding.tvQuickStatsTrash != null) {
-                binding.tvQuickStatsTrash.setVisibility(View.VISIBLE);
-            }
-            
-            if (binding.tvQuickStatsPoints != null) {
-                binding.tvQuickStatsPoints.setVisibility(View.VISIBLE);
-            }
-            
-            if (binding.tvQuickStatsBadge != null) {
-                binding.tvQuickStatsBadge.setVisibility(View.VISIBLE);
-            }
-            
-        } catch (Exception e) {
-            // Handle error silently
-        }
-    }    private void updateWeeklyChallengeUI() {
+    private void updateWeeklyChallengeUI() {
         // Challenge Global section has been completely removed from layout
         // No UI updates needed as the section no longer exists
     }
 
-    private void setupQuickActionButtons() {        try {
-            if (binding.btnQuickAction1 != null) {
-                binding.btnQuickAction1.setText(getString(R.string.home_start_plogging));
-                binding.btnQuickAction1.setVisibility(View.VISIBLE);
-                binding.btnQuickAction1.setOnClickListener(v -> {
-                    try {
-                        NavController navController = Navigation.findNavController(requireView());
-                        navController.navigate(R.id.action_homeFragment_to_ploggingFragment);
-                    } catch (Exception e) {
-                        if (getActivity() instanceof MainActivity) {
-                            ((MainActivity) getActivity()).navigateToPlgging();
-                        }
-                    }
-                });
-            }
-
-            if (binding.btnQuickAction2 != null) {
-                binding.btnQuickAction2.setText(getString(R.string.home_view_stats));
-                binding.btnQuickAction2.setVisibility(View.VISIBLE);
-                binding.btnQuickAction2.setOnClickListener(v -> {
-                    if (getActivity() instanceof MainActivity) {
-                        ((MainActivity) getActivity()).navigateToStats();
-                    }
-                });
-            }            if (binding.btnQuickAction3 != null) {
-                binding.btnQuickAction3.setText("Klasifikasi Sampah");
-                binding.btnQuickAction3.setVisibility(View.VISIBLE);
-                binding.btnQuickAction3.setOnClickListener(v -> {
-                    try {
-                        NavController navController = Navigation.findNavController(requireView());
-                        navController.navigate(R.id.action_homeFragment_to_classifyFragment);
-                    } catch (Exception e) {
-                        android.util.Log.e("HomeFragment", "Navigation error: " + e.getMessage());
-                    }
-                });
-            }
-
-            if (binding.btnQuickAction4 != null) {
-                binding.btnQuickAction4.setText(getString(R.string.home_trash_map));
-                binding.btnQuickAction4.setVisibility(View.VISIBLE);
-                binding.btnQuickAction4.setOnClickListener(v -> {
-                    try {
-                        NavController navController = Navigation.findNavController(requireView());
-                        navController.navigate(R.id.action_homeFragment_to_trashMapFragment);
-                    } catch (Exception e) {
-                        if (getActivity() instanceof MainActivity) {
-                            ((MainActivity) getActivity()).navigateToTrashMap();
-                        }
-                    }                });
-            }
-            
+    private void setupAboutCard() {
+        try {
             // Setup About card click listener
             if (binding.cardAbout != null) {
                 binding.cardAbout.setOnClickListener(v -> {
@@ -329,8 +236,7 @@ public class HomeFragment extends Fragment {
                     }
                     
                     android.util.Log.d("HomeFragment", "DEBUG: Total stats - Distance: " + totalDistance + 
-                        "m (" + (totalDistance/1000f) + "km), Trash: " + totalTrash + ", Points: " + totalPoints);
-                    
+                        "m (" + (totalDistance/1000f) + "km), Trash: " + totalTrash + ", Points: " + totalPoints);                    
                     String badge = getBadge(totalPoints);
                     
                     final float finalTotalDistance = totalDistance;
@@ -338,7 +244,6 @@ public class HomeFragment extends Fragment {
                     final int finalTotalPoints = totalPoints;
                     
                     requireActivity().runOnUiThread(() -> {
-                        updateStatsDisplay(finalTotalDistance, finalTotalTrash, finalTotalPoints, badge);
                         updateChallengeProgress(finalTotalTrash);
                     });
                 } else {
@@ -347,30 +252,9 @@ public class HomeFragment extends Fragment {
             } catch (Exception e) {
                 android.util.Log.e("HomeFragment", "DEBUG: Error updating dashboard stats", e);
             }
-        });
-    }    private void updateStatsDisplay(float totalDistance, int totalTrash, int totalPoints, String badge) {
-        try {
-            if (binding.tvQuickStatsDistance != null) {
-                binding.tvQuickStatsDistance.setText(String.format("%.1f km", totalDistance / 1000f));
-            }
-            
-            if (binding.tvQuickStatsTrash != null) {
-                binding.tvQuickStatsTrash.setText(String.valueOf(totalTrash));
-            }
-            
-            if (binding.tvQuickStatsPoints != null) {
-                binding.tvQuickStatsPoints.setText(String.valueOf(totalPoints));
-            }
-            
-            if (binding.tvQuickStatsBadge != null) {
-                // Show badge count instead of badge name
-                int badgeCount = getBadgeCount(totalPoints);
-                binding.tvQuickStatsBadge.setText(String.valueOf(badgeCount));
-            }
-        } catch (Exception e) {
-            // Handle error silently
-        }
-    }private void updateChallengeProgress(int totalTrash) {
+        });    }
+
+    private void updateChallengeProgress(int totalTrash) {
         // Challenge Global section has been completely removed from layout
         // No UI updates needed as the section no longer exists
     }

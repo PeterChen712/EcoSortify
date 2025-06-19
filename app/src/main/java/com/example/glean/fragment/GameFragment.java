@@ -5,6 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.ImageButton;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -17,13 +18,10 @@ import com.example.glean.game.GameEngine;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
-public class GameFragment extends Fragment implements GameEngine.GameCallback {
-
-    private FrameLayout gameContainer;
+public class GameFragment extends Fragment implements GameEngine.GameCallback {    private FrameLayout gameContainer;
     private TextView highScoreText;
     private MaterialButton playButton;
     private MaterialButton pauseButton;
-    private MaterialButton helpButton;
     
     private GameEngine gameEngine;
     private boolean gameStarted = false;
@@ -38,18 +36,23 @@ public class GameFragment extends Fragment implements GameEngine.GameCallback {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        
-        // Find views
+          // Find views
         gameContainer = view.findViewById(R.id.game_container);
         highScoreText = view.findViewById(R.id.high_score_text);
         playButton = view.findViewById(R.id.play_button);
         pauseButton = view.findViewById(R.id.pause_button);
-        helpButton = view.findViewById(R.id.help_button);
         
-        // Set up buttons
-        playButton.setOnClickListener(v -> startGame());
+        // Set up buttons        playButton.setOnClickListener(v -> startGame());
         pauseButton.setOnClickListener(v -> pauseGame());
-        helpButton.setOnClickListener(v -> showGameHelp());
+        
+        // Setup help button in toolbar
+        androidx.appcompat.widget.Toolbar gameToolbar = view.findViewById(R.id.toolbar_game);
+        if (gameToolbar != null) {
+            android.widget.ImageButton toolbarHelpButton = gameToolbar.findViewById(R.id.btn_help_game);
+            if (toolbarHelpButton != null) {
+                toolbarHelpButton.setOnClickListener(v -> showGameHelp());
+            }
+        }
         
         // Hide pause button initially
         pauseButton.setVisibility(View.GONE);
@@ -84,12 +87,22 @@ public class GameFragment extends Fragment implements GameEngine.GameCallback {
             pauseButton.setText("Lanjut");
             pauseButton.setIcon(requireContext().getDrawable(R.drawable.ic_play_24));
         }
-    }
-
-    private void showGameHelp() {
-        new MaterialAlertDialogBuilder(requireContext())                .setTitle("Bantuan Game")
-                .setMessage("Seret sampah ke tempat sampah yang sesuai:\n\n🟢 ORGANIK: Makanan, daun\n🔵 ANORGANIK: Plastik, kertas\n🔴 B3: Baterai, obat")
-                .setPositiveButton(R.string.ok, null)
+    }    private void showGameHelp() {
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("🎮 Cara Bermain Eco Sorting")
+                .setMessage("Seret sampah ke tempat sampah yang sesuai dengan jenisnya:\n\n" +
+                        "🟢 ORGANIK (Hijau):\n" +
+                        "• Sisa makanan, kulit buah\n" +
+                        "• Daun kering, ranting\n\n" +
+                        "� ANORGANIK (Kuning):\n" +
+                        "• Plastik, botol, kaleng\n" +
+                        "• Kertas, kardus\n\n" +
+                        "🔴 B3 (Merah):\n" +
+                        "• Baterai, lampu\n" +
+                        "• Obat-obatan, elektronik\n\n" +
+                        "🎯 Tujuan: Raih poin sebanyak-banyaknya!\n" +
+                        "❌ Hati-hati: Salah sortir mengurangi poin")
+                .setPositiveButton("Mulai Bermain", null)
                 .show();
     }
 
