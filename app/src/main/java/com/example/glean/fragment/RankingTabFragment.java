@@ -48,20 +48,27 @@ public class RankingTabFragment extends Fragment {
         fragment.setArguments(args);
         return fragment;
     }
-    
-    @Override
+      @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
             isPointsRanking = getArguments().getBoolean(ARG_IS_POINTS_RANKING, true);
         }
-          firestore = FirebaseFirestore.getInstance();
+        
+        firestore = FirebaseFirestore.getInstance();
         authManager = FirebaseAuthManager.getInstance(requireContext());
         dataManager = FirebaseDataManager.getInstance(requireContext());
         
-        // Get current user ID
-        SharedPreferences prefs = requireContext().getSharedPreferences("USER_PREFS", 0);
-        currentUserId = prefs.getString("FIREBASE_USER_ID", "");
+        // Get current user ID - prioritize Firebase UID for Firebase users
+        if (authManager.isLoggedIn() && authManager.getCurrentUserId() != null) {
+            currentUserId = authManager.getCurrentUserId(); // Firebase UID
+            Log.d(TAG, "Using Firebase UID for current user: " + currentUserId);
+        } else {
+            // Fallback to SharedPreferences for local users
+            SharedPreferences prefs = requireContext().getSharedPreferences("USER_PREFS", 0);
+            currentUserId = prefs.getString("FIREBASE_USER_ID", "");
+            Log.d(TAG, "Using SharedPreferences user ID: " + currentUserId);
+        }
     }
     
     @Nullable
@@ -311,22 +318,33 @@ public class RankingTabFragment extends Fragment {
         // You can customize error display here
         Log.e(TAG, message);
     }
-    
-    private void loadRankingDataWithFirebase() {
+      private void loadRankingDataWithFirebase() {
         showLoading(true);
+        
+        Log.d(TAG, "🏆 Starting Firebase ranking data load for " + (isPointsRanking ? "points" : "distance") + " ranking");
         
         // Subscribe to real-time ranking updates
         dataManager.subscribeToRanking(new FirebaseDataManager.RankingDataCallback() {
             @Override
             public void onRankingLoaded(List<FirebaseDataManager.RankingUser> ranking) {
                 requireActivity().runOnUiThread(() -> {
+                    Log.d(TAG, "🏆 Received ranking data: " + ranking.size() + " users");
+                    
                     // Convert Firebase ranking data to local ranking data
                     List<RankingUser> localRanking = convertFirebaseRankingToLocal(ranking);
-                      // Sort based on current tab
+                    
+                    // Sort based on current tab
                     if (isPointsRanking) {
                         localRanking.sort((a, b) -> Integer.compare(b.getTotalPoints(), a.getTotalPoints()));
+                        Log.d(TAG, "🏆 Sorted by points (descending)");
                     } else {
                         localRanking.sort((a, b) -> Double.compare(b.getTotalDistance(), a.getTotalDistance()));
+                        Log.d(TAG, "🏆 Sorted by distance (descending)");
+                    }
+                    
+                    // Update position numbers after sorting
+                    for (int i = 0; i < localRanking.size(); i++) {
+                        localRanking.get(i).setPosition(i + 1);
                     }
                     
                     rankingList.clear();
@@ -334,6 +352,14 @@ public class RankingTabFragment extends Fragment {
                     adapter.notifyDataSetChanged();
                     
                     showLoading(false);
+                    
+                    if (rankingList.isEmpty()) {
+                        showEmpty(true);
+                        Log.w(TAG, "⚠️ No ranking data to display");
+                    } else {
+                        showEmpty(false);
+                        Log.d(TAG, "✅ Ranking UI updated with " + rankingList.size() + " users");
+                    }
                     
                     // Update current user position
                     updateCurrentUserPosition();
@@ -343,8 +369,9 @@ public class RankingTabFragment extends Fragment {
             @Override
             public void onError(String error) {
                 requireActivity().runOnUiThread(() -> {
-                    Log.e(TAG, "Firebase ranking error: " + error);
+                    Log.e(TAG, "❌ Firebase ranking error: " + error);
                     showLoading(false);
+                    showEmpty(true);
                     Toast.makeText(requireContext(), 
                         "Gagal memuat data ranking: " + error, 
                         Toast.LENGTH_SHORT).show();
@@ -352,56 +379,242 @@ public class RankingTabFragment extends Fragment {
             }
         });
         
-        // Also sync local data to Firebase
-        dataManager.syncAllUserData(new FirebaseDataManager.DataSyncCallback() {
-            @Override
-            public void onSuccess() {
-                Log.d(TAG, "User data synced to Firebase for ranking");
-            }
-            
-            @Override
-            public void onError(String error) {
-                Log.w(TAG, "Failed to sync user data: " + error);
-            }
-        });
-    }
-    
-    private List<RankingUser> convertFirebaseRankingToLocal(List<FirebaseDataManager.RankingUser> firebaseRanking) {
+        // Skip sync for Firebase users to prevent data overwrite
+        if (authManager.getCurrentUserId() == null) {
+            Log.d(TAG, "⚠️ No current user ID - skipping data sync");
+            return;
+        }
+        
+        Log.d(TAG, "🔄 Current user is Firebase user - skipping local data sync to prevent overwriting Firebase data");
+    }    private List<RankingUser> convertFirebaseRankingToLocal(List<FirebaseDataManager.RankingUser> firebaseRanking) {
         List<RankingUser> localRanking = new ArrayList<>();
         
-        for (FirebaseDataManager.RankingUser fbUser : firebaseRanking) {            RankingUser localUser = new RankingUser(
-                fbUser.getUserId(),
-                fbUser.getUsername(),
-                "", // avatar URL - can be added later
-                fbUser.getTotalPoints(),
-                fbUser.getTotalDistance(),
-                fbUser.getTotalTrashCollected(),
-                0 // badge count - can be calculated later
-            );
-            localRanking.add(localUser);
-        }
+        Log.d(TAG, "🔄 Converting " + firebaseRanking.size() + " Firebase users to local ranking format");
         
-        return localRanking;
-    }
-    
-    private void updateCurrentUserPosition() {
-        // Find current user position in ranking
-        int currentUserPosition = -1;
-        for (int i = 0; i < rankingList.size(); i++) {
-            if (currentUserId.equals(rankingList.get(i).getUserId())) {
-                currentUserPosition = i + 1; // Position is 1-based
-                break;
+        for (FirebaseDataManager.RankingUser fbUser : firebaseRanking) {
+            try {
+                // Enhanced logging to debug the conversion issue
+                Log.d(TAG, "🔄 Processing Firebase user: " + fbUser.getUserId());
+                Log.d(TAG, "   - Username: " + fbUser.getUsername());
+                Log.d(TAG, "   - FullName: " + fbUser.getFullName());
+                Log.d(TAG, "   - Points: " + fbUser.getTotalPoints());
+                Log.d(TAG, "   - Distance: " + fbUser.getTotalDistance());
+                Log.d(TAG, "   - Trash: " + fbUser.getTotalTrashCollected());
+                Log.d(TAG, "   - PhotoURL: " + fbUser.getPhotoURL());
+                
+                // Use the best display name - prioritize fullName (nama) over username
+                String displayName = fbUser.getFullName();
+                if (displayName == null || displayName.trim().isEmpty()) {
+                    displayName = fbUser.getUsername();
+                }
+                if (displayName == null || displayName.trim().isEmpty()) {
+                    displayName = "User " + fbUser.getUserId().substring(0, Math.min(8, fbUser.getUserId().length()));
+                }
+                
+                // Get photo URL
+                String photoURL = fbUser.getPhotoURL();
+                if (photoURL == null) photoURL = "";
+                
+                RankingUser localUser = new RankingUser(
+                    fbUser.getUserId(),
+                    displayName,  // Use the best name (nama field preferred)
+                    photoURL,     // Use photoURL from Firebase
+                    fbUser.getTotalPoints(),
+                    fbUser.getTotalDistance(),
+                    fbUser.getTotalTrashCollected(),
+                    0 // badge count - will be simplified in display
+                );
+                localRanking.add(localUser);
+                
+                Log.v(TAG, "✅ Converted user: " + displayName + " (Points: " + fbUser.getTotalPoints() + ", Distance: " + fbUser.getTotalDistance() + ", Photo: " + photoURL + ")");
+            } catch (Exception e) {
+                Log.w(TAG, "⚠️ Error converting Firebase user to local format: " + fbUser.getUserId(), e);
             }
         }
-          // Update UI with current user position
-        if (currentUserPosition > 0) {
-            // Use existing UI components to show current position
-            binding.tvMyPosition.setText("#" + currentUserPosition);
-            binding.myRankingCard.setVisibility(View.VISIBLE);
-        } else {
-            binding.tvMyPosition.setText("#--");
+        
+        Log.d(TAG, "✅ Conversion complete: " + localRanking.size() + " users converted successfully");
+        return localRanking;
+    }
+      private void updateCurrentUserPosition() {
+        if (currentUserId == null || currentUserId.isEmpty()) {
+            Log.w(TAG, "⚠️ Cannot update current user position - user ID is null or empty");
+            binding.myRankingCard.setVisibility(View.GONE);
+            return;
         }
-    }    @Override
+        
+        Log.d(TAG, "🔍 Looking for current user in ranking list: " + currentUserId);
+        
+        // Find current user position in ranking
+        int currentUserPosition = -1;
+        RankingUser currentRankingUser = null;
+        
+        for (int i = 0; i < rankingList.size(); i++) {
+            RankingUser user = rankingList.get(i);
+            if (currentUserId.equals(user.getUserId())) {
+                currentUserPosition = i + 1; // Position is 1-based
+                currentRankingUser = user;
+                Log.d(TAG, "✅ Found current user at position " + currentUserPosition);
+                break;
+            }        }
+        
+        // Update UI with current user position
+        if (currentUserPosition > 0 && currentRankingUser != null) {
+            binding.myRankingCard.setVisibility(View.VISIBLE);
+            binding.tvMyPosition.setText("#" + currentUserPosition);
+            
+            // Use the same display name logic as in the ranking list (prioritize nama field)
+            String displayName = currentRankingUser.getUsername();
+            if (displayName == null || displayName.trim().isEmpty()) {
+                displayName = "You";
+            }
+            binding.tvMyUsername.setText(displayName);
+            
+            // Display score based on current tab
+            if (isPointsRanking) {
+                binding.tvMyScore.setText(currentRankingUser.getTotalPoints() + " poin");
+            } else {
+                binding.tvMyScore.setText(String.format("%.1f km", currentRankingUser.getTotalDistance() / 1000.0));
+            }
+            
+            // Display simplified stats (only KM and points, no badges)
+            binding.tvMyStats.setText(currentRankingUser.getFormattedStats());
+            
+            // Load profile image if available
+            if (currentRankingUser.getProfileImageUrl() != null && !currentRankingUser.getProfileImageUrl().isEmpty()) {
+                Glide.with(this)
+                        .load(currentRankingUser.getProfileImageUrl())
+                        .placeholder(R.drawable.ic_user_avatar)
+                        .error(R.drawable.ic_user_avatar)
+                        .into(binding.ivMyProfileImage);
+            } else {
+                binding.ivMyProfileImage.setImageResource(R.drawable.ic_user_avatar);
+            }
+            
+            Log.d(TAG, "✅ Current user UI updated - Position: #" + currentUserPosition + 
+                ", Points: " + currentRankingUser.getTotalPoints() + 
+                ", Distance: " + currentRankingUser.getTotalDistance());
+        } else {
+            // User not found in top ranking - fetch their actual position from Firebase
+            Log.w(TAG, "⚠️ Current user not found in top ranking list, will fetch actual position");
+            binding.tvMyPosition.setText("#--");
+            binding.tvMyUsername.setText("You");
+            binding.tvMyScore.setText("-- " + (isPointsRanking ? "poin" : "km"));
+            binding.myRankingCard.setVisibility(View.VISIBLE);
+            
+            // Try to fetch current user's actual stats from Firebase
+            fetchCurrentUserActualRanking();
+        }
+    }
+      private void fetchCurrentUserActualRanking() {
+        if (currentUserId == null || currentUserId.isEmpty()) {
+            return;
+        }
+        
+        Log.d(TAG, "🔍 Fetching actual ranking for current user from Firebase: " + currentUserId);
+        
+        // Get user profile data first
+        firestore.collection("users")
+                .document(currentUserId)
+                .get()
+                .addOnSuccessListener(userDoc -> {                    if (userDoc.exists()) {
+                        Log.d(TAG, "✅ Found current user data in Firebase");
+                        
+                        // Get name from users collection (prioritize "nama" field)
+                        String tempUsername = userDoc.getString("nama");
+                        if (tempUsername == null || tempUsername.trim().isEmpty()) {
+                            tempUsername = userDoc.getString("fullName");
+                            if (tempUsername == null) tempUsername = userDoc.getString("firstName");
+                            if (tempUsername == null) tempUsername = userDoc.getString("displayName");
+                            if (tempUsername == null) tempUsername = userDoc.getString("email");
+                            if (tempUsername == null) tempUsername = "You";
+                        }
+                        final String username = tempUsername; // Make effectively final for lambda
+                        
+                        // Get profile photo
+                        final String photoURL = userDoc.getString("photoURL");
+                        
+                        // Now get stats from user_stats collection
+                        firestore.collection("user_stats")
+                                .document(currentUserId)
+                                .get()
+                                .addOnSuccessListener(statsDoc -> {
+                                    int userPoints = 0;
+                                    double userDistance = 0.0;
+                                    
+                                    if (statsDoc.exists()) {
+                                        // Get stats from user_stats collection (preferred)
+                                        Object pointsObj = statsDoc.get("totalPoints");
+                                        if (pointsObj == null) pointsObj = statsDoc.get("currentPoints");
+                                        if (pointsObj instanceof Number) {
+                                            userPoints = ((Number) pointsObj).intValue();
+                                        }
+                                        
+                                        Object distanceObj = statsDoc.get("totalDistance");
+                                        if (distanceObj == null) distanceObj = statsDoc.get("totalKm");
+                                        if (distanceObj instanceof Number) {
+                                            userDistance = ((Number) distanceObj).doubleValue();
+                                        }
+                                        
+                                        Log.d(TAG, "📊 Stats from user_stats - Points: " + userPoints + ", Distance: " + userDistance);
+                                    } else {
+                                        // Fallback to users collection
+                                        Object pointsObj = userDoc.get("totalPoints");
+                                        if (pointsObj == null) pointsObj = userDoc.get("currentPoints");
+                                        if (pointsObj instanceof Number) {
+                                            userPoints = ((Number) pointsObj).intValue();
+                                        }
+                                        
+                                        Object distanceObj = userDoc.get("totalKm");
+                                        if (distanceObj == null) distanceObj = userDoc.get("totalDistance");
+                                        if (distanceObj instanceof Number) {
+                                            userDistance = ((Number) distanceObj).doubleValue();
+                                        }
+                                        
+                                        Log.d(TAG, "📊 Stats from users (fallback) - Points: " + userPoints + ", Distance: " + userDistance);
+                                    }
+                                    
+                                    // Update UI with user stats
+                                    binding.tvMyUsername.setText(username);
+                                    if (isPointsRanking) {
+                                        binding.tvMyScore.setText(userPoints + " poin");
+                                    } else {
+                                        binding.tvMyScore.setText(String.format("%.1f km", userDistance / 1000.0));
+                                    }
+                                    
+                                    // Display simplified stats (only KM and points)
+                                    binding.tvMyStats.setText(String.format("%.1f km • %d poin", userDistance / 1000.0, userPoints));
+                                    
+                                    // Load profile image if available
+                                    if (photoURL != null && !photoURL.isEmpty()) {
+                                        Glide.with(this)
+                                                .load(photoURL)
+                                                .placeholder(R.drawable.ic_user_avatar)
+                                                .error(R.drawable.ic_user_avatar)
+                                                .into(binding.ivMyProfileImage);
+                                    } else {
+                                        binding.ivMyProfileImage.setImageResource(R.drawable.ic_user_avatar);
+                                    }
+                                    
+                                    Log.d(TAG, "✅ Current user stats updated - Points: " + userPoints + ", Distance: " + userDistance + ", Name: " + username);
+                                })
+                                .addOnFailureListener(statsError -> {
+                                    Log.e(TAG, "❌ Error fetching user_stats, using fallback data", statsError);
+                                    // Continue with user data only
+                                    binding.tvMyUsername.setText(username);
+                                    binding.tvMyScore.setText("-- " + (isPointsRanking ? "poin" : "km"));
+                                    binding.tvMyStats.setText("-- km • -- poin");
+                                });
+                    } else {
+                        Log.w(TAG, "⚠️ Current user document not found in Firebase");
+                        binding.myRankingCard.setVisibility(View.GONE);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "❌ Error fetching current user data from Firebase", e);
+                    binding.myRankingCard.setVisibility(View.GONE);                });
+    }
+
+    @Override
     public void onDestroyView() {
         super.onDestroyView();
         

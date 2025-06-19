@@ -96,10 +96,8 @@ public class RankingUser implements Serializable {
 
     public String getFormattedDistance() {
         return String.format("%.1f km", totalDistance / 1000.0);
-    }
-
-    public String getFormattedStats() {
-        return String.format("%s • %d poin • %d badge", 
-                getFormattedDistance(), totalPoints, badgeCount);
+    }    public String getFormattedStats() {
+        return String.format("%.1f km • %d poin", 
+                totalDistance / 1000.0, totalPoints);
     }
 }

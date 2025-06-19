@@ -17,6 +17,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -186,11 +187,10 @@ public class FirebaseDataManager {
                     }
                 });
     }
-    
-    /**
+      /**
      * Ambil dan sinkronkan data ranking secara real-time
-     */
-    public void subscribeToRanking(RankingDataCallback callback) {
+     * Fetches all users from 'users' collection and sorts them for ranking
+     */    public void subscribeToRanking(RankingDataCallback callback) {
         if (!isUserLoggedIn()) {
             callback.onError("User not logged in");
             return;
@@ -201,22 +201,348 @@ public class FirebaseDataManager {
             rankingListener.remove();
         }
         
-        // Subscribe to real-time ranking updates
-        rankingListener = firestore.collection(COLLECTION_RANKING)
-                .orderBy("totalPoints", Query.Direction.DESCENDING)
-                .limit(100) // Top 100 users
-                .addSnapshotListener((queryDocumentSnapshots, e) -> {
+        Log.d(TAG, "🏆 Subscribing to ranking data - combining users and user_stats collections");
+        
+        // First get all users to get basic info (nama, email, photoURL)
+        rankingListener = firestore.collection(COLLECTION_USERS)
+                .addSnapshotListener((userSnapshots, e) -> {
                     if (e != null) {
-                        Log.w(TAG, "Listen failed for ranking", e);
+                        Log.w(TAG, "Listen failed for ranking users", e);
                         callback.onError(e.getMessage());
                         return;
                     }
                     
-                    if (queryDocumentSnapshots != null) {
-                        List<RankingUser> ranking = queryDocumentSnapshots.toObjects(RankingUser.class);
-                        callback.onRankingLoaded(ranking);
+                    if (userSnapshots != null) {
+                        Log.d(TAG, "🏆 Processing ranking data from " + userSnapshots.size() + " users");
+                        
+                        // Get all user_stats to get the actual points and distance
+                        firestore.collection(COLLECTION_STATS)
+                                .get()
+                                .addOnSuccessListener(statsSnapshots -> {
+                                    List<RankingUser> ranking = new ArrayList<>();
+                                    
+                                    // Create a map of user stats for quick lookup
+                                    Map<String, DocumentSnapshot> statsMap = new HashMap<>();
+                                    for (DocumentSnapshot statsDoc : statsSnapshots.getDocuments()) {
+                                        statsMap.put(statsDoc.getId(), statsDoc);
+                                    }
+                                    
+                                    // Process each user document
+                                    for (DocumentSnapshot userDoc : userSnapshots.getDocuments()) {
+                                        try {
+                                            RankingUser user = createRankingUserFromCombinedData(userDoc, statsMap.get(userDoc.getId()));
+                                            if (user != null) {
+                                                ranking.add(user);
+                                            }
+                                        } catch (Exception ex) {
+                                            Log.w(TAG, "⚠️ Error parsing user document for ranking: " + userDoc.getId(), ex);
+                                        }
+                                    }
+                                    
+                                    // Sort by totalPoints in descending order
+                                    ranking.sort((a, b) -> Integer.compare(b.getTotalPoints(), a.getTotalPoints()));
+                                    
+                                    // Limit to top 100 users
+                                    if (ranking.size() > 100) {
+                                        ranking = ranking.subList(0, 100);
+                                    }
+                                    
+                                    Log.d(TAG, "🏆 Ranking data processed: " + ranking.size() + " users");
+                                    callback.onRankingLoaded(ranking);
+                                })
+                                .addOnFailureListener(statsError -> {
+                                    Log.e(TAG, "❌ Failed to load user_stats for ranking", statsError);
+                                    callback.onError("Failed to load user stats: " + statsError.getMessage());
+                                });
+                    } else {
+                        Log.w(TAG, "⚠️ No ranking data available");
+                        callback.onRankingLoaded(new ArrayList<>());
                     }
                 });
+    }    /**
+     * Create RankingUser from combined user profile and stats data
+     */
+    private RankingUser createRankingUserFromCombinedData(DocumentSnapshot userDoc, DocumentSnapshot statsDoc) {
+        try {
+            String userId = userDoc.getId();
+            
+            // Debug: Log all available fields in the documents
+            Log.d(TAG, "🔍 User document " + userId + " fields: " + userDoc.getData());
+            if (statsDoc != null) {
+                Log.d(TAG, "🔍 Stats document " + userId + " fields: " + statsDoc.getData());
+            }
+            
+            // Get name from users collection (prioritize "nama" field)
+            String username = userDoc.getString("nama");  // Indonesian field for name
+            String fullName = username;  // Use nama as both username and full name
+            
+            if (username == null || username.trim().isEmpty()) {
+                // Fallback to other name fields
+                username = userDoc.getString("fullName");
+                if (username == null) username = userDoc.getString("firstName");
+                if (username == null) username = userDoc.getString("displayName");
+                if (username == null) username = userDoc.getString("name");
+                if (username == null) username = userDoc.getString("email"); // Last resort
+                fullName = username;
+            }
+            
+            Log.d(TAG, "📝 User data - ID: " + userId + ", Username: " + username + ", FullName: " + fullName);
+            
+            // Get profile photo URL from users collection
+            String photoURL = userDoc.getString("photoURL");
+            if (photoURL == null) photoURL = userDoc.getString("profileImageUrl");
+            if (photoURL == null) photoURL = userDoc.getString("avatarUrl");
+            
+            // Get stats from user_stats collection (preferred) or fallback to users collection
+            int totalPoints = 0;
+            double totalDistance = 0.0;
+            
+            if (statsDoc != null && statsDoc.exists()) {
+                // Get stats from user_stats collection (preferred source)
+                Object pointsObj = statsDoc.get("totalPoints");
+                if (pointsObj == null) pointsObj = statsDoc.get("currentPoints");
+                if (pointsObj == null) pointsObj = statsDoc.get("points");
+                if (pointsObj instanceof Number) {
+                    totalPoints = ((Number) pointsObj).intValue();
+                }
+                
+                Object distanceObj = statsDoc.get("totalDistance");
+                if (distanceObj == null) distanceObj = statsDoc.get("totalKm");
+                if (distanceObj == null) distanceObj = statsDoc.get("distance");
+                if (distanceObj instanceof Number) {
+                    totalDistance = ((Number) distanceObj).doubleValue();
+                }
+                
+                Log.d(TAG, "📊 Stats from user_stats - Points: " + totalPoints + ", Distance: " + totalDistance);
+            } else {
+                // Fallback to users collection if no stats document found
+                Object pointsObj = userDoc.get("totalPoints");
+                if (pointsObj == null) pointsObj = userDoc.get("currentPoints");
+                if (pointsObj instanceof Number) {
+                    totalPoints = ((Number) pointsObj).intValue();
+                }
+                
+                Object distanceObj = userDoc.get("totalKm");
+                if (distanceObj == null) distanceObj = userDoc.get("totalDistance");
+                if (distanceObj instanceof Number) {
+                    totalDistance = ((Number) distanceObj).doubleValue();
+                }
+                
+                Log.d(TAG, "📊 Stats from users (fallback) - Points: " + totalPoints + ", Distance: " + totalDistance);
+            }
+            
+            // Handle trash collected (optional, from either collection)
+            int totalTrashCollected = 0;
+            Object trashObj = null;
+            if (statsDoc != null) {
+                trashObj = statsDoc.get("totalTrashCollected");
+                if (trashObj == null) trashObj = statsDoc.get("trashCount");
+            }
+            if (trashObj == null) {
+                trashObj = userDoc.get("totalTrashCollected");
+                if (trashObj == null) trashObj = userDoc.get("trashCount");
+            }
+            if (trashObj instanceof Number) {
+                totalTrashCollected = ((Number) trashObj).intValue();
+            }
+            
+            Log.d(TAG, "🗑️ Trash data - totalTrashCollected: " + totalTrashCollected);
+            
+            long lastUpdated = System.currentTimeMillis();
+            Object timestampObj = statsDoc != null ? statsDoc.get("lastUpdated") : userDoc.get("lastUpdated");
+            if (timestampObj instanceof Number) {
+                lastUpdated = ((Number) timestampObj).longValue();
+            }
+            
+            // Create RankingUser with photoURL included
+            RankingUser rankingUser = new RankingUser(userId, username, fullName, totalPoints, totalDistance, totalTrashCollected, lastUpdated);
+            
+            // Set photo URL if available
+            if (photoURL != null && !photoURL.trim().isEmpty()) {
+                rankingUser.setPhotoURL(photoURL);
+            }
+            
+            Log.d(TAG, "✅ Created RankingUser - ID: " + userId + ", Username: " + username + ", Points: " + totalPoints + ", Distance: " + totalDistance + ", PhotoURL: " + photoURL);
+            
+            // Final validation - ensure we never return a user with completely null data
+            if (username == null && fullName == null) {
+                Log.w(TAG, "⚠️ User " + userId + " has no name data, using fallback name");
+                rankingUser.setUsername("User " + userId.substring(0, Math.min(8, userId.length())));
+                rankingUser.setFullName("User " + userId.substring(0, Math.min(8, userId.length())));
+            }
+            
+            return rankingUser;
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error creating RankingUser from combined data", e);
+            return null;
+        }
+    }
+
+    /**
+     * Create RankingUser from Firebase document (legacy method, kept for compatibility)
+     */
+    private RankingUser createRankingUserFromFirebaseDoc(DocumentSnapshot document) {
+        try {
+            String userId = document.getId();
+            
+            // Debug: Log all available fields in the document
+            Log.d(TAG, "🔍 Document " + userId + " fields: " + document.getData());
+              String username = document.getString("username");
+            String fullName = document.getString("fullName");
+            if (fullName == null) fullName = document.getString("nama");
+            if (fullName == null) fullName = document.getString("firstName");
+            
+            // Try additional common field names for user identification
+            if (username == null) {
+                username = document.getString("displayName");
+                if (username == null) username = document.getString("name");
+                if (username == null) username = document.getString("email");
+                if (username == null) username = document.getString("userEmail");
+            }
+            
+            if (fullName == null) {
+                fullName = document.getString("displayName");
+                if (fullName == null) fullName = document.getString("name");
+                // Try concatenating first and last name
+                String firstName = document.getString("firstName");
+                String lastName = document.getString("lastName");
+                if (firstName != null && lastName != null) {
+                    fullName = firstName + " " + lastName;
+                } else if (firstName != null) {
+                    fullName = firstName;
+                }
+            }
+            
+            // If both username and fullName are still null, try alternative field names
+            if (username == null && fullName == null) {
+                username = document.getString("email");  // Fallback to email
+                fullName = document.getString("displayName");  // Try displayName
+                Log.d(TAG, "🔄 Trying alternative fields - email: " + username + ", displayName: " + fullName);
+            }
+            
+            // Use fullName as username if username is null
+            if (username == null && fullName != null) {
+                username = fullName;
+                Log.d(TAG, "🔄 Using fullName as username: " + username);
+            }
+            
+            Log.d(TAG, "📝 User data - ID: " + userId + ", Username: " + username + ", FullName: " + fullName);
+              // Handle different field names for points
+            int totalPoints = 0;
+            Object pointsObj = document.get("totalPoints");
+            if (pointsObj == null) pointsObj = document.get("currentPoints");
+            if (pointsObj == null) pointsObj = document.get("points");  // Add fallback
+            if (pointsObj == null) pointsObj = document.get("score");  // Alternative name
+            
+            // Check if stats are nested in a sub-object
+            if (pointsObj == null) {
+                Map<String, Object> stats = (Map<String, Object>) document.get("stats");
+                if (stats != null) {
+                    pointsObj = stats.get("totalPoints");
+                    if (pointsObj == null) pointsObj = stats.get("points");
+                    if (pointsObj == null) pointsObj = stats.get("currentPoints");
+                }
+            }
+            
+            // Check userStats sub-object
+            if (pointsObj == null) {
+                Map<String, Object> userStats = (Map<String, Object>) document.get("userStats");
+                if (userStats != null) {
+                    pointsObj = userStats.get("totalPoints");
+                    if (pointsObj == null) pointsObj = userStats.get("points");
+                    if (pointsObj == null) pointsObj = userStats.get("currentPoints");
+                }
+            }
+            
+            if (pointsObj instanceof Number) {
+                totalPoints = ((Number) pointsObj).intValue();
+            }
+            Log.d(TAG, "📊 Points data - totalPoints: " + totalPoints);            // Handle different field names for distance
+            double totalDistance = 0.0;
+            Object distanceObj = document.get("totalDistance");
+            if (distanceObj == null) distanceObj = document.get("totalKm");
+            if (distanceObj == null) distanceObj = document.get("totalPloggingDistance");
+            if (distanceObj == null) distanceObj = document.get("distance");  // Add fallback
+            if (distanceObj == null) distanceObj = document.get("km");  // Short name
+            
+            // Check if distance is nested in a sub-object
+            if (distanceObj == null) {
+                Map<String, Object> stats = (Map<String, Object>) document.get("stats");
+                if (stats != null) {
+                    distanceObj = stats.get("totalDistance");
+                    if (distanceObj == null) distanceObj = stats.get("distance");
+                    if (distanceObj == null) distanceObj = stats.get("totalKm");
+                }
+            }
+            
+            // Check userStats sub-object
+            if (distanceObj == null) {
+                Map<String, Object> userStats = (Map<String, Object>) document.get("userStats");
+                if (userStats != null) {
+                    distanceObj = userStats.get("totalDistance");
+                    if (distanceObj == null) distanceObj = userStats.get("distance");
+                    if (distanceObj == null) distanceObj = userStats.get("totalKm");
+                }
+            }
+            
+            if (distanceObj instanceof Number) {
+                totalDistance = ((Number) distanceObj).doubleValue();
+            }
+            Log.d(TAG, "📏 Distance data - totalDistance: " + totalDistance);
+              // Handle trash collected
+            int totalTrashCollected = 0;
+            Object trashObj = document.get("totalTrashCollected");
+            if (trashObj == null) trashObj = document.get("trashCount");  // Add fallback
+            if (trashObj == null) trashObj = document.get("totalTrash");  // Alternative name
+            if (trashObj == null) trashObj = document.get("trash");  // Short name
+            
+            // Check if trash data is nested in a sub-object
+            if (trashObj == null) {
+                Map<String, Object> stats = (Map<String, Object>) document.get("stats");
+                if (stats != null) {
+                    trashObj = stats.get("totalTrashCollected");
+                    if (trashObj == null) trashObj = stats.get("trashCount");
+                    if (trashObj == null) trashObj = stats.get("totalTrash");
+                }
+            }
+            
+            // Check userStats sub-object
+            if (trashObj == null) {
+                Map<String, Object> userStats = (Map<String, Object>) document.get("userStats");
+                if (userStats != null) {
+                    trashObj = userStats.get("totalTrashCollected");
+                    if (trashObj == null) trashObj = userStats.get("trashCount");
+                    if (trashObj == null) trashObj = userStats.get("totalTrash");
+                }
+            }
+            
+            if (trashObj instanceof Number) {
+                totalTrashCollected = ((Number) trashObj).intValue();
+            }
+            Log.d(TAG, "🗑️ Trash data - totalTrashCollected: " + totalTrashCollected);
+            
+            long lastUpdated = System.currentTimeMillis();
+            Object timestampObj = document.get("lastUpdated");
+            if (timestampObj instanceof Number) {
+                lastUpdated = ((Number) timestampObj).longValue();
+            }
+              RankingUser rankingUser = new RankingUser(userId, username, fullName, totalPoints, totalDistance, totalTrashCollected, lastUpdated);
+            Log.d(TAG, "✅ Created RankingUser - ID: " + userId + ", Username: " + username + ", Points: " + totalPoints + ", Distance: " + totalDistance);
+            
+            // Final validation - ensure we never return a user with completely null data
+            if (username == null && fullName == null) {
+                Log.w(TAG, "⚠️ User " + userId + " has no name data, using fallback name");
+                rankingUser.setUsername("User " + userId.substring(0, Math.min(8, userId.length())));
+                rankingUser.setFullName("User " + userId.substring(0, Math.min(8, userId.length())));
+            }
+            
+            return rankingUser;
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error creating RankingUser from Firebase document: " + document.getId(), e);
+            return null;
+        }
     }
     
     /**
@@ -1099,11 +1425,11 @@ public class FirebaseDataManager {
                    ", trash=" + totalTrashCollected + ", sessions=" + totalSessions + "}";
         }
     }
-    
-    public static class RankingUser {
+      public static class RankingUser {
         private String userId;
         private String username;
         private String fullName;
+        private String photoURL;  // Add photoURL field
         private int totalPoints;
         private double totalDistance;
         private int totalTrashCollected;
@@ -1131,6 +1457,9 @@ public class FirebaseDataManager {
         
         public String getFullName() { return fullName; }
         public void setFullName(String fullName) { this.fullName = fullName; }
+        
+        public String getPhotoURL() { return photoURL; }
+        public void setPhotoURL(String photoURL) { this.photoURL = photoURL; }
         
         public int getTotalPoints() { return totalPoints; }
         public void setTotalPoints(int totalPoints) { this.totalPoints = totalPoints; }
