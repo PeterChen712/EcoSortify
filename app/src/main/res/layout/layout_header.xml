@@ -2,7 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="72dp"
+    android:layout_height="112dp"
     android:background="@drawable/curved_header_background"
     android:paddingHorizontal="16dp"
     android:paddingTop="12dp"
@@ -12,9 +12,9 @@
 
     <!-- App Title -->
     <TextView
-        android:layout_width="0dp"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
+        android:layout_gravity="center"
         android:text="Ecosortify"
         android:textSize="24sp"
         android:textStyle="bold"
