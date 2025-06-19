@@ -20,12 +20,12 @@ import com.example.glean.databinding.FragmentBadgeSelectionBinding;
 import com.example.glean.db.AppDatabase;
 import com.example.glean.model.Badge;
 import com.example.glean.model.UserEntity;
+import com.example.glean.service.FirebaseDataManager;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class BadgeSelectionFragment extends Fragment implements BadgeSelectionAdapter.OnBadgeClickListener {
-    private static final String TAG = "BadgeSelectionFragment";
+public class BadgeSelectionFragment extends Fragment implements BadgeSelectionAdapter.OnBadgeClickListener {    private static final String TAG = "BadgeSelectionFragment";
     private static final int MAX_SELECTED_BADGES = 3;
     
     private FragmentBadgeSelectionBinding binding;
@@ -35,6 +35,8 @@ public class BadgeSelectionFragment extends Fragment implements BadgeSelectionAd
     private List<Badge> availableBadges;
     private List<String> selectedBadgeIds = new ArrayList<>();
     private List<String> originalBadgeIds = new ArrayList<>();
+    private FirebaseDataManager firebaseDataManager;
+    private FirebaseDataManager.UserProfile userProfile;
     
     @Nullable
     @Override
@@ -42,12 +44,12 @@ public class BadgeSelectionFragment extends Fragment implements BadgeSelectionAd
         binding = FragmentBadgeSelectionBinding.inflate(inflater, container, false);
         return binding.getRoot();
     }
-    
-    @Override
+      @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         
         db = AppDatabase.getInstance(requireContext());
+        firebaseDataManager = FirebaseDataManager.getInstance(requireContext());
         setupRecyclerView();
         loadUserData();
     }
@@ -70,8 +72,38 @@ public class BadgeSelectionFragment extends Fragment implements BadgeSelectionAd
                 }
             });
         }
+    }    private void loadCurrentBadge() {
+        // Load profile customization from Firebase
+        firebaseDataManager.loadProfileCustomization(new FirebaseDataManager.ProfileDataCallback() {
+            @Override
+            public void onProfileLoaded(FirebaseDataManager.UserProfile profile) {
+                userProfile = profile;
+                
+                List<String> selectedBadges = profile.getSelectedBadges();
+                selectedBadgeIds.clear();
+                selectedBadgeIds.addAll(selectedBadges);
+                
+                if (selectedBadgeIds.isEmpty()) {
+                    selectedBadgeIds.add("starter"); // Ensure at least one badge
+                }
+                
+                originalBadgeIds = new ArrayList<>(selectedBadgeIds);
+                
+                // Update current badge display to show selected count
+                updateCurrentBadgeDisplay();
+                loadAvailableBadges();
+            }
+            
+            @Override
+            public void onError(String error) {
+                Log.e(TAG, "Error loading profile customization: " + error);
+                // Fallback to SharedPreferences for backward compatibility
+                loadCurrentBadgeFromPreferences();
+            }
+        });
     }
-      private void loadCurrentBadge() {
+    
+    private void loadCurrentBadgeFromPreferences() {
         // Get current selected badges from user preferences
         SharedPreferences prefs = requireActivity().getSharedPreferences("profile_settings", 0);
         String selectedBadgesJson = prefs.getString("selected_badges", "");
@@ -103,15 +135,17 @@ public class BadgeSelectionFragment extends Fragment implements BadgeSelectionAd
         
         // Update current badge display to show selected count
         updateCurrentBadgeDisplay();
-    }
-      private void loadAvailableBadges() {
-        availableBadges = generateUserBadges(currentUser);
-        
-        if (availableBadges.isEmpty()) {
-            showEmptyState();
-        } else {
-            hideEmptyState();
-            adapter.updateBadges(availableBadges, selectedBadgeIds);
+        loadAvailableBadges();
+    }    private void loadAvailableBadges() {
+        if (currentUser != null) {
+            availableBadges = generateUserBadges(currentUser);
+            
+            if (availableBadges.isEmpty()) {
+                showEmptyState();
+            } else {
+                hideEmptyState();
+                adapter.updateBadges(availableBadges, selectedBadgeIds);
+            }
         }
     }
       private List<Badge> generateUserBadges(UserEntity user) {
@@ -251,18 +285,46 @@ public class BadgeSelectionFragment extends Fragment implements BadgeSelectionAd
                 Toast.makeText(requireContext(), "Maximum " + MAX_SELECTED_BADGES + " badges can be selected", Toast.LENGTH_SHORT).show();
             }
         }
-    }
-      public void saveSelection() {
+    }    public void saveSelection() {
         if (!selectedBadgeIds.equals(originalBadgeIds)) {
-            // Save selected badges to preferences as comma-separated string
-            SharedPreferences prefs = requireActivity().getSharedPreferences("profile_settings", 0);
-            String selectedBadgesJson = String.join(",", selectedBadgeIds);
-            prefs.edit().putString("selected_badges", selectedBadgesJson).apply();
-            
-            // Also maintain legacy single badge for backward compatibility (use first selected)
-            prefs.edit().putString("active_badge", selectedBadgeIds.get(0)).apply();
-            
-            Log.d(TAG, "Badge selection saved: " + selectedBadgesJson);
+            // Save selected badges to Firebase
+            if (userProfile != null) {
+                firebaseDataManager.updateProfileCustomization(
+                    selectedBadgeIds,
+                    userProfile.getOwnedBackgrounds(),
+                    userProfile.getActiveBackground(),
+                    new FirebaseDataManager.ProfileCustomizationCallback() {
+                        @Override
+                        public void onSuccess() {
+                            Log.d(TAG, "Badge selection saved to Firebase: " + String.join(",", selectedBadgeIds));
+                            
+                            // Also save to SharedPreferences for backward compatibility
+                            SharedPreferences prefs = requireActivity().getSharedPreferences("profile_settings", 0);
+                            String selectedBadgesJson = String.join(",", selectedBadgeIds);
+                            prefs.edit().putString("selected_badges", selectedBadgesJson).apply();
+                            prefs.edit().putString("active_badge", selectedBadgeIds.get(0)).apply();
+                        }
+                        
+                        @Override
+                        public void onError(String error) {
+                            Log.e(TAG, "Error saving badge selection to Firebase: " + error);
+                            
+                            // Fallback to SharedPreferences only
+                            SharedPreferences prefs = requireActivity().getSharedPreferences("profile_settings", 0);
+                            String selectedBadgesJson = String.join(",", selectedBadgeIds);
+                            prefs.edit().putString("selected_badges", selectedBadgesJson).apply();
+                            prefs.edit().putString("active_badge", selectedBadgeIds.get(0)).apply();
+                            Log.d(TAG, "Badge selection saved to SharedPreferences as fallback: " + selectedBadgesJson);
+                        }
+                    });
+            } else {
+                // Fallback to SharedPreferences only
+                SharedPreferences prefs = requireActivity().getSharedPreferences("profile_settings", 0);
+                String selectedBadgesJson = String.join(",", selectedBadgeIds);
+                prefs.edit().putString("selected_badges", selectedBadgesJson).apply();
+                prefs.edit().putString("active_badge", selectedBadgeIds.get(0)).apply();
+                Log.d(TAG, "Badge selection saved to SharedPreferences: " + selectedBadgesJson);
+            }
         }
     }
     

@@ -1481,9 +1481,7 @@ public class FirebaseDataManager {
         private String email;
         private String avatarUrl;
         private String badgeUrl;
-        private long lastUpdated;
-        
-        // Additional fields to handle various Firebase document structures
+        private long lastUpdated;        // Additional fields to handle various Firebase document structures
         private String fullName;           // For Firebase documents with combined name
         private String nama;               // For Indonesian field names
         private String photoURL;           // Alternative photo field name
@@ -1494,6 +1492,11 @@ public class FirebaseDataManager {
         private double totalPloggingDistance; // Full distance field name
         private int totalTrashCollected;   // Trash collection data
         private int currentLevel;          // User level
+        
+        // Profile customization fields
+        private List<String> selectedBadges;       // Array/List of selected badges (max 3)
+        private List<String> ownedBackgrounds;     // Array/List of owned backgrounds
+        private String activeBackground;           // Currently active background ID
         
         public UserProfile() {} // Required for Firebase
         
@@ -1655,10 +1658,23 @@ public class FirebaseDataManager {
         public void setTotalPloggingDistance(double totalPloggingDistance) { this.totalPloggingDistance = totalPloggingDistance; }
         
         public int getTotalTrashCollected() { return totalTrashCollected; }
-        public void setTotalTrashCollected(int totalTrashCollected) { this.totalTrashCollected = totalTrashCollected; }
-        
-        public int getCurrentLevel() { return currentLevel; }
+        public void setTotalTrashCollected(int totalTrashCollected) { this.totalTrashCollected = totalTrashCollected; }        public int getCurrentLevel() { return currentLevel; }
         public void setCurrentLevel(int currentLevel) { this.currentLevel = currentLevel; }
+        
+        // Profile customization getters and setters
+        public List<String> getSelectedBadges() { 
+            return selectedBadges != null ? selectedBadges : new ArrayList<>(); 
+        }
+        public void setSelectedBadges(List<String> selectedBadges) { this.selectedBadges = selectedBadges; }
+          public List<String> getOwnedBackgrounds() { 
+            return ownedBackgrounds != null ? ownedBackgrounds : new ArrayList<>(); 
+        }
+        public void setOwnedBackgrounds(List<String> ownedBackgrounds) { this.ownedBackgrounds = ownedBackgrounds; }
+        
+        public String getActiveBackground() { 
+            return activeBackground != null ? activeBackground : "default"; 
+        }
+        public void setActiveBackground(String activeBackground) { this.activeBackground = activeBackground; }
         
         /**
          * Get the display name for UI purposes
@@ -1681,9 +1697,101 @@ public class FirebaseDataManager {
             } else if (email != null && !email.isEmpty()) {
                 return email.split("@")[0]; // Use email prefix as fallback
             }
-            
-            return "User";
+              return "User";
         }
+    }
+    
+    /**
+     * Update user points in Firebase after purchase
+     */
+    public void updateUserPointsAfterPurchase(int pointsToDeduct, ProfileCustomizationCallback callback) {
+        if (!isUserLoggedIn()) {
+            callback.onError("User not logged in");
+            return;
+        }
+        
+        String userId = getCurrentUserId();
+        
+        firestore.collection(COLLECTION_STATS)
+                .document(userId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        UserStats currentStats = documentSnapshot.toObject(UserStats.class);
+                        if (currentStats != null) {
+                            int currentPoints = currentStats.getTotalPoints();
+                            if (currentPoints >= pointsToDeduct) {
+                                int newPoints = currentPoints - pointsToDeduct;
+                                
+                                // Update points in Firebase
+                                firestore.collection(COLLECTION_STATS)
+                                        .document(userId)
+                                        .update("totalPoints", newPoints)
+                                        .addOnSuccessListener(aVoid -> {
+                                            Log.d(TAG, "User points updated in Firebase: " + newPoints);
+                                            
+                                            // Also update local database
+                                            executor.execute(() -> {
+                                                try {
+                                                    int localUserId = getCurrentLocalUserId();
+                                                    if (localUserId != -1) {
+                                                        AppDatabase.getInstance(context).userDao().updatePoints(localUserId, newPoints);
+                                                    }
+                                                } catch (Exception e) {
+                                                    Log.e(TAG, "Error updating local points", e);
+                                                }
+                                            });
+                                            
+                                            callback.onSuccess();
+                                        })
+                                        .addOnFailureListener(e -> {
+                                            Log.e(TAG, "Error updating points in Firebase", e);
+                                            callback.onError("Failed to update points: " + e.getMessage());
+                                        });
+                            } else {
+                                callback.onError("Insufficient points");
+                            }
+                        } else {
+                            callback.onError("User stats not found");
+                        }
+                    } else {
+                        callback.onError("User stats document not found");
+                    }
+                })                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error fetching user stats", e);
+                    callback.onError("Failed to fetch user stats: " + e.getMessage());
+                });
+    }
+    
+    /**
+     * Update profile customization data in Firebase
+     */
+    public void updateProfileCustomization(List<String> selectedBadges, List<String> ownedBackgrounds, 
+                                         String activeBackground, ProfileCustomizationCallback callback) {
+        if (!isUserLoggedIn()) {
+            callback.onError("User not logged in");
+            return;
+        }
+        
+        String userId = getCurrentUserId();
+        
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("selectedBadges", selectedBadges);
+        updates.put("ownedBackgrounds", ownedBackgrounds);
+        updates.put("activeBackground", activeBackground);
+        updates.put("lastUpdated", System.currentTimeMillis());
+        
+        firestore.collection(COLLECTION_USERS)
+                .document(userId)
+                .update(updates)
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "Profile customization updated successfully");
+                    callback.onSuccess();
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error updating profile customization", e);
+                    callback.onError("Failed to update profile: " + e.getMessage());
+                });
     }
     
     /**
@@ -1967,7 +2075,133 @@ public class FirebaseDataManager {
         } catch (Exception e) {
             Log.w(TAG, "Error validating profile data", e);
         }
+          return profile;
+    }
+    
+    /**
+     * Add background to owned backgrounds and update Firebase
+     */
+    public void purchaseBackground(String backgroundId, int price, ProfileCustomizationCallback callback) {
+        if (!isUserLoggedIn()) {
+            callback.onError("User not logged in");
+            return;
+        }
         
-        return profile;
+        String userId = getCurrentUserId();
+        
+        // First, deduct points
+        updateUserPointsAfterPurchase(price, new ProfileCustomizationCallback() {
+            @Override
+            public void onSuccess() {
+                // Points deducted successfully, now add background to owned list
+                firestore.collection(COLLECTION_USERS)
+                        .document(userId)
+                        .get()
+                        .addOnSuccessListener(documentSnapshot -> {
+                            UserProfile profile = documentSnapshot.exists() ? 
+                                    documentSnapshot.toObject(UserProfile.class) : new UserProfile();
+                            
+                            if (profile != null) {
+                                List<String> ownedBackgrounds = profile.getOwnedBackgrounds();
+                                if (!ownedBackgrounds.contains(backgroundId)) {
+                                    ownedBackgrounds.add(backgroundId);
+                                    
+                                    firestore.collection(COLLECTION_USERS)
+                                            .document(userId)
+                                            .update("ownedBackgrounds", ownedBackgrounds)
+                                            .addOnSuccessListener(aVoid -> {
+                                                Log.d(TAG, "Background purchased successfully: " + backgroundId);
+                                                callback.onSuccess();
+                                            })
+                                            .addOnFailureListener(e -> {
+                                                Log.e(TAG, "Error updating owned backgrounds", e);
+                                                callback.onError("Failed to save background purchase: " + e.getMessage());
+                                            });
+                                } else {
+                                    Log.w(TAG, "Background already owned: " + backgroundId);
+                                    callback.onSuccess();
+                                }
+                            } else {
+                                callback.onError("Failed to load user profile");
+                            }
+                        })
+                        .addOnFailureListener(e -> {
+                            Log.e(TAG, "Error fetching user profile", e);
+                            callback.onError("Failed to fetch profile: " + e.getMessage());
+                        });
+            }
+            
+            @Override
+            public void onError(String error) {
+                callback.onError(error);
+            }
+        });
+    }
+    
+    /**
+     * Load profile customization data from Firebase
+     */
+    public void loadProfileCustomization(ProfileDataCallback callback) {
+        if (!isUserLoggedIn()) {
+            callback.onError("User not logged in");
+            return;
+        }
+        
+        String userId = getCurrentUserId();
+        
+        firestore.collection(COLLECTION_USERS)
+                .document(userId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    UserProfile profile = documentSnapshot.exists() ? 
+                            documentSnapshot.toObject(UserProfile.class) : new UserProfile();
+                    
+                    if (profile != null) {
+                        // Ensure default values
+                        if (profile.getOwnedBackgrounds().isEmpty()) {
+                            profile.getOwnedBackgrounds().add("default");
+                        }
+                        if (profile.getSelectedBadges().isEmpty()) {
+                            profile.getSelectedBadges().add("starter");
+                        }
+                        if (profile.getActiveBackground() == null || profile.getActiveBackground().isEmpty()) {
+                            profile.setActiveBackground("default");
+                        }
+                        
+                        callback.onProfileLoaded(profile);
+                    } else {
+                        callback.onError("Failed to parse profile data");
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error loading profile customization", e);
+                    callback.onError("Failed to load profile: " + e.getMessage());
+                });
+    }
+    
+    /**
+     * Initialize default profile customization data for new users
+     */
+    public void initializeDefaultProfileCustomization(ProfileCustomizationCallback callback) {
+        if (!isUserLoggedIn()) {
+            callback.onError("User not logged in");
+            return;
+        }
+        
+        List<String> defaultSelectedBadges = new ArrayList<>();
+        defaultSelectedBadges.add("starter");
+        
+        List<String> defaultOwnedBackgrounds = new ArrayList<>();
+        defaultOwnedBackgrounds.add("default");
+        
+        String defaultActiveBackground = "default";
+        
+        updateProfileCustomization(defaultSelectedBadges, defaultOwnedBackgrounds, 
+                                 defaultActiveBackground, callback);
+    }
+    
+    // Callback interfaces for profile operations
+    public interface ProfileCustomizationCallback {
+        void onSuccess();        void onError(String error);
     }
 }

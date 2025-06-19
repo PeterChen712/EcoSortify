@@ -18,7 +18,7 @@ import com.example.glean.model.LocationPointEntity;
 import com.example.glean.model.RecordEntity;
 import com.example.glean.model.TrashEntity;
 import com.example.glean.model.UserEntity;
-import com.example.glean.util.Converters;
+import com.example.glean.db.Converters;
 
 @Database(
     entities = {

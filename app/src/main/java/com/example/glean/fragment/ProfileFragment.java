@@ -47,7 +47,7 @@ import com.example.glean.db.AppDatabase;
 import com.example.glean.model.Badge;
 import com.example.glean.model.UserEntity;
 import com.example.glean.util.NetworkUtil;
-import com.example.glean.util.PasswordValidator;
+import com.example.glean.service.FirebaseDataManager;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -1007,17 +1007,35 @@ public class ProfileFragment extends Fragment {    private static final String T
                 binding.btnCustomize.setAlpha(1.0f);
             }
         }
-    }
-    
-    private void updateProfileSkin() {
-        if (binding.profileSkinBackground != null) {
-            SharedPreferences prefs = requireActivity().getSharedPreferences("profile_settings", 0);
-            String currentSkin = prefs.getString("selected_skin", "default");
-            
-            int skinResource = getSkinResource(currentSkin);
-            binding.profileSkinBackground.setBackgroundResource(skinResource);
-            
-            Log.d(TAG, "Profile skin updated to: " + currentSkin);
+    }    private void updateProfileSkin() {
+        // Check if fragment is still active and binding is not null
+        if (binding != null && binding.profileSkinBackground != null && isAdded() && !isDetached()) {
+            // Try to load from Firebase first
+            FirebaseDataManager firebaseDataManager = FirebaseDataManager.getInstance(requireContext());
+              firebaseDataManager.loadProfileCustomization(new FirebaseDataManager.ProfileDataCallback() {
+                @Override
+                public void onProfileLoaded(FirebaseDataManager.UserProfile profile) {
+                    // Check if fragment is still active and binding is not null
+                    if (binding != null && isAdded() && !isDetached()) {
+                        String currentSkin = profile.getActiveBackground();
+                        int skinResource = getSkinResource(currentSkin);
+                        binding.profileSkinBackground.setBackgroundResource(skinResource);
+                        Log.d(TAG, "Profile skin updated from Firebase to: " + currentSkin);
+                    }
+                }
+                  @Override
+                public void onError(String error) {
+                    // Check if fragment is still active and binding is not null
+                    if (binding != null && isAdded() && !isDetached()) {
+                        // Fallback to SharedPreferences
+                        SharedPreferences prefs = requireActivity().getSharedPreferences("profile_settings", 0);
+                        String currentSkin = prefs.getString("selected_skin", "default");
+                        int skinResource = getSkinResource(currentSkin);
+                        binding.profileSkinBackground.setBackgroundResource(skinResource);
+                        Log.d(TAG, "Profile skin updated from SharedPreferences (fallback) to: " + currentSkin);
+                    }
+                }
+            });
         }
     }
     
@@ -1329,13 +1347,103 @@ public class ProfileFragment extends Fragment {    private static final String T
     private void captureImageFromCamera() {
         // Placeholder implementation
         Toast.makeText(requireContext(), "Camera feature coming soon", Toast.LENGTH_SHORT).show();
+    }    private void setupBadges(UserEntity user) {
+        // Load badges from Firebase
+        FirebaseDataManager firebaseDataManager = FirebaseDataManager.getInstance(requireContext());
+        
+        firebaseDataManager.loadProfileCustomization(new FirebaseDataManager.ProfileDataCallback() {
+            @Override
+            public void onProfileLoaded(FirebaseDataManager.UserProfile profile) {
+                List<String> selectedBadgeIds = profile.getSelectedBadges();
+                if (selectedBadgeIds.isEmpty()) {
+                    selectedBadgeIds.add("starter"); // Ensure at least one badge
+                }
+                
+                List<Badge> selectedBadges = new ArrayList<>();
+                for (String badgeId : selectedBadgeIds) {
+                    Badge badge = createBadgeFromId(badgeId, user);
+                    if (badge != null) {
+                        selectedBadges.add(badge);
+                    }
+                }
+                
+                // Update UI with selected badges
+                if (binding != null && binding.rvBadges != null) {
+                    ProfileBadgeAdapter adapter = new ProfileBadgeAdapter(requireContext(), selectedBadges);
+                    binding.rvBadges.setAdapter(adapter);
+                    binding.rvBadges.setLayoutManager(new GridLayoutManager(requireContext(), Math.min(selectedBadges.size(), 3)));
+                }
+                
+                Log.d(TAG, "Badges loaded from Firebase: " + selectedBadgeIds.size() + " badges");
+            }
+            
+            @Override
+            public void onError(String error) {
+                // Fallback to SharedPreferences
+                SharedPreferences prefs = requireActivity().getSharedPreferences("profile_settings", 0);
+                String selectedBadgesStr = prefs.getString("selected_badges", "starter");
+                String[] badgeArray = selectedBadgesStr.split(",");
+                
+                List<Badge> selectedBadges = new ArrayList<>();
+                for (String badgeId : badgeArray) {
+                    if (!badgeId.trim().isEmpty()) {
+                        Badge badge = createBadgeFromId(badgeId.trim(), user);
+                        if (badge != null) {
+                            selectedBadges.add(badge);
+                        }
+                    }
+                }
+                
+                // Update UI with selected badges
+                if (binding != null && binding.rvBadges != null) {
+                    ProfileBadgeAdapter adapter = new ProfileBadgeAdapter(requireContext(), selectedBadges);
+                    binding.rvBadges.setAdapter(adapter);
+                    binding.rvBadges.setLayoutManager(new GridLayoutManager(requireContext(), Math.min(selectedBadges.size(), 3)));
+                }
+                
+                Log.d(TAG, "Badges loaded from SharedPreferences (fallback): " + selectedBadges.size() + " badges");
+            }
+        });
     }
-
-    private void setupBadges(UserEntity user) {
-        // Placeholder implementation for badges
-        Log.d(TAG, "Setting up badges for user: " + user.getUsername());
-        // This should populate the badges RecyclerView based on user achievements
-    }    private void updateProfileDecorations(UserEntity user) {
+    
+    private Badge createBadgeFromId(String badgeId, UserEntity user) {
+        switch (badgeId) {
+            case "starter":
+                Badge starter = new Badge(1, "Starter", "Your first badge", "starter", 1, true);
+                starter.setIconResource(R.drawable.ic_star);
+                return starter;
+            case "green_helper":
+                Badge greenHelper = new Badge(2, "Green Helper", "Eco-friendly contributor", "green_helper", 1, true);
+                greenHelper.setIconResource(R.drawable.ic_leaf);
+                return greenHelper;
+            case "eco_warrior":
+                Badge ecoWarrior = new Badge(3, "Eco Warrior", "Environmental champion", "eco_warrior", 2, true);
+                ecoWarrior.setIconResource(R.drawable.ic_award);
+                return ecoWarrior;
+            case "green_champion":
+                Badge greenChampion = new Badge(4, "Green Champion", "Green environmental champion", "green_champion", 2, true);
+                greenChampion.setIconResource(R.drawable.ic_award);
+                return greenChampion;
+            case "earth_guardian":
+                Badge earthGuardian = new Badge(5, "Earth Guardian", "Protector of the environment", "earth_guardian", 3, true);
+                earthGuardian.setIconResource(R.drawable.ic_globe);
+                return earthGuardian;
+            case "expert_plogger":
+                Badge expertPlogger = new Badge(6, "Expert Plogger", "Master of plogging", "expert_plogger", 3, true);
+                expertPlogger.setIconResource(R.drawable.ic_crown);
+                return expertPlogger;
+            case "eco_legend":
+                Badge ecoLegend = new Badge(7, "Eco Legend", "Legendary environmental hero", "eco_legend", 3, true);
+                ecoLegend.setIconResource(R.drawable.ic_crown);
+                return ecoLegend;
+            case "master_cleaner":
+                Badge masterCleaner = new Badge(8, "Master Cleaner", "Expert in cleanup activities", "master_cleaner", 3, true);
+                masterCleaner.setIconResource(R.drawable.ic_cleaning);
+                return masterCleaner;
+            default:
+                return null;
+        }
+    }private void updateProfileDecorations(UserEntity user) {
         // Placeholder implementation for profile decorations
         Log.d(TAG, "Updating profile decorations for user: " + user.getUsername());
     }

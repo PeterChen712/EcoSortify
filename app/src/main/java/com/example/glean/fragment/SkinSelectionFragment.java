@@ -20,21 +20,22 @@ import com.example.glean.databinding.FragmentSkinSelectionBinding;
 import com.example.glean.db.AppDatabase;
 import com.example.glean.model.ProfileSkin;
 import com.example.glean.model.UserEntity;
+import com.example.glean.service.FirebaseDataManager;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
-public class SkinSelectionFragment extends Fragment implements SkinSelectionAdapter.OnSkinClickListener {
-    private static final String TAG = "SkinSelectionFragment";
+public class SkinSelectionFragment extends Fragment implements SkinSelectionAdapter.OnSkinClickListener {    private static final String TAG = "SkinSelectionFragment";
     
     private FragmentSkinSelectionBinding binding;
     private SkinSelectionAdapter adapter;
     private AppDatabase db;
     private UserEntity currentUser;
     private List<ProfileSkin> availableSkins;
-    private String selectedSkinId = null;
+    private String selectedSkinId = "default"; // Initialize with default value
     private String originalSkinId = null;
+    private FirebaseDataManager firebaseDataManager;
+    private FirebaseDataManager.UserProfile userProfile;
     
     @Nullable
     @Override
@@ -42,12 +43,12 @@ public class SkinSelectionFragment extends Fragment implements SkinSelectionAdap
         binding = FragmentSkinSelectionBinding.inflate(inflater, container, false);
         return binding.getRoot();
     }
-    
-    @Override
+      @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         
         db = AppDatabase.getInstance(requireContext());
+        firebaseDataManager = FirebaseDataManager.getInstance(requireContext());
         setupRecyclerView();
         loadUserData();
     }
@@ -78,11 +79,48 @@ public class SkinSelectionFragment extends Fragment implements SkinSelectionAdap
             binding.tvUserPoints.setText(String.valueOf(currentUser.getPoints()));
         }
     }
-    
-    private void loadCurrentSkin() {
-        // Get current active skin from user preferences
+      private void loadCurrentSkin() {
+        // Load profile customization from Firebase
+        firebaseDataManager.loadProfileCustomization(new FirebaseDataManager.ProfileDataCallback() {            @Override
+            public void onProfileLoaded(FirebaseDataManager.UserProfile profile) {
+                userProfile = profile;
+                
+                String currentSkinId = profile.getActiveBackground();
+                // Ensure we have a valid skin ID, default to "default" if null or empty
+                if (currentSkinId == null || currentSkinId.trim().isEmpty()) {
+                    currentSkinId = "default";
+                }
+                
+                originalSkinId = currentSkinId;
+                selectedSkinId = currentSkinId;
+                
+                // Find and display current skin
+                ProfileSkin currentSkin = findSkinById(currentSkinId);
+                if (currentSkin != null) {
+                    updateCurrentSkinDisplay(currentSkin);
+                }
+                
+                loadAvailableSkins();
+            }
+            
+            @Override
+            public void onError(String error) {
+                Log.e(TAG, "Error loading profile customization: " + error);
+                // Fallback to SharedPreferences for backward compatibility
+                loadCurrentSkinFromPreferences();
+            }
+        });
+    }
+      private void loadCurrentSkinFromPreferences() {
+        // Fallback method using SharedPreferences
         SharedPreferences prefs = requireActivity().getSharedPreferences("profile_settings", 0);
         String currentSkinId = prefs.getString("selected_skin", "default");
+        
+        // Ensure we have a valid skin ID, default to "default" if null or empty
+        if (currentSkinId == null || currentSkinId.trim().isEmpty()) {
+            currentSkinId = "default";
+        }
+        
         originalSkinId = currentSkinId;
         selectedSkinId = currentSkinId;
         
@@ -91,34 +129,55 @@ public class SkinSelectionFragment extends Fragment implements SkinSelectionAdap
         if (currentSkin != null) {
             updateCurrentSkinDisplay(currentSkin);
         }
-    }
-    
-    private void loadAvailableSkins() {
-        availableSkins = generateAvailableSkins(currentUser);
         
-        if (availableSkins.isEmpty()) {
-            showEmptyState();
-        } else {
-            hideEmptyState();
-            adapter.updateSkins(availableSkins, selectedSkinId, currentUser.getPoints());
+        loadAvailableSkins();
+    }
+      private void loadAvailableSkins() {
+        if (currentUser != null) {
+            availableSkins = generateAvailableSkins(currentUser);
+            
+            if (availableSkins.isEmpty()) {
+                showEmptyState();
+            } else {
+                hideEmptyState();
+                adapter.updateSkins(availableSkins, selectedSkinId, currentUser.getPoints());
+            }
         }
     }
       private List<ProfileSkin> generateAvailableSkins(UserEntity user) {
         List<ProfileSkin> skins = new ArrayList<>();
         
-        // Get owned skins from preferences
-        SharedPreferences prefs = requireActivity().getSharedPreferences("profile_settings", 0);
-        String ownedSkinsStr = prefs.getString("owned_skins", "default");
-        List<String> ownedSkins = new ArrayList<>(Arrays.asList(ownedSkinsStr.split(",")));
+        // Get owned skins from Firebase profile, fallback to SharedPreferences
+        List<String> ownedSkins = new ArrayList<>();
+        if (userProfile != null) {
+            ownedSkins = userProfile.getOwnedBackgrounds();
+        } else {
+            // Fallback to SharedPreferences
+            SharedPreferences prefs = requireActivity().getSharedPreferences("profile_settings", 0);
+            String ownedSkinsStr = prefs.getString("owned_skins", "default");
+            String[] skinArray = ownedSkinsStr.split(",");
+            for (String skin : skinArray) {
+                if (!skin.trim().isEmpty()) {
+                    ownedSkins.add(skin.trim());
+                }
+            }
+        }
+        
+        // Ensure default skin is always owned
+        if (!ownedSkins.contains("default")) {
+            ownedSkins.add("default");
+        }
+          // Ensure selectedSkinId is not null, default to "default" if null
+        String currentSelectedSkin = (selectedSkinId != null) ? selectedSkinId : "default";
         
         // Default skin (always owned)
-        skins.add(new ProfileSkin("default", "Default Green", 0, R.drawable.profile_skin_default, true, selectedSkinId.equals("default")));
+        skins.add(new ProfileSkin("default", "Default Green", 0, R.drawable.profile_skin_default, true, currentSelectedSkin.equals("default")));
         
         // Premium skins
-        skins.add(new ProfileSkin("nature", "Nature", 100, R.drawable.profile_skin_nature, ownedSkins.contains("nature"), selectedSkinId.equals("nature")));
-        skins.add(new ProfileSkin("ocean", "Ocean", 150, R.drawable.profile_skin_ocean, ownedSkins.contains("ocean"), selectedSkinId.equals("ocean")));
-        skins.add(new ProfileSkin("sunset", "Sunset", 200, R.drawable.profile_skin_sunset, ownedSkins.contains("sunset"), selectedSkinId.equals("sunset")));
-        skins.add(new ProfileSkin("galaxy", "Galaxy", 300, R.drawable.profile_skin_galaxy, ownedSkins.contains("galaxy"), selectedSkinId.equals("galaxy")));
+        skins.add(new ProfileSkin("nature", "Nature", 100, R.drawable.profile_skin_nature, ownedSkins.contains("nature"), currentSelectedSkin.equals("nature")));
+        skins.add(new ProfileSkin("ocean", "Ocean", 150, R.drawable.profile_skin_ocean, ownedSkins.contains("ocean"), currentSelectedSkin.equals("ocean")));
+        skins.add(new ProfileSkin("sunset", "Sunset", 200, R.drawable.profile_skin_sunset, ownedSkins.contains("sunset"), currentSelectedSkin.equals("sunset")));
+        skins.add(new ProfileSkin("galaxy", "Galaxy", 300, R.drawable.profile_skin_galaxy, ownedSkins.contains("galaxy"), currentSelectedSkin.equals("galaxy")));
         
         return skins;
     }
@@ -168,55 +227,88 @@ public class SkinSelectionFragment extends Fragment implements SkinSelectionAdap
             
             Log.d(TAG, "Skin selected: " + skin.getName());
         }
-    }
-      @Override
+    }    @Override
     public void onSkinPurchase(ProfileSkin skin) {
         if (currentUser.getPoints() >= skin.getPrice()) {
-            // Deduct points and unlock skin
-            int newPoints = currentUser.getPoints() - skin.getPrice();
-            
-            // Update user points in database using background thread
-            new Thread(() -> {
-                db.userDao().updatePoints(currentUser.getId(), newPoints);
-                
-                // Update UI on main thread
-                requireActivity().runOnUiThread(() -> {
-                    // Update current user points locally
-                    currentUser.setPoints(newPoints);
-                    
-                    // Update owned skins in preferences
-                    SharedPreferences prefs = requireActivity().getSharedPreferences("profile_settings", 0);
-                    String ownedSkinsStr = prefs.getString("owned_skins", "default");
-                    if (!ownedSkinsStr.contains(skin.getId())) {
-                        ownedSkinsStr += "," + skin.getId();
-                        prefs.edit().putString("owned_skins", ownedSkinsStr).apply();
+            // Use Firebase to purchase background
+            firebaseDataManager.purchaseBackground(skin.getId(), skin.getPrice(), 
+                new FirebaseDataManager.ProfileCustomizationCallback() {
+                    @Override
+                    public void onSuccess() {
+                        // Update current user points locally
+                        int newPoints = currentUser.getPoints() - skin.getPrice();
+                        currentUser.setPoints(newPoints);
+                        
+                        // Update profile data
+                        if (userProfile != null) {
+                            List<String> ownedBackgrounds = userProfile.getOwnedBackgrounds();
+                            if (!ownedBackgrounds.contains(skin.getId())) {
+                                ownedBackgrounds.add(skin.getId());
+                            }
+                        }
+                        
+                        // Update UI
+                        skin.setUnlocked(true);
+                        updateUserPointsDisplay();
+                        adapter.notifyDataSetChanged();
+                        
+                        Toast.makeText(requireContext(), 
+                                "Successfully purchased " + skin.getName() + "!", 
+                                Toast.LENGTH_SHORT).show();
+                        
+                        Log.d(TAG, "Skin purchased: " + skin.getName() + ", Points remaining: " + newPoints);
                     }
-                      // Update UI
-                    skin.setUnlocked(true);
-                    updateUserPointsDisplay();
-                    adapter.notifyDataSetChanged();
                     
-                    Toast.makeText(requireContext(), 
-                            "Successfully purchased " + skin.getName() + "!", 
-                            Toast.LENGTH_SHORT).show();
-                    
-                    Log.d(TAG, "Skin purchased: " + skin.getName() + ", Points remaining: " + newPoints);
+                    @Override
+                    public void onError(String error) {
+                        Log.e(TAG, "Error purchasing skin: " + error);
+                        Toast.makeText(requireContext(), 
+                                "Purchase failed: " + error, 
+                                Toast.LENGTH_SHORT).show();
+                    }
                 });
-            }).start();
         } else {
             Toast.makeText(requireContext(), 
                     "Not enough points! You need " + skin.getPrice() + " points.", 
                     Toast.LENGTH_SHORT).show();
         }
     }
-    
-    public void saveSelection() {
+      public void saveSelection() {
         if (selectedSkinId != null && !selectedSkinId.equals(originalSkinId)) {
-            // Save selected skin to preferences
-            SharedPreferences prefs = requireActivity().getSharedPreferences("profile_settings", 0);
-            prefs.edit().putString("selected_skin", selectedSkinId).apply();
-            
-            Log.d(TAG, "Skin selection saved: " + selectedSkinId);
+            // Save selected skin to Firebase
+            if (userProfile != null) {
+                userProfile.setActiveBackground(selectedSkinId);
+                
+                firebaseDataManager.updateProfileCustomization(
+                    userProfile.getSelectedBadges(),
+                    userProfile.getOwnedBackgrounds(),
+                    selectedSkinId,
+                    new FirebaseDataManager.ProfileCustomizationCallback() {
+                        @Override
+                        public void onSuccess() {
+                            Log.d(TAG, "Skin selection saved to Firebase: " + selectedSkinId);
+                            
+                            // Also save to SharedPreferences for backward compatibility
+                            SharedPreferences prefs = requireActivity().getSharedPreferences("profile_settings", 0);
+                            prefs.edit().putString("selected_skin", selectedSkinId).apply();
+                        }
+                        
+                        @Override
+                        public void onError(String error) {
+                            Log.e(TAG, "Error saving skin selection to Firebase: " + error);
+                            
+                            // Fallback to SharedPreferences only
+                            SharedPreferences prefs = requireActivity().getSharedPreferences("profile_settings", 0);
+                            prefs.edit().putString("selected_skin", selectedSkinId).apply();
+                            Log.d(TAG, "Skin selection saved to SharedPreferences as fallback: " + selectedSkinId);
+                        }
+                    });
+            } else {
+                // Fallback to SharedPreferences only
+                SharedPreferences prefs = requireActivity().getSharedPreferences("profile_settings", 0);
+                prefs.edit().putString("selected_skin", selectedSkinId).apply();
+                Log.d(TAG, "Skin selection saved to SharedPreferences: " + selectedSkinId);
+            }
         }
     }
     

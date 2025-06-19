@@ -11,17 +11,6 @@ public class Converters {
     }
 
     @TypeConverter
-    public static Long dateToTimestamp(Date date) {
-        return date == null ? null : date.getTime();
-    }
-    
-    @TypeConverter
-    public static String fromString(String value) {
-        return value;
-    }
-    
-    @TypeConverter
-    public static String toString(String value) {
-        return value;
+    public static Long dateToTimestamp(Date date) {        return date == null ? null : date.getTime();
     }
 }
