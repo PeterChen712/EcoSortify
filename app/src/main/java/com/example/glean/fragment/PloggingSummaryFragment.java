@@ -434,7 +434,7 @@ public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallb
             "⏱️ Duration: %s\n" +
             "🗑️ Trash collected: %d items\n" +
             "🏆 Points earned: %d\n\n" +
-            "Join me in making our environment cleaner! #Plogging #CleanEnvironment #GleanGo",
+            "Join me in making our environment cleaner! #Plogging #CleanEnvironment #Ecosortify",
             formattedDate,
             currentRecord.getDistance() / 1000f,
             formatDuration(currentRecord.getDuration()),
@@ -593,7 +593,7 @@ public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallb
             SimpleDateFormat timestampFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
             String timestamp = timestampFormat.format(new Date());
             
-            canvas.drawText("Dibuat oleh GleanGo - " + timestamp, 40, totalHeight - 40, footerPaint);
+            canvas.drawText("Dibuat oleh Ecosortify - " + timestamp, 40, totalHeight - 40, footerPaint);
             
             return resultBitmap;
             
@@ -657,7 +657,7 @@ public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallb
                     "Plogging_Route_" + System.currentTimeMillis() + ".jpg");
             values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
             values.put(MediaStore.Images.Media.RELATIVE_PATH,
-                    android.os.Environment.DIRECTORY_PICTURES + "/GleanGo/");
+                    android.os.Environment.DIRECTORY_PICTURES + "/Ecosortify/");
 
             Uri uri = requireContext().getContentResolver()
                     .insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
@@ -692,7 +692,7 @@ public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallb
         try {
             File picturesDir = android.os.Environment
                     .getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_PICTURES);
-            File gleanDir = new File(picturesDir, "GleanGo");
+            File gleanDir = new File(picturesDir, "Ecosortify");
 
             if (!gleanDir.exists()) {
                 gleanDir.mkdirs();
@@ -745,7 +745,7 @@ public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallb
             titlePaint.setAntiAlias(true);
             titlePaint.setTypeface(Typeface.DEFAULT_BOLD);
 
-            canvas.drawText("🌱 GleanGo - Plogging Result", 50, 100, titlePaint);
+            canvas.drawText("🌱 Ecosortify - Plogging Result", 50, 100, titlePaint);
 
             String[] lines = completionMessage.split("\n");
             int yPosition = 200;
@@ -766,7 +766,7 @@ public class PloggingSummaryFragment extends Fragment implements OnMapReadyCallb
             timestampPaint.setAntiAlias(true);
 
             canvas.drawText(timestamp, 50, height - 100, timestampPaint);
-            canvas.drawText("Aplikasi GleanGo - Make Your World Clean 🌱", 50, height - 50, timestampPaint);
+            canvas.drawText("Aplikasi Ecosortify - Make Your World Clean 🌱", 50, height - 50, timestampPaint);
 
             return bitmap;
         } catch (Exception e) {

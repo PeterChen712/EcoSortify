@@ -12,9 +12,9 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.firebase.FirebaseApp;
 
-public class GleanApplication extends Application {
+public class EcosortifyApplication extends Application {
     
-    private static final String TAG = "GleanApplication";
+    private static final String TAG = "EcosortifyApplication";
       @Override
     public void onCreate() {
         super.onCreate();

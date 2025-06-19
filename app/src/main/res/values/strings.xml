@@ -1,6 +1,6 @@
 <resources>
     <!-- App Info -->
-    <string name="app_name">GleanGo</string>
+    <string name="app_name">Ecosortify</string>
     <string name="add_trash_shortcut_short_label">Tambah Sampah</string>
     <string name="add_trash_shortcut_long_label">Laporkan sampah baru</string>
     
@@ -158,9 +158,8 @@
     <string name="home_start_plogging">Mulai Plogging</string>
     <string name="home_view_stats">Lihat Statistik</string>
     <string name="home_view_community">Lihat Komunitas</string>
-    <string name="home_trash_map">Peta Sampah</string>
-    <string name="home_about_title">Tentang GleanGo</string>
-    <string name="home_about_description">Pelajari cerita di balik nama GleanGo dan filosofi plogging kami</string>
+    <string name="home_trash_map">Peta Sampah</string>    <string name="home_about_title">Tentang Ecosortify</string>
+    <string name="home_about_description">Pelajari cerita di balik nama Ecosortify dan filosofi plogging kami</string>
     <string name="navigation_not_available">Navigasi gak tersedia</string>
     <string name="error_loading_home">Error loading halaman utama: %s</string>
     

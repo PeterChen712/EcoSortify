@@ -82,7 +82,7 @@ public class NotificationHelper {
         
         return new NotificationCompat.Builder(context, CHANNEL_ID_TRACKING)
                 .setContentTitle("Tracking Location")
-                .setContentText("GleanGo is tracking your plogging activity")
+                .setContentText("Ecosortify is tracking your plogging activity")
                 .setSmallIcon(R.drawable.ic_plogging)
                 .setContentIntent(pendingIntent)
                 .setPriority(NotificationCompat.PRIORITY_LOW)

@@ -15,7 +15,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:text="Glean Go"
+        android:text="Ecosortify"
         android:textSize="24sp"
         android:textStyle="bold"
         android:textColor="@color/header_text_primary"

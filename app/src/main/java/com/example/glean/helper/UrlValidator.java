@@ -141,7 +141,7 @@ public class UrlValidator {
             
             // Set user agent to avoid blocking
             connection.setRequestProperty("User-Agent", 
-                "Mozilla/5.0 (Android) GleanGo/1.0 NewsValidator");
+                "Mozilla/5.0 (Android) Ecosortify/1.0 NewsValidator");
             
             // Get response
             int responseCode = connection.getResponseCode();

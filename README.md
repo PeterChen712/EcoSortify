@@ -1,7 +1,13 @@
 <p align="center">
-  <img width="180" src="README/logo.png" alt="GleanGo Logo"/>
+  <img width="180" NamNamndung filosofi mendalam:
+- "Eco" merujuk pada ekologi dan kepedulian lingkungan  
+- "Sort" berarti memilah dan mengategorikan sampah dengan tepat
+- "ify" memberikan makna transformasi aktif — mengubah kebiasaan menjadi aksi nyata untuk lingkunganortify" sendiri mengandung filosofi mendalam:
+- "Eco" merujuk pada ekologi dan kepedulian lingkungan  
+- "Sort" berarti memilah dan mengategorikan sampah dengan tepat
+- "ify" memberikan makna transformasi aktif — mengubah kebiasaan menjadi aksi nyata untuk lingkunganADME/logo.png" alt="Ecosortify Logo"/>
 </p>
-<h1 align="center">GleanGo: Make Your World Clean 🌱</h1>
+<h1 align="center">Ecosortify: Make Your World Clean 🌱</h1>
 <p align="center">
   <b>Plogging app for a cleaner world — Run, pick up, and make a difference with AI and GPS.</b>
 </p>
@@ -30,12 +36,12 @@ Plogging adalah gabungan aktivitas jogging dan memungut sampah. Nama ini berasal
 
 ## 🌏 Filosofi
 
-**GleanGo lahir dari keinginan sederhana: membuat olahraga dan aksi nyata menjaga lingkungan jadi lebih seru dan bermakna.**
+**Ecosortify lahir dari keinginan sederhana: membuat olahraga dan aksi nyata menjaga lingkungan jadi lebih seru dan bermakna.**
   
 Bayangkan kamu jogging pagi, tapi kali ini setiap langkahmu tak hanya menyehatkan, tapi juga membersihkan jalanan dari sampah. 
 
 Perubahan besar dimulai dari aksi kecil yang konsisten.  
-Dengan teknologi GPS presisi tinggi, AI untuk klasifikasi sampah, dan sistem gamifikasi yang seru, GleanGo ingin mengajakmu menjadi bagian dari gerakan hijau masa kini.
+Dengan teknologi GPS presisi tinggi, AI untuk klasifikasi sampah, dan sistem gamifikasi yang seru, Ecosortify ingin mengajakmu menjadi bagian dari gerakan hijau masa kini.
 
 Nama “GleanGo” sendiri mengandung filosofi mendalam:
 - “Glean” berarti memungut sisa, terinspirasi dari lukisan "The Gleaners" karya Jean-François Millet, yang menggambarkan orang-orang sederhana memungut sisa panen sebagai simbol kerja keras dan kepedulian lingkungan.
@@ -45,9 +51,9 @@ Nama “GleanGo” sendiri mengandung filosofi mendalam:
     <a href="https://en.wikipedia.org/wiki/The_Gleaners">[Baca kisah lukisan ini di Wikipedia]</a>
   </div>
 
-Setiap fitur di GleanGo dirancang untuk membuat kontribusimu terasa nyata. Mulai dari tracking rute, pengenalan sampah otomatis, hingga komunitas yang saling mendukung.
+Setiap fitur di Ecosortify dirancang untuk membuat kontribusimu terasa nyata. Mulai dari tracking rute, pengenalan sampah otomatis, hingga komunitas yang saling mendukung.
 
-> **Dengan GleanGo, setiap langkahmu berarti untuk kesehatan dan bumi yang lebih bersih.**
+> **Dengan Ecosortify, setiap langkahmu berarti untuk kesehatan dan bumi yang lebih bersih.**
 
 ---
 
@@ -56,7 +62,7 @@ Setiap fitur di GleanGo dirancang untuk membuat kontribusimu terasa nyata. Mulai
 ![SDG 17 Goals](README/sdg_17_goals.png)
 
 Sustainable Development Goals (SDGs) adalah 17 tujuan global sebagai “blueprint” masa depan yang lebih baik dan berkelanjutan.  
-GleanGo mendukung beberapa SDGs, khususnya:
+Ecosortify mendukung beberapa SDGs, khususnya:
 - **Good Health and Well-Being**: Melalui plogging, kamu sehat dan lingkungan juga bersih!
 - **Responsible Consumption and Production**: Dengan memilah dan mendaur ulang sampah yang ditemukan.
 
@@ -156,9 +162,8 @@ GleanGo mendukung beberapa SDGs, khususnya:
 ## 🚀 Getting Started
 
 1. **Clone repo:**  
-   ```bash
-   git clone https://github.com/username/glean.git
-   cd glean
+   ```bash   git clone https://github.com/username/ecosortify.git
+   cd ecosortify
    ```
 2. **Buka di Android Studio**  
 3. **Sync dependencies**  
@@ -175,6 +180,6 @@ GleanGo mendukung beberapa SDGs, khususnya:
 <div align="center">
 
 **Made with 💚 for a cleaner world**  
-*GleanGo - Making environmental action fun, social, and impactful*
+*Ecosortify - Making environmental action fun, social, and impactful*
 
 </div>

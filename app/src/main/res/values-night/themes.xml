@@ -1,11 +1,10 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.Glean" parent="Theme.Material3.DayNight.NoActionBar">
+<resources xmlns:tools="http://schemas.android.com/tools">    <!-- Base application theme. -->
+    <style name="Base.Theme.Ecosortify" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Customize your dark theme here. -->
         <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
     </style>
 
-    <style name="Theme.Glean" parent="Base.Theme.Glean">
+    <style name="Theme.Ecosortify" parent="Base.Theme.Ecosortify">
         <!-- Primary brand color for dark theme -->
         <item name="colorPrimary">@color/primary_dark</item>
         <item name="colorPrimaryVariant">@color/primary_darker</item>
@@ -28,17 +27,13 @@
         
         <!-- Navigation bar -->
         <item name="android:navigationBarColor">@color/surface_dark</item>
-    </style>
-
-    <!-- Splash screen theme -->
-    <style name="Theme.Glean.Splash" parent="Theme.Glean">
+    </style>    <!-- Splash screen theme -->
+    <style name="Theme.Ecosortify.Splash" parent="Theme.Ecosortify">
         <item name="android:windowBackground">@drawable/splash_background_dark</item>
         <item name="android:windowFullscreen">true</item>
         <item name="android:windowTranslucentNavigation">true</item>
-    </style>
-
-    <!-- Authentication theme -->
-    <style name="Theme.Glean.Auth" parent="Theme.Glean">
+    </style>    <!-- Authentication theme -->
+    <style name="Theme.Ecosortify.Auth" parent="Theme.Ecosortify">
         <item name="android:windowBackground">@color/background_dark</item>
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:statusBarColor">@color/background_dark</item>
