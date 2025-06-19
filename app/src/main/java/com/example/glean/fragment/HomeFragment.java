@@ -1,11 +1,15 @@
 package com.example.glean.fragment;
 
 import android.content.SharedPreferences;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
+import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -15,12 +19,15 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LiveData;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
+import androidx.viewpager2.widget.ViewPager2;
 
 import com.example.glean.R;
 import com.example.glean.activity.MainActivity;
+import com.example.glean.adapter.TipsAdapter;
 import com.example.glean.databinding.FragmentHomeBinding;
 import com.example.glean.db.AppDatabase;
 import com.example.glean.model.RecordEntity;
+import com.example.glean.model.Tip;
 import com.example.glean.model.UserEntity;
 
 import java.util.ArrayList;
@@ -32,7 +39,16 @@ import java.util.concurrent.Executors;
 public class HomeFragment extends Fragment {
     private FragmentHomeBinding binding;
     private AppDatabase db;
-    private ExecutorService executor;    private int currentTimeFilter = -1;
+    private ExecutorService executor;
+    private int currentTimeFilter = -1;
+    
+    // Tips carousel variables
+    private ViewPager2 tipsViewPager;
+    private LinearLayout dotsIndicator;
+    private TipsAdapter tipsAdapter;
+    private Handler carouselHandler;
+    private Runnable carouselRunnable;
+    private List<Tip> tipsList;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -62,10 +78,12 @@ public class HomeFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);        try {
             initializeDashboardContent();
             setupAboutCard();
+            setupTipsCarousel();
             loadUserData();
-            updateDashboardStats();} catch (Exception e) {
+            updateDashboardStats();
+        } catch (Exception e) {
             showErrorMessage(getString(R.string.error_loading_home, e.getMessage()));
-        }    }
+        }}
 
     private void initializeDashboardContent() {try {
             // Date and motivation text are now part of the simple header
@@ -291,13 +309,27 @@ public class HomeFragment extends Fragment {
         return calendar.getTimeInMillis();
     }    private void showErrorMessage(String message) {
         Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
-    }
-      @Override
+    }    @Override
     public void onResume() {
         super.onResume();
         android.util.Log.d("HomeFragment", "DEBUG: onResume() called - refreshing data");
         updateDashboardStats();
         debugDatabaseState();
+        
+        // Start auto-scroll when fragment resumes
+        if (carouselHandler != null && carouselRunnable != null) {
+            carouselHandler.postDelayed(carouselRunnable, 4000);
+        }
+    }
+    
+    @Override
+    public void onPause() {
+        super.onPause();
+        
+        // Stop auto-scroll when fragment pauses
+        if (carouselHandler != null && carouselRunnable != null) {
+            carouselHandler.removeCallbacks(carouselRunnable);
+        }
     }
       private void debugDatabaseState() {
         executor.execute(() -> {
@@ -377,11 +409,15 @@ public class HomeFragment extends Fragment {
                 android.util.Log.e("HomeFragment", "Error debugging database", e);
             }
         });
-    }
-
-    @Override
+    }    @Override
     public void onDestroyView() {
         super.onDestroyView();
+        
+        // Clean up carousel resources
+        if (carouselHandler != null && carouselRunnable != null) {
+            carouselHandler.removeCallbacks(carouselRunnable);
+        }
+        
         binding = null;
     }
 
@@ -391,5 +427,114 @@ public class HomeFragment extends Fragment {
         if (executor != null && !executor.isShutdown()) {
             executor.shutdown();
         }
+    }
+    
+    private void setupTipsCarousel() {
+        try {
+            tipsViewPager = binding.getRoot().findViewById(R.id.tips_view_pager);
+            dotsIndicator = binding.getRoot().findViewById(R.id.dots_indicator);
+            
+            if (tipsViewPager != null && dotsIndicator != null) {
+                // Create tips list
+                tipsList = createTipsList();
+                
+                // Setup adapter
+                tipsAdapter = new TipsAdapter(tipsList);
+                tipsViewPager.setAdapter(tipsAdapter);
+                
+                // Setup dots indicator
+                setupDotsIndicator();
+                
+                // Setup page change callback for dots
+                tipsViewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
+                    @Override
+                    public void onPageSelected(int position) {
+                        updateDotsIndicator(position);
+                    }
+                });
+                
+                // Setup auto-scroll
+                setupAutoScroll();
+            }
+        } catch (Exception e) {
+            android.util.Log.e("HomeFragment", "Error setting up tips carousel", e);
+        }
+    }    private List<Tip> createTipsList() {
+        List<Tip> tips = new ArrayList<>();
+        tips.add(new Tip("Kurangi Plastik", "Bawa botol minum dan tas belanja sendiri untuk mengurangi sampah plastik!", R.drawable.ic_eco));
+        tips.add(new Tip("Hemat Energi", "Matikan lampu dan peralatan elektronik saat tidak digunakan untuk menghemat energi!", R.drawable.ic_lightbulb));
+        tips.add(new Tip("Daur Ulang", "Pisahkan sampah organik dan anorganik untuk memudahkan proses daur ulang!", R.drawable.ic_cleaning));
+        tips.add(new Tip("Transportasi Hijau", "Gunakan sepeda atau berjalan kaki untuk jarak dekat, lebih sehat dan ramah lingkungan!", R.drawable.ic_eco));
+        tips.add(new Tip("Hemat Air", "Gunakan air secukupnya dan perbaiki keran yang bocor untuk menghemat air!", R.drawable.ic_eco));
+        tips.add(new Tip("Kompos", "Buat kompos dari sampah organik untuk mengurangi limbah dan menyuburkan tanaman!", R.drawable.ic_eco));
+        tips.add(new Tip("Paperless", "Gunakan dokumen digital untuk mengurangi penggunaan kertas dan menjaga hutan!", R.drawable.ic_lightbulb));
+        return tips;
+    }
+    
+    private void setupDotsIndicator() {
+        if (dotsIndicator != null && tipsList != null) {
+            dotsIndicator.removeAllViews();
+            
+            for (int i = 0; i < tipsList.size(); i++) {
+                ImageView dot = new ImageView(requireContext());
+                GradientDrawable drawable = new GradientDrawable();
+                drawable.setShape(GradientDrawable.OVAL);
+                drawable.setSize(dpToPx(8), dpToPx(8));
+                drawable.setColor(getResources().getColor(R.color.dots_inactive, null));
+                dot.setImageDrawable(drawable);
+                
+                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                    dpToPx(8), dpToPx(8)
+                );
+                params.setMargins(dpToPx(4), 0, dpToPx(4), 0);
+                dot.setLayoutParams(params);
+                
+                dotsIndicator.addView(dot);
+            }
+            
+            // Set first dot as active
+            if (dotsIndicator.getChildCount() > 0) {
+                updateDotsIndicator(0);
+            }
+        }
+    }
+    
+    private void updateDotsIndicator(int position) {
+        if (dotsIndicator != null) {
+            for (int i = 0; i < dotsIndicator.getChildCount(); i++) {
+                ImageView dot = (ImageView) dotsIndicator.getChildAt(i);
+                GradientDrawable drawable = new GradientDrawable();
+                drawable.setShape(GradientDrawable.OVAL);
+                drawable.setSize(dpToPx(8), dpToPx(8));
+                
+                if (i == position) {
+                    drawable.setColor(getResources().getColor(R.color.environmental_green, null));
+                } else {
+                    drawable.setColor(getResources().getColor(R.color.dots_inactive, null));
+                }
+                
+                dot.setImageDrawable(drawable);
+            }
+        }
+    }
+    
+    private void setupAutoScroll() {
+        carouselHandler = new Handler();
+        carouselRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (tipsViewPager != null && tipsList != null) {
+                    int currentItem = tipsViewPager.getCurrentItem();
+                    int nextItem = (currentItem + 1) % tipsList.size();
+                    tipsViewPager.setCurrentItem(nextItem, true);
+                    carouselHandler.postDelayed(this, 4000); // Auto-scroll every 4 seconds
+                }
+            }
+        };
+    }
+    
+    private int dpToPx(int dp) {
+        float density = getResources().getDisplayMetrics().density;
+        return Math.round(dp * density);
     }
 }

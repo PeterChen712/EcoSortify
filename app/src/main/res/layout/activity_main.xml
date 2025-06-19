@@ -27,10 +27,12 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:menu="@menu/bottom_navigation_menu"
-        app:labelVisibilityMode="labeled"
+        app:labelVisibilityMode="selected"
         style="@style/Widget.Material3.BottomNavigationView"
         android:background="?attr/colorSurface"
         app:itemIconTint="@color/bottom_nav_item_color"
-        app:itemTextColor="@color/bottom_nav_item_color" />
+        app:itemTextColor="@color/bottom_nav_item_color"
+        app:itemTextAppearanceActive="@style/TextAppearance.Material3.LabelSmall"
+        app:itemTextAppearanceInactive="@style/TextAppearance.Material3.LabelSmall" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -45,13 +45,11 @@ public class MainActivity extends AppCompatActivity {
         
         // Always proceed to main UI (no forced login)
         setupUI();
-    }
-    
-    private void setupUI() {
+    }    private void setupUI() {
         android.util.Log.d("MainActivity", "Setting up main UI");
         
         binding.bottomNavigation.setVisibility(View.VISIBLE);
-        binding.bottomNavigation.setLabelVisibilityMode(NavigationBarView.LABEL_VISIBILITY_UNLABELED);
+        binding.bottomNavigation.setLabelVisibilityMode(NavigationBarView.LABEL_VISIBILITY_SELECTED);
         
         // Add error handling for the entire setup process
         try {
@@ -205,11 +203,9 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception e) {
             android.util.Log.e("MainActivity", "Failed to create emergency view: " + e.getMessage(), e);
         }
-    }
-    
-    private void setupBottomNavigation() {
+    }    private void setupBottomNavigation() {
         binding.bottomNavigation.setVisibility(View.VISIBLE);
-        binding.bottomNavigation.setLabelVisibilityMode(NavigationBarView.LABEL_VISIBILITY_UNLABELED);
+        binding.bottomNavigation.setLabelVisibilityMode(NavigationBarView.LABEL_VISIBILITY_SELECTED);
     }
 
     @Override

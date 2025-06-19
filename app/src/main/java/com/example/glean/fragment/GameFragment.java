@@ -1,5 +1,6 @@
 package com.example.glean.fragment;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -18,7 +19,11 @@ import com.example.glean.game.GameEngine;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
-public class GameFragment extends Fragment implements GameEngine.GameCallback {    private FrameLayout gameContainer;
+public class GameFragment extends Fragment implements GameEngine.GameCallback {    
+    private static final String PREFS_NAME = "EcoSortifyGamePrefs";
+    private static final String HIGH_SCORE_KEY = "highScore";
+    
+    private FrameLayout gameContainer;
     private TextView highScoreText;
     private MaterialButton playButton;
     private MaterialButton pauseButton;
@@ -41,9 +46,15 @@ public class GameFragment extends Fragment implements GameEngine.GameCallback { 
         highScoreText = view.findViewById(R.id.high_score_text);
         playButton = view.findViewById(R.id.play_button);
         pauseButton = view.findViewById(R.id.pause_button);
-        
-        // Set up buttons        playButton.setOnClickListener(v -> startGame());
-        pauseButton.setOnClickListener(v -> pauseGame());
+          // Set up buttons        
+        playButton.setOnClickListener(v -> {
+            android.util.Log.d("GameFragment", "Play button clicked");
+            startGame();
+        });
+        pauseButton.setOnClickListener(v -> {
+            android.util.Log.d("GameFragment", "Pause button clicked");
+            pauseGame();
+        });
         
         // Setup help button in toolbar
         androidx.appcompat.widget.Toolbar gameToolbar = view.findViewById(R.id.toolbar_game);
@@ -56,16 +67,51 @@ public class GameFragment extends Fragment implements GameEngine.GameCallback { 
         
         // Hide pause button initially
         pauseButton.setVisibility(View.GONE);
+        
+        // Load and display high score
+        loadAndDisplayHighScore();
+    }
+    
+    private void loadAndDisplayHighScore() {
+        SharedPreferences prefs = requireContext().getSharedPreferences(PREFS_NAME, requireContext().MODE_PRIVATE);
+        int highScore = prefs.getInt(HIGH_SCORE_KEY, 0);
+        updateHighScoreText(highScore);
     }
 
     private void startGame() {
+        android.util.Log.d("GameFragment", "startGame() called - gameStarted: " + gameStarted);
+        
         if (gameEngine == null) {
             // Create new game engine
+            android.util.Log.d("GameFragment", "Creating new GameEngine...");
             gameEngine = new GameEngine(requireContext(), this);
             gameContainer.addView(gameEngine);
+            
+            // Wait a bit for surface to be ready
+            gameContainer.post(() -> {
+                if (gameEngine.isSurfaceReady()) {
+                    android.util.Log.d("GameFragment", "Surface is ready, starting game");
+                    proceedWithGameStart();
+                } else {
+                    android.util.Log.d("GameFragment", "Surface not ready, waiting...");
+                    // Try again after a short delay
+                    gameContainer.postDelayed(() -> {
+                        if (gameEngine.isSurfaceReady()) {
+                            proceedWithGameStart();
+                        } else {
+                            android.util.Log.w("GameFragment", "Surface still not ready after delay");
+                        }
+                    }, 100);
+                }
+            });
+        } else {
+            proceedWithGameStart();
         }
-        
+    }
+    
+    private void proceedWithGameStart() {
         if (!gameStarted) {
+            android.util.Log.d("GameFragment", "Starting new game...");
             // Show pause button, hide play button
             playButton.setVisibility(View.GONE);
             pauseButton.setVisibility(View.VISIBLE);
@@ -74,6 +120,7 @@ public class GameFragment extends Fragment implements GameEngine.GameCallback { 
             gameEngine.startGame();
             gameStarted = true;
         } else {
+            android.util.Log.d("GameFragment", "Resuming paused game...");
             // Resume the game if it was paused
             gameEngine.startGame();
             pauseButton.setText("Jeda");

@@ -79,6 +79,8 @@ public class GameEngine extends SurfaceView implements SurfaceHolder.Callback, R
     private int screenWidth;
     private int screenHeight;
 
+    private boolean surfaceReady = false;
+
     public interface GameCallback {
         void onGameOver(int score, int highScore);
         void onScoreChanged(int score);
@@ -154,30 +156,41 @@ public class GameEngine extends SurfaceView implements SurfaceHolder.Callback, R
             bgMusic.setVolume(0.3f, 0.3f); // Reduced volume for better balance
         }
     }
-    
-    private void loadHighScore() {
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        highScore = prefs.getInt(HIGH_SCORE_KEY, 0);
+      private void loadHighScore() {
+        try {
+            SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            highScore = prefs.getInt(HIGH_SCORE_KEY, 0);
+            android.util.Log.d("GameEngine", "High score loaded: " + highScore);
+        } catch (Exception e) {
+            android.util.Log.e("GameEngine", "Error loading high score", e);
+            highScore = 0;
+        }
     }
-    
-    private void saveHighScore() {
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = prefs.edit();
-        editor.putInt(HIGH_SCORE_KEY, highScore);
-        editor.apply();
-    }
-
-    @Override
+      private void saveHighScore() {
+        try {
+            SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.putInt(HIGH_SCORE_KEY, highScore);
+            editor.apply();
+            android.util.Log.d("GameEngine", "High score saved: " + highScore);
+        } catch (Exception e) {
+            android.util.Log.e("GameEngine", "Error saving high score", e);
+        }
+    }    @Override
     public void surfaceCreated(@NonNull SurfaceHolder holder) {
+        android.util.Log.d("GameEngine", "surfaceCreated() called");
         // Store screen dimensions
         screenWidth = getWidth();
         screenHeight = getHeight();
         
+        android.util.Log.d("GameEngine", "Screen dimensions: " + screenWidth + "x" + screenHeight);
+        
         // Create trash bins
         createTrashBins();
         
-        // Start game
-        startGame();
+        // DO NOT auto-start game here - let user control it
+        android.util.Log.d("GameEngine", "Surface created, waiting for user to start game");
+        surfaceReady = true;
     }
 
     @Override
@@ -191,10 +204,16 @@ public class GameEngine extends SurfaceView implements SurfaceHolder.Callback, R
     public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
         // Stop game
         stopGame();
-    }
-
-    public void startGame() {
+    }    public void startGame() {
+        android.util.Log.d("GameEngine", "startGame() called - isRunning: " + isRunning + ", gamePaused: " + gamePaused + ", surfaceReady: " + surfaceReady);
+        
+        if (!surfaceReady) {
+            android.util.Log.w("GameEngine", "Surface not ready yet, cannot start game");
+            return;
+        }
+        
         if (!isRunning) {
+            android.util.Log.d("GameEngine", "Starting new game...");
             isRunning = true;
             gameOver = false;
             gamePaused = false;
@@ -204,13 +223,16 @@ public class GameEngine extends SurfaceView implements SurfaceHolder.Callback, R
             // Start music
             if (bgMusic != null && !bgMusic.isPlaying()) {
                 bgMusic.start();
+                android.util.Log.d("GameEngine", "Background music started");
             }
         } else if (gamePaused) {
             // Resume game
+            android.util.Log.d("GameEngine", "Resuming paused game...");
             gamePaused = false;
             
             if (bgMusic != null && !bgMusic.isPlaying()) {
                 bgMusic.start();
+                android.util.Log.d("GameEngine", "Background music resumed");
             }
         }
     }
@@ -237,18 +259,25 @@ public class GameEngine extends SurfaceView implements SurfaceHolder.Callback, R
         if (bgMusic != null && bgMusic.isPlaying()) {
             bgMusic.stop();
         }
-    }
-
-    @Override
+    }    @Override
     public void run() {
+        android.util.Log.d("GameEngine", "Game loop started");
+        
         while (isRunning) {
-            // Skip updates if game is paused or over
-            if (!gamePaused && !gameOver) {
-                update();
+            try {
+                // Skip updates if game is paused or over
+                if (!gamePaused && !gameOver) {
+                    update();
+                }
+                draw();
+                control();
+            } catch (Exception e) {
+                android.util.Log.e("GameEngine", "Error in game loop", e);
+                // Continue running even if there's an error
             }
-            draw();
-            control();
         }
+        
+        android.util.Log.d("GameEngine", "Game loop ended");
     }
 
     private void update() {
@@ -652,5 +681,9 @@ public class GameEngine extends SurfaceView implements SurfaceHolder.Callback, R
         ORGANIC,
         INORGANIC,
         HAZARDOUS
+    }
+
+    public boolean isSurfaceReady() {
+        return surfaceReady;
     }
 }
