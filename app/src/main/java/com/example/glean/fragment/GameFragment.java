@@ -24,12 +24,12 @@ public class GameFragment extends Fragment implements GameEngine.GameCallback {
     private static final String HIGH_SCORE_KEY = "highScore";
     
     private FrameLayout gameContainer;
-    private TextView highScoreText;
-    private MaterialButton playButton;
+    private TextView highScoreText;    private MaterialButton playButton;
     private MaterialButton pauseButton;
     
     private GameEngine gameEngine;
     private boolean gameStarted = false;
+    private boolean gamePaused = false;
 
     @Nullable
     @Override
@@ -50,10 +50,13 @@ public class GameFragment extends Fragment implements GameEngine.GameCallback {
         playButton.setOnClickListener(v -> {
             android.util.Log.d("GameFragment", "Play button clicked");
             startGame();
-        });
-        pauseButton.setOnClickListener(v -> {
-            android.util.Log.d("GameFragment", "Pause button clicked");
-            pauseGame();
+        });        pauseButton.setOnClickListener(v -> {
+            android.util.Log.d("GameFragment", "Pause/Resume button clicked - gamePaused: " + gamePaused);
+            if (gamePaused) {
+                resumeGame();
+            } else {
+                pauseGame();
+            }
         });
         
         // Setup help button in toolbar
@@ -115,26 +118,42 @@ public class GameFragment extends Fragment implements GameEngine.GameCallback {
             // Show pause button, hide play button
             playButton.setVisibility(View.GONE);
             pauseButton.setVisibility(View.VISIBLE);
-            
-            // Start the game
+              // Start the game
             gameEngine.startGame();
             gameStarted = true;
-        } else {
+            gamePaused = false;
+            updatePauseButtonState();} else {
             android.util.Log.d("GameFragment", "Resuming paused game...");
             // Resume the game if it was paused
             gameEngine.startGame();
-            pauseButton.setText("Jeda");
-            pauseButton.setIcon(requireContext().getDrawable(R.drawable.ic_pause_24));
+            gamePaused = false;
+            updatePauseButtonState();
+        }
+    }    private void pauseGame() {
+        if (gameEngine != null && gameStarted && !gamePaused) {
+            gameEngine.pauseGame();
+            gamePaused = true;
+            updatePauseButtonState();
         }
     }
 
-    private void pauseGame() {
-        if (gameEngine != null && gameStarted) {
-            gameEngine.pauseGame();
+    private void resumeGame() {
+        if (gameEngine != null && gameStarted && gamePaused) {
+            gameEngine.startGame();
+            gamePaused = false;
+            updatePauseButtonState();
+        }
+    }
+    
+    private void updatePauseButtonState() {
+        if (gamePaused) {
             pauseButton.setText("Lanjut");
             pauseButton.setIcon(requireContext().getDrawable(R.drawable.ic_play_24));
+        } else {
+            pauseButton.setText("Jeda");
+            pauseButton.setIcon(requireContext().getDrawable(R.drawable.ic_pause_24));
         }
-    }    private void showGameHelp() {
+    }private void showGameHelp() {
         new MaterialAlertDialogBuilder(requireContext())
                 .setTitle("🎮 Cara Bermain Eco Sorting")
                 .setMessage("Seret sampah ke tempat sampah yang sesuai dengan jenisnya:\n\n" +
@@ -158,12 +177,12 @@ public class GameFragment extends Fragment implements GameEngine.GameCallback {
         requireActivity().runOnUiThread(() -> {
             // Update high score text
             updateHighScoreText(highScore);
-            
-            // Show play button, hide pause button
+              // Show play button, hide pause button
             playButton.setVisibility(View.VISIBLE);
             pauseButton.setVisibility(View.GONE);
             
             gameStarted = false;
+            gamePaused = false;
             
             // Show game over dialog with score
             new MaterialAlertDialogBuilder(requireContext())                    .setTitle("Game Over")
@@ -186,13 +205,11 @@ public class GameFragment extends Fragment implements GameEngine.GameCallback {
     
     private void updateHighScoreText(int highScore) {
         highScoreText.setText("Skor Tertinggi: " + highScore);
-    }
-
-    @Override
+    }    @Override
     public void onPause() {
         super.onPause();
-        if (gameEngine != null && gameStarted) {
-            gameEngine.pauseGame();
+        if (gameEngine != null && gameStarted && !gamePaused) {
+            pauseGame();
         }
     }
 

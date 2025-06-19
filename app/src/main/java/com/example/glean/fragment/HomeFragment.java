@@ -83,36 +83,15 @@ public class HomeFragment extends Fragment {
             updateDashboardStats();
         } catch (Exception e) {
             showErrorMessage(getString(R.string.error_loading_home, e.getMessage()));
-        }}
-
-    private void initializeDashboardContent() {try {
+        }}    private void initializeDashboardContent() {try {
             // Date and motivation text are now part of the simple header
-            // No longer needed as we removed the large greeting container            // Set daily tip
-            if (binding.tvDailyTip != null) {
-                String dailyTip = getDailyTip();
-                binding.tvDailyTip.setText(dailyTip);
-                binding.tvDailyTip.setVisibility(View.VISIBLE);
-            }
+            // No longer needed as we removed the large greeting container
             
             updateWeeklyChallengeUI();
             
         } catch (Exception e) {
             // Handle error silently
-        }
-    }
-      private String getDailyTip() {
-        String[] ecoTips = {
-            getString(R.string.eco_tip_1),
-            getString(R.string.eco_tip_2),
-            getString(R.string.eco_tip_3),
-            getString(R.string.eco_tip_4),
-            getString(R.string.eco_tip_5),
-            getString(R.string.eco_tip_6),
-            getString(R.string.eco_tip_7)
-        };        
-        int dayOfWeek = Calendar.getInstance().get(Calendar.DAY_OF_WEEK);
-        return ecoTips[dayOfWeek % ecoTips.length];
-    }
+        }    }
 
     private void updateWeeklyChallengeUI() {
         // Challenge Global section has been completely removed from layout
@@ -143,24 +122,14 @@ public class HomeFragment extends Fragment {
         try {
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
             int userId = prefs.getInt("USER_ID", -1);
-            
-            if (userId != -1) {
+              if (userId != -1) {
                 LiveData<UserEntity> userLiveData = db.userDao().getUserById(userId);                userLiveData.observe(getViewLifecycleOwner(), user -> {                    if (user != null) {
                         String displayName = getDisplayName(user);
                         String greetingWithName = getTimeGreeting() + ", " + displayName + "!";
-                          // Update the welcome message in the header with actual user name
-                        TextView tvWelcomeUser = binding.getRoot().findViewById(R.id.tvWelcomeUser);
-                        if (tvWelcomeUser != null) {
-                            tvWelcomeUser.setText("Selamat Datang, " + displayName + "!");
-                        }
                         
                         loadUserStats(userId);
                     }
-                });            } else {                // Set default welcome message when no user is logged in
-                TextView tvWelcomeUser = binding.getRoot().findViewById(R.id.tvWelcomeUser);
-                if (tvWelcomeUser != null) {
-                    tvWelcomeUser.setText("Selamat Datang!");
-                }
+                });            } else {                // No special handling needed for logged out state
             }
         } catch (Exception e) {
             // Handle error silently

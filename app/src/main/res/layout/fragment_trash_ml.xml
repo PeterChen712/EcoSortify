@@ -17,18 +17,15 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginBottom="24dp">
-
-            <ImageView
+            android:layout_marginBottom="24dp">            <ImageView
                 android:layout_width="24dp"
-                android:layout_height="24dp"                android:src="@android:drawable/ic_menu_camera"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_classification"
                 app:tint="?attr/colorPrimary"
-                android:layout_marginEnd="12dp" />
-
-            <TextView
+                android:layout_marginEnd="12dp" />            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Deteksi Sampah AI"
+                android:text="@string/classification_title"
                 android:textSize="24sp"
                 android:textStyle="bold"
                 android:textColor="?attr/colorOnSurface" />

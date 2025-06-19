@@ -452,18 +452,16 @@ public class GameEngine extends SurfaceView implements SurfaceHolder.Callback, R
     public boolean onTouchEvent(MotionEvent event) {
         float touchX = event.getX();
         float touchY = event.getY();
-        
-        // Handle game over or paused state
+          // Handle game over or paused state
         if (gameOver) {
             if (event.getAction() == MotionEvent.ACTION_UP) {
                 resetGame();
                 return true;
             }
         } else if (gamePaused) {
-            if (event.getAction() == MotionEvent.ACTION_UP) {
-                startGame();  // Resume game
-                return true;
-            }
+            // When game is paused, don't handle any touch events
+            // Let the UI button handle resume
+            return true;
         }
         
         // Handle waste item interactions
@@ -685,5 +683,13 @@ public class GameEngine extends SurfaceView implements SurfaceHolder.Callback, R
 
     public boolean isSurfaceReady() {
         return surfaceReady;
+    }
+    
+    public boolean isGamePaused() {
+        return gamePaused;
+    }
+    
+    public boolean isGameRunning() {
+        return isRunning && !gameOver;
     }
 }

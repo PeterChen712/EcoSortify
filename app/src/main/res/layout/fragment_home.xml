@@ -26,66 +26,8 @@
             android:paddingTop="@dimen/header_spacing_large"
             android:paddingBottom="24dp"
             android:paddingStart="20dp"
-            android:paddingEnd="20dp">        <!-- Enhanced Daily Tip -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="20dp"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="8dp"
-            app:strokeWidth="0dp"
-            android:backgroundTint="@color/environmental_green">
+            android:paddingEnd="20dp">
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="20dp"
-                android:gravity="center_vertical">
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/circle_white_bg"
-                    android:padding="12dp"
-                    android:layout_marginEnd="16dp">
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@drawable/ic_lightbulb"
-                        app:tint="@color/environmental_green"
-                        android:contentDescription="Lightbulb Icon" />
-
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Tip Hari Ini"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:textColor="@android:color/white"
-                        android:alpha="0.9"
-                        android:layout_marginBottom="4dp" />
-
-                    <TextView
-                        android:id="@+id/tvDailyTip"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Bawa botol minum sendiri untuk mengurangi sampah plastik!"
-                        android:textSize="15sp"
-                        android:textColor="@android:color/white"
-                        android:lineSpacingExtra="2dp" />
-
-                </LinearLayout>
-
-            </LinearLayout>        
-        </com.google.android.material.card.MaterialCardView>
 
         <!-- Daily Tips Carousel Section -->
         <LinearLayout
