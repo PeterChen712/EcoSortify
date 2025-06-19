@@ -349,15 +349,15 @@ public class ProfileFragment extends Fragment {    private static final String T
         }
         return null;
     }    private void loadUserData() {
-        // First load from local database
-        loadUserDataFromLocal();
-        
-        // Then set up real-time Firebase synchronization if user is logged in
+        // If user is logged in with Firebase, prioritize Firebase data
         if (authManager.isLoggedIn()) {
             Log.d(TAG, "🔥 Setting up real-time Firebase data synchronization");
             setupFirebaseRealTimeSync();
+            // Only load local data as fallback after Firebase setup
         } else {
             Log.d(TAG, "User not logged in with Firebase, using local data only");
+            // First load from local database for non-Firebase users
+            loadUserDataFromLocal();
         }
     }
       /**
@@ -445,11 +445,11 @@ public class ProfileFragment extends Fragment {    private static final String T
             updateUIWithFirebaseAuthFallback();
             
             Log.d(TAG, "🔥 Real-time Firebase listeners activated");
-            
-        } catch (Exception e) {
+              } catch (Exception e) {
             Log.e(TAG, "Error setting up Firebase real-time sync", e);
-            // Fallback to Firebase Auth data if real-time setup fails
-            updateUIWithFirebaseAuthFallback();
+            // Only fall back to local data if Firebase completely fails
+            Log.d(TAG, "Falling back to local data due to Firebase error");
+            loadUserDataFromLocalAsFirebaseFallback();
         }
     }
     
@@ -490,16 +490,18 @@ public class ProfileFragment extends Fragment {    private static final String T
             Log.e(TAG, "Error updating UI with Firebase stats", e);
         }
     }
-    
-    /**
+      /**
      * Update UI with real-time Firebase profile data
      */    private void updateUIWithFirebaseProfile(com.example.glean.service.FirebaseDataManager.UserProfile profile) {
         try {
             if (binding != null) {
+                Log.d(TAG, "🔥 Updating UI with Firebase profile data - Name: " + profile.getDisplayName());
+                
                 // Update name display with enhanced fallback logic
                 String displayName = profile.getDisplayName();
                 if (binding.tvName != null) {
                     binding.tvName.setText(displayName);
+                    Log.d(TAG, "🔥 Firebase profile name set to: " + displayName);
                 }
                   // Update email with fallback to Firebase Auth if not in profile
                 String email = profile.getEmail();
@@ -509,6 +511,7 @@ public class ProfileFragment extends Fragment {    private static final String T
                         String firebaseEmail = authManager.getFirebaseUserEmail();
                         if (firebaseEmail != null && !firebaseEmail.isEmpty()) {
                             email = firebaseEmail;
+                            Log.d(TAG, "🔥 Using Firebase Auth email as fallback: " + email);
                         }
                     } catch (Exception e) {
                         Log.w(TAG, "Could not get email from Firebase Auth", e);
@@ -516,6 +519,7 @@ public class ProfileFragment extends Fragment {    private static final String T
                 }
                 if (binding.tvEmail != null) {
                     binding.tvEmail.setText(email != null && !email.isEmpty() ? email : "No email");
+                    Log.d(TAG, "🔥 Firebase profile email set to: " + email);
                 }
                 
                 // Update profile image with enhanced fallback logic
@@ -532,7 +536,7 @@ public class ProfileFragment extends Fragment {    private static final String T
                     }
                 }
                 
-                // Update local user data if available
+                // Update local user data if available - but don't let it override UI
                 if (currentUser != null) {
                     // Update current user object with profile data
                     String firstName = profile.getFirstName();
@@ -554,7 +558,7 @@ public class ProfileFragment extends Fragment {    private static final String T
                     // Load the updated profile image
                     loadProfileImage(currentUser);
                     
-                    // Update local database
+                    // Update local database in background without affecting UI
                     executor.execute(() -> {
                         try {
                             db.userDao().update(currentUser);
@@ -662,35 +666,111 @@ public class ProfileFragment extends Fragment {    private static final String T
             }
         });
     }
+      /**
+     * Load local data only as fallback when Firebase authentication/sync fails
+     * This method will not override Firebase data if Firebase user is logged in
+     */
+    private void loadUserDataFromLocalAsFirebaseFallback() {
+        if (userId == -1) {
+            Log.e(TAG, "Invalid user ID, cannot load user data");
+            Toast.makeText(requireContext(), "User not found. Please login again.", Toast.LENGTH_LONG).show();
+            logout();
+            return;
+        }
+        
+        Log.d(TAG, "Loading local data as Firebase fallback for userId: " + userId);
+          db.userDao().getUserById(userId).observe(getViewLifecycleOwner(), user -> {
+            if (user != null) {
+                // Only use local data if we don't have Firebase data
+                if (!authManager.isLoggedIn() || (binding.tvName != null && 
+                    (binding.tvName.getText().toString().equals("User") || 
+                     binding.tvName.getText().toString().equals("Loading...")))) {
+                    String username = user.getUsername() != null ? user.getUsername() : "Unknown User";
+                    Log.d(TAG, "Using local fallback data: " + username);
+                    currentUser = user;
+                    updateUIWithUserData(user);
+                } else {
+                    Log.d(TAG, "Firebase data already loaded, skipping local fallback");
+                    // Just update currentUser reference but don't override UI
+                    currentUser = user;
+                }
+            } else {
+                Log.e(TAG, "User not found in database for userId: " + userId);
+                // Try to create a default user only if Firebase is not available
+                if (!authManager.isLoggedIn()) {
+                    createDefaultUserIfNeeded();
+                }
+            }
+        });
+    }
       private void updateUIWithUserData(UserEntity user) {
         try {
-            // Set user info with safe null checks
-            String displayName = getDisplayName(user);
-            if (binding.tvName != null) {
-                binding.tvName.setText(displayName);
+            // For Firebase users, don't override Firebase data with local data
+            if (authManager.isLoggedIn()) {
+                Log.d(TAG, "Firebase user detected - limiting local data updates to avoid overriding Firebase data");
+                
+                // Only update UI elements that Firebase might not provide
+                // or if the current display is still showing default/loading values
+                if (binding.tvName != null) {
+                    String currentDisplayName = binding.tvName.getText().toString();
+                    if (currentDisplayName.equals("User") || currentDisplayName.equals("Loading...") || 
+                        currentDisplayName.isEmpty() || currentDisplayName.equals("Unknown User")) {
+                        // Only set local data if no Firebase data is displayed
+                        String displayName = getDisplayName(user);
+                        binding.tvName.setText(displayName);
+                        Log.d(TAG, "Updated name from local data (no Firebase data): " + displayName);
+                    } else {
+                        Log.d(TAG, "Keeping existing Firebase name: " + currentDisplayName);
+                    }
+                }
+                
+                if (binding.tvEmail != null) {
+                    String currentEmail = binding.tvEmail.getText().toString();
+                    if (currentEmail.equals("No email") || currentEmail.isEmpty() || 
+                        currentEmail.equals("Loading email...")) {
+                        // Only set local email if no Firebase email is displayed
+                        String email = user.getEmail();
+                        binding.tvEmail.setText(email != null && !email.isEmpty() ? email : "No email");
+                        Log.d(TAG, "Updated email from local data (no Firebase data): " + email);
+                    } else {
+                        Log.d(TAG, "Keeping existing Firebase email: " + currentEmail);
+                    }
+                }
+            } else {
+                // For non-Firebase users, update UI normally
+                Log.d(TAG, "Non-Firebase user - updating UI with local data");
+                
+                // Set user info with safe null checks
+                String displayName = getDisplayName(user);
+                if (binding.tvName != null) {
+                    binding.tvName.setText(displayName);
+                }
+                
+                if (binding.tvEmail != null) {
+                    String email = user.getEmail();
+                    binding.tvEmail.setText(email != null && !email.isEmpty() ? email : "No email");
+                }
             }
             
-            if (binding.tvEmail != null) {
-                String email = user.getEmail();
-                binding.tvEmail.setText(email != null && !email.isEmpty() ? email : "No email");
-            }
-            
+            // These can be updated regardless of Firebase status
             // Format and display member since date
             String memberSince = formatMemberSince(user.getCreatedAt());
             if (binding.tvMemberSince != null) {
                 binding.tvMemberSince.setText("Member since: " + memberSince);
             }
             
-            // Display points with safe handling
-            if (binding.tvTotalPoints != null) {
+            // Display points with safe handling (only if not Firebase user or no Firebase stats loaded)
+            if (binding.tvTotalPoints != null && !authManager.isLoggedIn()) {
                 binding.tvTotalPoints.setText(String.valueOf(user.getPoints()));
             }
             
-            // Load profile image
+            // Load profile image only if no Firebase image is set
             loadProfileImage(user);
             
-            // Load user statistics
-            loadUserStatistics();
+            // Load user statistics (for non-Firebase users)
+            if (!authManager.isLoggedIn()) {
+                loadUserStatistics();
+            }
             
             // Setup badges
             setupBadges(user);
@@ -1531,9 +1611,13 @@ public class ProfileFragment extends Fragment {    private static final String T
         if (firebaseDataManager != null) {
             firebaseDataManager.stopAllListeners();
         }
-    }
-
-    private void createDefaultUserIfNeeded() {
+    }    private void createDefaultUserIfNeeded() {
+        // Don't create default users for Firebase authenticated users
+        if (authManager.isLoggedIn()) {
+            Log.d(TAG, "Firebase user detected - skipping default user creation");
+            return;
+        }
+        
         executor.execute(() -> {
             try {
                 // Check if any user exists first
@@ -1562,8 +1646,10 @@ public class ProfileFragment extends Fragment {    private static final String T
                     requireActivity().runOnUiThread(() -> {
                         Log.d(TAG, "Default user created with ID: " + newUserId);
                         Toast.makeText(requireContext(), "Profile created successfully!", Toast.LENGTH_SHORT).show();
-                        // Reload user data
-                        loadUserData();
+                        // Reload user data only for non-Firebase users
+                        if (!authManager.isLoggedIn()) {
+                            loadUserData();
+                        }
                     });
                 } else {
                     // Get first available user and update userId
@@ -1580,8 +1666,10 @@ public class ProfileFragment extends Fragment {    private static final String T
                         
                         requireActivity().runOnUiThread(() -> {
                             Log.d(TAG, "Using existing user with ID: " + userId);
-                            // Reload user data
-                            loadUserData();
+                            // Reload user data only for non-Firebase users
+                            if (!authManager.isLoggedIn()) {
+                                loadUserData();
+                            }
                         });
                     }
                 }
@@ -1589,7 +1677,9 @@ public class ProfileFragment extends Fragment {    private static final String T
                 Log.e(TAG, "Error creating default user", e);
                 requireActivity().runOnUiThread(() -> {
                     Toast.makeText(requireContext(), "Error creating profile", Toast.LENGTH_SHORT).show();
-                    setDefaultUIValues();
+                    if (!authManager.isLoggedIn()) {
+                        setDefaultUIValues();
+                    }
                 });            }        });
     }
       
