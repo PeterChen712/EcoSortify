@@ -1296,8 +1296,18 @@ public class ProfileFragment extends Fragment {    private static final String T
 
         DialogEditProfileBinding dialogBinding = DialogEditProfileBinding.inflate(getLayoutInflater());
         
-        // Pre-fill current user data
-        dialogBinding.etName.setText(currentUser.getUsername());
+        // Perbaikan: Pre-fill current user data dengan nama dari getFullName() atau username/email
+        String displayName = null;
+        if (currentUser.getFullName() != null && !currentUser.getFullName().isEmpty()) {
+            displayName = currentUser.getFullName();
+        } else if (currentUser.getUsername() != null && !currentUser.getUsername().isEmpty()) {
+            displayName = currentUser.getUsername();
+        } else if (currentUser.getEmail() != null && !currentUser.getEmail().isEmpty()) {
+            displayName = currentUser.getEmail();
+        } else {
+            displayName = "";
+        }
+        dialogBinding.etName.setText(displayName);
         dialogBinding.etEmail.setText(currentUser.getEmail());
         dialogBinding.etEmail.setEnabled(false); // Email is read-only
         

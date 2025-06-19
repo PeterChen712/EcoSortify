@@ -156,6 +156,9 @@ public class OtherPlayerProfileActivity extends AppCompatActivity {
                 user.setTrashCount(totalTrash != null ? totalTrash.intValue() : 0);
                 user.setBadgeCount(0); // Will be calculated from achievements
 
+                // Load player background directly from this document (fresh data)
+                loadPlayerBackgroundFromDocument(document);
+                
                 displayPlayerData(user);
                 
             } catch (Exception e) {
@@ -165,7 +168,7 @@ public class OtherPlayerProfileActivity extends AppCompatActivity {
         } else {
             showError("Player not found");
         }
-    }private void displayPlayerData(RankingUser user) {
+    }    private void displayPlayerData(RankingUser user) {
         try {
             // Display basic info
             String displayName = user.getUsername();
@@ -185,6 +188,13 @@ public class OtherPlayerProfileActivity extends AppCompatActivity {
             // Load profile image
             loadProfileImage(user.getProfileImageUrl());
             
+            // Load and apply profile background from Firestore only if not loaded from handleFirebaseData
+            if (rankingUser != null) {
+                // Data came from ranking, need to fetch background separately
+                loadPlayerBackgroundFromFirestore(user.getUserId());
+            }
+            // If data came from handleFirebaseData, background is already loaded
+            
             // Generate and display badges based on points
             generateAndDisplayBadges(user.getTotalPoints());
             
@@ -199,6 +209,105 @@ public class OtherPlayerProfileActivity extends AppCompatActivity {
         } catch (Exception e) {
             Log.e(TAG, "Error displaying player data", e);
             showError("Error displaying data");
+        }
+    }    /**
+     * Load the active background for the visited player from an existing DocumentSnapshot
+     */
+    private void loadPlayerBackgroundFromDocument(DocumentSnapshot document) {
+        try {
+            // Get the activeBackground field directly from document root (not from user_profile)
+            String activeBackground = "default"; // Default fallback
+            
+            String backgroundFromFirestore = document.getString("activeBackground");
+            if (backgroundFromFirestore != null && !backgroundFromFirestore.trim().isEmpty()) {
+                activeBackground = backgroundFromFirestore;
+            }
+            
+            Log.d(TAG, "Player background loaded from document: " + activeBackground);
+            
+            // Apply the background to the profile
+            int backgroundResource = getSkinResource(activeBackground);
+            if (binding.profileSkinBackground != null) {
+                binding.profileSkinBackground.setBackgroundResource(backgroundResource);
+                Log.d(TAG, "Background applied from document for other player: " + activeBackground);
+            }
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error parsing player background from document", e);
+            // Fallback to default background
+            applyDefaultBackground();
+        }
+    }    /**
+     * Load the active background for the visited player from Firestore
+     */
+    private void loadPlayerBackgroundFromFirestore(String userId) {
+        Log.d(TAG, "Loading background for player: " + userId);
+        
+        firestore.collection("users")
+                .document(userId)
+                .get()
+                .addOnSuccessListener(document -> {
+                    if (document.exists()) {
+                        try {
+                            // Get the activeBackground field directly from document root (not from user_profile)
+                            String activeBackground = "default"; // Default fallback
+                            
+                            String backgroundFromFirestore = document.getString("activeBackground");
+                            if (backgroundFromFirestore != null && !backgroundFromFirestore.trim().isEmpty()) {
+                                activeBackground = backgroundFromFirestore;
+                            }
+                            
+                            Log.d(TAG, "Player background loaded: " + activeBackground);
+                            
+                            // Apply the background to the profile
+                            int backgroundResource = getSkinResource(activeBackground);
+                            if (binding.profileSkinBackground != null) {
+                                binding.profileSkinBackground.setBackgroundResource(backgroundResource);
+                                Log.d(TAG, "Background applied for other player: " + activeBackground);
+                            }
+                            
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error parsing player background data", e);
+                            // Fallback to default background
+                            applyDefaultBackground();
+                        }
+                    } else {
+                        Log.w(TAG, "Player document not found, using default background");
+                        applyDefaultBackground();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error loading player background from Firestore", e);
+                    // Fallback to default background
+                    applyDefaultBackground();
+                });
+    }
+
+    /**
+     * Apply default background when Firestore data is not available
+     */
+    private void applyDefaultBackground() {
+        if (binding.profileSkinBackground != null) {
+            binding.profileSkinBackground.setBackgroundResource(R.drawable.profile_skin_default);
+            Log.d(TAG, "Default background applied for other player");
+        }
+    }
+
+    /**
+     * Get the drawable resource for a skin ID (same logic as ProfileFragment)
+     */
+    private int getSkinResource(String skinId) {
+        switch (skinId) {
+            case "nature":
+                return R.drawable.profile_skin_nature;
+            case "ocean":
+                return R.drawable.profile_skin_ocean;
+            case "sunset":
+                return R.drawable.profile_skin_sunset;
+            case "galaxy":
+                return R.drawable.profile_skin_galaxy;
+            default:
+                return R.drawable.profile_skin_default;
         }
     }
 
