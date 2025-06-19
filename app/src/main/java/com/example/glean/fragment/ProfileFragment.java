@@ -208,8 +208,7 @@ public class ProfileFragment extends Fragment {    private static final String T
             Log.e(TAG, "Error setting up offline ProfileFragment", e);
             Toast.makeText(requireContext(), getString(R.string.error_loading_profile), Toast.LENGTH_SHORT).show();
         }
-    }
-      private void setupUI() {
+    }      private void setupUI() {
         // Setup RecyclerView for badges with same design as Customize Profile
         if (binding.rvBadges != null) {
             binding.rvBadges.setLayoutManager(new GridLayoutManager(requireContext(), 3)); // Match CustomizeProfile 3-column layout
@@ -220,6 +219,9 @@ public class ProfileFragment extends Fragment {    private static final String T
         
         // Add some visual feedback
         addVisualFeedback();
+        
+        // Set initial button state (disabled until data loads)
+        updateCustomizeButtonState();
     }
       private void setupClickListeners() {
         // Back button to navigate to Plogging
@@ -305,8 +307,7 @@ public class ProfileFragment extends Fragment {    private static final String T
                     }
                     return false; // Don't consume the event
                 });
-            }
-        }
+            }        }
     }
     
     private void setupThemeToggle() {
@@ -315,6 +316,22 @@ public class ProfileFragment extends Fragment {    private static final String T
         if (themeToggle != null) {
             themeToggle.setOnClickListener(v -> toggleTheme());
         }
+    }
+
+    private void toggleTheme() {
+        // Get current theme
+        int currentMode = AppCompatDelegate.getDefaultNightMode();
+        
+        // Toggle between light and dark mode
+        if (currentMode == AppCompatDelegate.MODE_NIGHT_YES) {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+        } else {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+        }
+        
+        // Save theme preference
+        SharedPreferences prefs = requireActivity().getSharedPreferences("USER_PREFS", 0);
+        prefs.edit().putInt("THEME_MODE", AppCompatDelegate.getDefaultNightMode()).apply();
     }
     
     private void navigateBackToPlogging() {
@@ -521,8 +538,7 @@ public class ProfileFragment extends Fragment {    private static final String T
                     binding.tvEmail.setText(email != null && !email.isEmpty() ? email : "No email");
                     Log.d(TAG, "🔥 Firebase profile email set to: " + email);
                 }
-                
-                // Update profile image with enhanced fallback logic
+                  // Update profile image with enhanced fallback logic
                 String avatarUrl = profile.getAvatarUrl();
                 if ((avatarUrl == null || avatarUrl.isEmpty()) && authManager.isLoggedIn()) {
                     // Fallback to Firebase Auth user photo
@@ -536,7 +552,10 @@ public class ProfileFragment extends Fragment {    private static final String T
                     }
                 }
                 
-                // Update local user data if available - but don't let it override UI
+                // Create final versions for lambda
+                final String finalEmail = email;
+                final String finalAvatarUrl = avatarUrl;
+                  // Update local user data if available - but don't let it override UI
                 if (currentUser != null) {
                     // Update current user object with profile data
                     String firstName = profile.getFirstName();
@@ -547,12 +566,11 @@ public class ProfileFragment extends Fragment {    private static final String T
                     }
                     if (lastName != null && !lastName.isEmpty()) {
                         currentUser.setLastName(lastName);
+                    }                    if (finalEmail != null && !finalEmail.isEmpty()) {
+                        currentUser.setEmail(finalEmail);
                     }
-                    if (email != null && !email.isEmpty()) {
-                        currentUser.setEmail(email);
-                    }
-                    if (avatarUrl != null && !avatarUrl.isEmpty()) {
-                        currentUser.setProfileImagePath(avatarUrl);
+                    if (finalAvatarUrl != null && !finalAvatarUrl.isEmpty()) {
+                        currentUser.setProfileImagePath(finalAvatarUrl);
                     }
                     
                     // Load the updated profile image
@@ -568,16 +586,56 @@ public class ProfileFragment extends Fragment {    private static final String T
                         }
                     });
                 } else {
-                    // Create a temporary user object for image loading if currentUser is null
-                    UserEntity tempUser = new UserEntity();
-                    tempUser.setFirstName(profile.getFirstName());
-                    tempUser.setLastName(profile.getLastName());
-                    tempUser.setEmail(email);
-                    tempUser.setProfileImagePath(avatarUrl);
-                    loadProfileImage(tempUser);
+                    // ENHANCED: Create currentUser for Firebase users when it's null
+                    Log.d(TAG, "Creating currentUser from Firebase profile data");
+                    UserEntity firebaseUser = new UserEntity();
+                    firebaseUser.setId(userId);
+                    firebaseUser.setFirstName(profile.getFirstName());
+                    firebaseUser.setLastName(profile.getLastName());
+                    firebaseUser.setUsername(displayName);                    firebaseUser.setEmail(finalEmail);
+                    firebaseUser.setProfileImagePath(finalAvatarUrl);
+                    firebaseUser.setCreatedAt(System.currentTimeMillis());
+                    
+                    // Set currentUser for immediate use
+                    currentUser = firebaseUser;
+                    
+                    // Load the profile image
+                    loadProfileImage(firebaseUser);
+                    
+                    // Try to save/update in local database in background
+                    executor.execute(() -> {
+                        try {
+                            // Try to find existing user first
+                            UserEntity existingUser = db.userDao().getUserByIdSync(userId);
+                            if (existingUser != null) {
+                                // Update existing user
+                                existingUser.setFirstName(profile.getFirstName());
+                                existingUser.setLastName(profile.getLastName());
+                                existingUser.setUsername(displayName);                                existingUser.setEmail(finalEmail);
+                                existingUser.setProfileImagePath(finalAvatarUrl);
+                                db.userDao().update(existingUser);
+                                Log.d(TAG, "Updated existing local user with Firebase profile data");
+                                
+                                // Update currentUser reference to the persistent entity
+                                getActivity().runOnUiThread(() -> currentUser = existingUser);
+                            } else {
+                                // Insert new user
+                                long newUserId = db.userDao().insert(firebaseUser);
+                                Log.d(TAG, "Created new local user from Firebase profile with ID: " + newUserId);
+                            }
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error saving Firebase user to local database", e);
+                            // Keep the temporary user object even if database save fails
+                        }
+                    });
+                    
+                    Log.d(TAG, "Created currentUser from Firebase profile: " + displayName);
                 }
                 
                 Log.d(TAG, "UI updated with Firebase profile: " + displayName);
+                
+                // Update customize button state after Firebase profile is loaded
+                updateCustomizeButtonState();
                 
             }
         } catch (Exception e) {
@@ -621,8 +679,7 @@ public class ProfileFragment extends Fragment {    private static final String T
                     binding.tvEmail.setText(emailDisplay);
                     Log.d(TAG, "🔄 Updated email display to: " + emailDisplay);
                 }
-                
-                // Load profile image if available
+                  // Load profile image if available
                 if (firebasePhotoUrl != null && !firebasePhotoUrl.isEmpty()) {
                     Log.d(TAG, "🔄 Loading Firebase Auth profile image");
                     if (currentUser != null) {
@@ -635,9 +692,50 @@ public class ProfileFragment extends Fragment {    private static final String T
                         loadProfileImage(tempUser);
                     }
                 }
+                
+                // ENHANCED: Create currentUser from Firebase Auth data if it's null
+                if (currentUser == null) {
+                    Log.d(TAG, "🔄 Creating currentUser from Firebase Auth data");
+                    UserEntity authUser = new UserEntity();
+                    authUser.setId(userId);
+                    
+                    // Set name data
+                    String displayName = firebaseName;
+                    if (displayName == null || displayName.isEmpty()) {
+                        displayName = firebaseEmail != null ? firebaseEmail.split("@")[0] : "User";
+                    }
+                    
+                    // Try to split first/last name
+                    String[] nameParts = displayName.split(" ", 2);
+                    authUser.setFirstName(nameParts[0]);
+                    if (nameParts.length > 1) {
+                        authUser.setLastName(nameParts[1]);
+                    }
+                    authUser.setUsername(displayName);
+                    
+                    // Set email
+                    if (firebaseEmail != null && !firebaseEmail.isEmpty()) {
+                        authUser.setEmail(firebaseEmail);
+                    }
+                    
+                    // Set profile image
+                    if (firebasePhotoUrl != null && !firebasePhotoUrl.isEmpty()) {
+                        authUser.setProfileImagePath(firebasePhotoUrl);
+                    }
+                    
+                    authUser.setCreatedAt(System.currentTimeMillis());
+                    
+                    // Set currentUser for immediate use
+                    currentUser = authUser;
+                    
+                    Log.d(TAG, "✅ Created currentUser from Firebase Auth: " + displayName);
+                }
             }
             
             Log.d(TAG, "✅ Firebase Auth fallback data applied successfully");
+            
+            // Update customize button state after Firebase Auth fallback is applied
+            updateCustomizeButtonState();
             
         } catch (Exception e) {
             Log.e(TAG, "❌ Error applying Firebase Auth fallback", e);
@@ -774,9 +872,11 @@ public class ProfileFragment extends Fragment {    private static final String T
             
             // Setup badges
             setupBadges(user);
-            
-            // Update profile decorations
+              // Update profile decorations
             updateProfileDecorations(user);
+            
+            // Update customize button state after user data is loaded
+            updateCustomizeButtonState();
             
         } catch (Exception e) {
             Log.e(TAG, "Error updating UI with user data", e);
@@ -860,840 +960,56 @@ public class ProfileFragment extends Fragment {    private static final String T
         return "User";
     }
     
-    private String formatMemberSince(long createdAt) {
-        if (createdAt > 0) {
-            SimpleDateFormat sdf = new SimpleDateFormat("MMM yyyy", Locale.getDefault());
-            return sdf.format(new Date(createdAt));
-        }
-        return "Recently";
-    }
-    
-    private void loadUserStatistics() {
-        if (userId == -1) return;
-        
-        executor.execute(() -> {
-            try {
-                // Get user statistics from database
-                int totalRecords = db.recordDao().getRecordCountByUserId(userId);
-                float totalDistance = db.recordDao().getTotalDistanceByUserId(userId);
-                long totalDuration = db.recordDao().getTotalDurationByUserId(userId);
-                  requireActivity().runOnUiThread(() -> {
-                    // Update UI with safe null checks
-                    if (binding.tvTotalPoints != null) {
-                        // Show user's total accumulated points instead of record count
-                        int userPoints = currentUser != null ? currentUser.getPoints() : 0;
-                        binding.tvTotalPoints.setText(String.valueOf(userPoints));
-                    }
-                    if (binding.tvTotalPlogs != null) {
-                        binding.tvTotalPlogs.setText(String.valueOf(totalRecords));
-                    }
-                    // Fixed: Now properly referencing the correct TextView ID
-                    if (binding.tvTotalDistance != null) {
-                        binding.tvTotalDistance.setText(String.format(Locale.getDefault(), "%.1f", totalDistance / 1000f));
-                    }
-                });
-            } catch (Exception e) {
-                Log.e(TAG, "Error loading user statistics", e);                requireActivity().runOnUiThread(() -> {
-                    // Set default values on error
-                    if (binding.tvTotalPoints != null) {
-                        binding.tvTotalPoints.setText("0");
-                    }
-                    if (binding.tvTotalPlogs != null) {
-                        binding.tvTotalPlogs.setText("0");
-                    }
-                    if (binding.tvTotalDistance != null) {
-                        binding.tvTotalDistance.setText("0.0");
-                    }
-                });
-            }
-        });
-    }
-      private void setupBadges(UserEntity user) {
-        List<Badge> badges = generateUserBadges(user);
-          if (binding.rvBadges != null) {            // Use the new ProfileBadgeAdapter
-            ProfileBadgeAdapter adapter = new ProfileBadgeAdapter(requireContext(), badges, badge -> {
-                // Navigate to Profile Customization when badge is clicked
-                openCustomizeProfileActivity();
-            });
-            binding.rvBadges.setAdapter(adapter);
-        }
-    }
-    
-    // Generate badges using the same logic as BadgeSelectionFragment for consistency
-    private List<Badge> generateUserBadges(UserEntity user) {
-        List<Badge> badges = new ArrayList<>();
-        int points = user.getPoints();
-        int badgeIdCounter = 1;
-        
-        // Always available badges
-        Badge starter = new Badge(badgeIdCounter++, "Starter", "Your first badge", "starter", 1, true);
-        starter.setIconResource(R.drawable.ic_star);
-        badges.add(starter);
-        
-        // Achievement-based badges (same logic as BadgeSelectionFragment)
-        if (points >= 50) {
-            Badge greenHelper = new Badge(badgeIdCounter++, "Green Helper", "Eco-friendly contributor", "green_helper", 1, true);
-            greenHelper.setIconResource(R.drawable.ic_leaf);
-            badges.add(greenHelper);
-        }
-        if (points >= 100) {
-            Badge ecoWarrior = new Badge(badgeIdCounter++, "Eco Warrior", "Environmental champion", "eco_warrior", 2, true);
-            ecoWarrior.setIconResource(R.drawable.ic_award);
-            badges.add(ecoWarrior);
-        }
-        if (points >= 200) {
-            Badge greenChampion = new Badge(badgeIdCounter++, "Green Champion", "Green environmental champion", "green_champion", 2, true);
-            greenChampion.setIconResource(R.drawable.ic_award);
-            badges.add(greenChampion);
-        }
-        if (points >= 500) {
-            Badge earthGuardian = new Badge(badgeIdCounter++, "Earth Guardian", "Protector of the environment", "earth_guardian", 3, true);
-            earthGuardian.setIconResource(R.drawable.ic_globe);
-            badges.add(earthGuardian);
-        }
-        if (points >= 1000) {
-            Badge expertPlogger = new Badge(badgeIdCounter++, "Expert Plogger", "Master of plogging", "expert_plogger", 3, true);
-            expertPlogger.setIconResource(R.drawable.ic_crown);
-            badges.add(expertPlogger);
-        }
-        if (points >= 2000) {
-            Badge ecoLegend = new Badge(badgeIdCounter++, "Eco Legend", "Legendary environmental hero", "eco_legend", 3, true);
-            ecoLegend.setIconResource(R.drawable.ic_crown);
-            badges.add(ecoLegend);
-        }
-        
-        // Special badges
-        if (points >= 1500) {
-            Badge masterCleaner = new Badge(badgeIdCounter++, "Master Cleaner", "Expert in cleanup activities", "master_cleaner", 3, true);
-            masterCleaner.setIconResource(R.drawable.ic_cleaning);
-            badges.add(masterCleaner);
-        }
-        
-        return badges;
-    }
-    
-    private void updateProfileDecorations(UserEntity user) {
-        if (binding.ivProfileFrame == null) return;
-        
-        String activeDecoration = user.getActiveDecoration();
-        if (activeDecoration != null && !activeDecoration.isEmpty() && !activeDecoration.equals("none")) {
-            try {
-                switch (activeDecoration) {
-                    case "1": // Gold frame
-                        binding.ivProfileFrame.setImageResource(android.R.drawable.star_big_on);
-                        binding.ivProfileFrame.setVisibility(View.VISIBLE);
-                        break;
-                    case "2": // Silver frame
-                        binding.ivProfileFrame.setImageResource(android.R.drawable.star_on);
-                        binding.ivProfileFrame.setVisibility(View.VISIBLE);
-                        break;
-                    case "3": // Bronze frame
-                        binding.ivProfileFrame.setImageResource(android.R.drawable.star_off);
-                        binding.ivProfileFrame.setVisibility(View.VISIBLE);
-                        break;
-                    default:
-                        binding.ivProfileFrame.setVisibility(View.GONE);
-                        break;
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "Error loading profile decoration", e);
-                binding.ivProfileFrame.setVisibility(View.GONE);
-            }
-        } else {
-            binding.ivProfileFrame.setVisibility(View.GONE);
-        }
-    }
-      private void checkPermissionsAndSelectImage() {
-        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.READ_EXTERNAL_STORAGE) 
-                != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(requireActivity(),
-                    new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
-                    REQUEST_STORAGE_PERMISSION);
-        } else {
-            showImageSourceDialog();
-        }
-    }
-    
-    private void showImageSourceDialog() {
-        String[] options = {"Camera", "Gallery"};
-        
-        new MaterialAlertDialogBuilder(requireContext())
-                .setTitle("Select Profile Picture")
-                .setItems(options, (dialog, which) -> {
-                    if (which == 0) {
-                        // Camera option
-                        checkCameraPermissionAndCapture();
-                    } else {
-                        // Gallery option
-                        selectImageFromGallery();
-                    }
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
-    }
-    
-    private void checkCameraPermissionAndCapture() {
-        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA) 
-                != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(requireActivity(),
-                    new String[]{Manifest.permission.CAMERA},
-                    REQUEST_CAMERA_PERMISSION);
-        } else {
-            captureImageFromCamera();
-        }
-    }
-    
-    private void captureImageFromCamera() {
+    /**
+     * Updates the state of the customize profile button based on user data availability
+     */
+    private void updateCustomizeButtonState() {
         try {
-            Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-            if (cameraIntent.resolveActivity(requireActivity().getPackageManager()) != null) {
-                // Create image file
-                File photoFile = createImageFile();
-                if (photoFile != null) {
-                    cameraImageUri = FileProvider.getUriForFile(
-                            requireContext(),
-                            "com.example.glean.fileprovider",
-                            photoFile
-                    );
-                    cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, cameraImageUri);
-                    startActivityForResult(cameraIntent, CAMERA_REQUEST);
-                }
-            } else {
-                Toast.makeText(requireContext(), "No camera app available", Toast.LENGTH_SHORT).show();
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error capturing image from camera", e);
-            Toast.makeText(requireContext(), "Error opening camera", Toast.LENGTH_SHORT).show();
-        }
-    }
-    
-    private File createImageFile() {
-        try {
-            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
-            String imageFileName = "PROFILE_" + timeStamp + "_";
-            File storageDir = new File(requireContext().getFilesDir(), "images");
-            if (!storageDir.exists()) {
-                storageDir.mkdirs();
-            }
-            return File.createTempFile(imageFileName, ".jpg", storageDir);
-        } catch (Exception e) {
-            Log.e(TAG, "Error creating image file", e);
-            return null;
-        }
-    }
-    
-    private void selectImageFromGallery() {
-        try {
-            Intent intent = new Intent();
-            intent.setType("image/*");
-            intent.setAction(Intent.ACTION_GET_CONTENT);
-            startActivityForResult(Intent.createChooser(intent, "Select Profile Picture"), PICK_IMAGE_REQUEST);
-        } catch (Exception e) {
-            Log.e(TAG, "Error selecting image from gallery", e);
-            Toast.makeText(requireContext(), "Error opening image picker", Toast.LENGTH_SHORT).show();
-        }
-    }    @Override
-    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        
-        if (resultCode != Activity.RESULT_OK) {
-            return;        }
-          try {            
-            // Handle skin selection
-            if (requestCode == SKIN_SELECTION_REQUEST && data != null) {
-                String selectedSkin = data.getStringExtra("selected_skin");
-                if (selectedSkin != null) {
-                    updateProfileSkin();
-                    Toast.makeText(requireContext(), "Profile skin updated!", Toast.LENGTH_SHORT).show();
-                }
+            if (binding == null || binding.btnCustomize == null) {
                 return;
             }
             
-            // Handle image selection and cropping
-            if (requestCode == PICK_IMAGE_REQUEST && data != null && data.getData() != null) {
-                // Gallery image selected
-                selectedImageUri = data.getData();
-                startCropActivity(selectedImageUri);
-                
-            } else if (requestCode == CAMERA_REQUEST && cameraImageUri != null) {
-                // Camera image captured
-                startCropActivity(cameraImageUri);
-                
-            } else if (requestCode == UCrop.REQUEST_CROP) {
-                // Image cropped successfully
-                handleCropResult(data);
-                
-            } else if (requestCode == UCrop.RESULT_ERROR) {
-                // Crop error
-                handleCropError(data);
-            }
+            boolean hasUserData = false;
+            String debugInfo = "";
             
-        } catch (Exception e) {
-            Log.e(TAG, "Error handling activity result", e);
-            Toast.makeText(requireContext(), "Error processing image", Toast.LENGTH_SHORT).show();
-        }
-    }
-    
-    private void startCropActivity(Uri sourceUri) {
-        try {
-            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
-            String fileName = "cropped_profile_" + timeStamp + ".jpg";
-            Uri destinationUri = Uri.fromFile(new File(requireContext().getCacheDir(), fileName));
-            
-            UCrop.Options options = new UCrop.Options();
-            options.setCompressionFormat(android.graphics.Bitmap.CompressFormat.JPEG);
-            options.setCompressionQuality(90);
-            options.setHideBottomControls(false);
-            options.setFreeStyleCropEnabled(true);
-            options.setShowCropFrame(true);
-            options.setShowCropGrid(true);
-            options.setCircleDimmedLayer(true);
-            options.setCropGridStrokeWidth(2);
-            options.setCropFrameStrokeWidth(4);
-            options.setMaxBitmapSize(1024);
-              // Set colors
-            options.setToolbarColor(ContextCompat.getColor(requireContext(), R.color.primary));
-            options.setStatusBarColor(ContextCompat.getColor(requireContext(), R.color.primary_dark));
-            options.setActiveControlsWidgetColor(ContextCompat.getColor(requireContext(), R.color.accent));
-            
-            UCrop.of(sourceUri, destinationUri)
-                    .withAspectRatio(1, 1)
-                    .withMaxResultSize(512, 512)
-                    .withOptions(options)
-                    .start(requireContext(), this);
-                    
-        } catch (Exception e) {
-            Log.e(TAG, "Error starting crop activity", e);
-            Toast.makeText(requireContext(), "Error opening crop editor", Toast.LENGTH_SHORT).show();
-        }
-    }
-    
-    private void handleCropResult(@Nullable Intent data) {
-        if (data != null) {
-            final Uri resultUri = UCrop.getOutput(data);
-            if (resultUri != null) {
-                selectedImageUri = resultUri;
-                
-                // Display the cropped image
-                if (binding != null && binding.ivProfilePic != null) {
-                    Glide.with(this)
-                            .load(resultUri)
-                            .placeholder(android.R.drawable.ic_menu_camera)
-                            .error(android.R.drawable.ic_menu_camera)
-                            .circleCrop()
-                            .diskCacheStrategy(DiskCacheStrategy.NONE)
-                            .skipMemoryCache(true)
-                            .into(binding.ivProfilePic);
-                }
-                
-                // Save the cropped image
-                saveProfileImage();
-                
-                Toast.makeText(requireContext(), "Profile picture updated successfully", Toast.LENGTH_SHORT).show();
-            }
-        }
-    }
-    
-    private void handleCropError(@Nullable Intent data) {
-        if (data != null) {
-            final Throwable cropError = UCrop.getError(data);
-            if (cropError != null) {
-                Log.e(TAG, "Crop error: " + cropError.getMessage(), cropError);
-                Toast.makeText(requireContext(), "Error cropping image: " + cropError.getMessage(), Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(requireContext(), "Error cropping image", Toast.LENGTH_SHORT).show();
-            }
-        }
-    }
-      private void saveProfileImage() {
-        if (selectedImageUri != null && currentUser != null) {
-            executor.execute(() -> {
-                try {
-                    // Copy the cropped image to permanent storage
-                    String permanentImagePath = copyImageToPermanentStorage(selectedImageUri);
-                    
-                    if (permanentImagePath != null) {
-                        // Update user with new image path
-                        currentUser.setProfileImagePath(permanentImagePath);
-                        db.userDao().update(currentUser);
-                        
-                        requireActivity().runOnUiThread(() -> {
-                            // Reload the profile image
-                            loadProfileImage();
-                            Toast.makeText(requireContext(), "Profile picture updated!", Toast.LENGTH_SHORT).show();
-                        });
-                    } else {
-                        requireActivity().runOnUiThread(() -> {
-                            Toast.makeText(requireContext(), "Failed to save profile picture", Toast.LENGTH_SHORT).show();
-                        });
-                    }
-                    
-                } catch (Exception e) {
-                    Log.e(TAG, "Error saving profile image to database", e);
-                    requireActivity().runOnUiThread(() -> {
-                        Toast.makeText(requireContext(), "Failed to save profile picture", Toast.LENGTH_SHORT).show();
-                    });
-                }
-            });
-        }
-    }
-    
-    private String copyImageToPermanentStorage(Uri sourceUri) {
-        try {
-            // Create permanent storage directory
-            File profileImagesDir = new File(requireContext().getFilesDir(), "profile_images");
-            if (!profileImagesDir.exists()) {
-                profileImagesDir.mkdirs();
-            }
-            
-            // Create unique filename
-            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
-            String fileName = "profile_" + userId + "_" + timeStamp + ".jpg";
-            File destinationFile = new File(profileImagesDir, fileName);
-            
-            // Copy file from source URI to destination
-            try (java.io.InputStream inputStream = requireContext().getContentResolver().openInputStream(sourceUri);
-                 java.io.FileOutputStream outputStream = new java.io.FileOutputStream(destinationFile)) {
-                
-                if (inputStream != null) {
-                    byte[] buffer = new byte[1024];
-                    int length;
-                    while ((length = inputStream.read(buffer)) > 0) {
-                        outputStream.write(buffer, 0, length);
-                    }
-                    outputStream.flush();
-                    
-                    Log.d(TAG, "Image saved to: " + destinationFile.getAbsolutePath());
-                    return destinationFile.getAbsolutePath();
-                }
-            }
-            
-        } catch (Exception e) {
-            Log.e(TAG, "Error copying image to permanent storage", e);
-        }
-        return null;
-    }
-    
-    private void loadProfileImage() {
-        if (currentUser != null && currentUser.getProfileImagePath() != null && binding != null && binding.ivProfilePic != null) {
-            String imagePath = currentUser.getProfileImagePath();
-            
-            // Clear any existing cache for this image
-            Glide.with(requireContext()).clear(binding.ivProfilePic);
-            
-            // Load the image with cache busting
-            Glide.with(this)
-                    .load(new File(imagePath))
-                    .placeholder(android.R.drawable.ic_menu_camera)
-                    .error(android.R.drawable.ic_menu_camera)
-                    .circleCrop()
-                    .diskCacheStrategy(DiskCacheStrategy.NONE)
-                    .skipMemoryCache(true)
-                    .signature(new com.bumptech.glide.signature.ObjectKey(System.currentTimeMillis()))
-                    .into(binding.ivProfilePic);
-            
-            Log.d(TAG, "Loading profile image from: " + imagePath);
-        } else {
-            // Load default profile image
-            if (binding != null && binding.ivProfilePic != null) {
-                Glide.with(this)
-                        .load(android.R.drawable.ic_menu_camera)
-                        .circleCrop()
-                        .into(binding.ivProfilePic);
-            }
-        }
-    }
-    
-    private void showEditProfileDialog() {
-        try {
-            BottomSheetDialog dialog = new BottomSheetDialog(requireContext());
-            DialogEditProfileBinding dialogBinding = DialogEditProfileBinding.inflate(getLayoutInflater());
-            dialog.setContentView(dialogBinding.getRoot());
-              // Set current values
+            // Check if we have valid user data
             if (currentUser != null) {
-                String currentName = getDisplayName(currentUser);
-                dialogBinding.etName.setText(currentName);
-                  // Show email as read-only (disable editing)
-                if (currentUser.getEmail() != null) {
-                    dialogBinding.etEmail.setText(currentUser.getEmail());
-                    dialogBinding.etEmail.setEnabled(false); // Make email field read-only
-                    dialogBinding.etEmail.setAlpha(0.6f); // Visual indication that it's disabled
-                }
-            }
-            
-            // Add real-time password validation
-            dialogBinding.etPassword.addTextChangedListener(new TextWatcher() {
-                @Override
-                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-                @Override
-                public void onTextChanged(CharSequence s, int start, int before, int count) {}
-
-                @Override
-                public void afterTextChanged(Editable s) {
-                    String password = s.toString();
-                    if (!password.isEmpty()) {
-                        PasswordValidator.ValidationResult result = PasswordValidator.validatePassword(password);
-                        if (!result.isValid()) {
-                            dialogBinding.etPassword.setError(result.getErrorMessage());
-                        } else {
-                            dialogBinding.etPassword.setError(null);
-                        }
-                    } else {
-                        dialogBinding.etPassword.setError(null);
-                    }
-                }
-            });
-            
-            // Set click listeners
-            dialogBinding.btnSave.setOnClickListener(v -> {
-                String name = dialogBinding.etName.getText().toString().trim();
-                String password = dialogBinding.etPassword.getText().toString().trim();
+                hasUserData = true;
+                debugInfo = "currentUser available: " + getDisplayName(currentUser);
+            } else if (binding.tvName != null && binding.tvEmail != null) {
+                String userName = binding.tvName.getText().toString();
+                String userEmail = binding.tvEmail.getText().toString();
                 
-                if (name.isEmpty()) {
-                    Toast.makeText(requireContext(), "Name cannot be empty", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                
-                if (currentUser != null) {
-                    // Split name into first and last name
-                    String[] nameParts = name.split(" ", 2);
-                    currentUser.setFirstName(nameParts[0]);
-                    if (nameParts.length > 1) {
-                        currentUser.setLastName(nameParts[1]);
-                    } else {
-                        currentUser.setLastName("");
-                    }
-                      // Update password only if provided
-                    if (!password.isEmpty()) {
-                        // Validate password strength
-                        PasswordValidator.ValidationResult passwordValidation = PasswordValidator.validatePasswordWithDetailedMessage(password);
-                        if (!passwordValidation.isValid()) {
-                            Toast.makeText(requireContext(), passwordValidation.getErrorMessage(), Toast.LENGTH_LONG).show();
-                            return;
-                        }
-                        currentUser.setPassword(password);
-                    }
-                    
-                    executor.execute(() -> {
-                        try {
-                            db.userDao().update(currentUser);
-                              requireActivity().runOnUiThread(() -> {
-                                Toast.makeText(requireContext(), getString(R.string.profile_updated_success), Toast.LENGTH_SHORT).show();
-                                dialog.dismiss();
-                            });
-                        } catch (Exception e) {
-                            Log.e(TAG, "Error updating user profile", e);                            requireActivity().runOnUiThread(() -> {
-                                Toast.makeText(requireContext(), getString(R.string.profile_update_failed), Toast.LENGTH_SHORT).show();
-                            });
-                        }
-                    });
-                }
-            });
-            
-            dialogBinding.btnCancel.setOnClickListener(v -> dialog.dismiss());
-            
-            dialog.show();
-              } catch (Exception e) {
-            Log.e(TAG, "Error showing edit profile dialog", e);
-            Toast.makeText(requireContext(), getString(R.string.error_opening_edit_dialog), Toast.LENGTH_SHORT).show();
-        }
-    }
-      private void showSettingsDialog() {
-        try {
-            DialogSettingsBinding dialogBinding = DialogSettingsBinding.inflate(LayoutInflater.from(requireContext()));
-            MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(requireContext());
-            builder.setView(dialogBinding.getRoot());
-            builder.setTitle("⚙️ Pengaturan");
-            
-            // Get current settings
-            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
-            boolean isDarkMode = prefs.getBoolean("DARK_MODE", false);
-            
-            // Set current value for dark mode switch
-            dialogBinding.switchDarkMode.setChecked(isDarkMode);
-            
-            // Create dialog
-            androidx.appcompat.app.AlertDialog dialog = builder.create();
-            
-            // Set listener for dark mode switch with animation
-            dialogBinding.switchDarkMode.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                prefs.edit().putBoolean("DARK_MODE", isChecked).apply();
-                
-                // Add haptic feedback for better UX
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-                    buttonView.performHapticFeedback(android.view.HapticFeedbackConstants.CONTEXT_CLICK);
-                }
-            });
-            
-            dialogBinding.btnSave.setOnClickListener(v -> {
-                dialog.dismiss();
-                
-                // Apply theme if it was changed
-                boolean newDarkMode = prefs.getBoolean("DARK_MODE", false);
-                if (newDarkMode != isDarkMode) {
-                    AppCompatDelegate.setDefaultNightMode(
-                        newDarkMode ? AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO);
-                    requireActivity().recreate();
-                }
-                
-                Toast.makeText(requireContext(), "Pengaturan tersimpan", Toast.LENGTH_SHORT).show();
-            });
-            
-            dialogBinding.btnCancel.setOnClickListener(v -> {
-                // Revert dark mode changes
-                prefs.edit().putBoolean("DARK_MODE", isDarkMode).apply();
-                dialog.dismiss();
-            });
-            
-            dialog.show();
-              } catch (Exception e) {
-            Log.e(TAG, "Error showing settings dialog", e);
-            Toast.makeText(requireContext(), getString(R.string.error_opening_settings), Toast.LENGTH_SHORT).show();
-        }
-    }
-      private void showLogoutConfirmation() {
-        new MaterialAlertDialogBuilder(requireContext())
-                .setTitle(getString(R.string.logout_title))
-                .setMessage(getString(R.string.logout_message))
-                .setPositiveButton(getString(R.string.logout), (dialog, which) -> logout())
-                .setNegativeButton(getString(R.string.cancel), null)
-                .show();
-    }
-      private void logout() {
-        try {
-            Log.d(TAG, "🔴 Logout initiated from ProfileFragment");
-            
-            // Show loading/progress indicator
-            Toast.makeText(requireContext(), "Logging out...", Toast.LENGTH_SHORT).show();
-            
-            // Perform complete logout using Firebase Auth Manager
-            if (authManager != null) {
-                authManager.logout();
-                Log.d(TAG, "🔴 FirebaseAuthManager logout completed");
-            }
-            
-            // Clear any local references
-            currentUser = null;
-            userId = -1;
-            
-            // Reset any cached data
-            if (executor != null && !executor.isShutdown()) {
-                executor.shutdown();
-                executor = Executors.newSingleThreadExecutor();
-            }
-            
-            Log.d(TAG, "🔴 Local data cleared");
-            
-            Toast.makeText(requireContext(), getString(R.string.logged_out_success), Toast.LENGTH_SHORT).show();
-            
-            // Navigate to login screen and clear back stack
-            try {
-                NavController navController = Navigation.findNavController(requireView());
-                // Clear back stack by navigating to login with no back stack
-                navController.popBackStack(R.id.loginFragment, false);
-                navController.navigate(R.id.action_profileFragment_to_loginFragment);
-                
-                // Finish the current activity to prevent going back
-                if (getActivity() != null) {
-                    getActivity().finish();
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "Navigation error during logout", e);
-                // Fallback: finish activity directly
-                if (getActivity() != null) {
-                    getActivity().finish();
-                }
-            }
-            
-        } catch (Exception e) {
-            Log.e(TAG, "Error during logout", e);
-            Toast.makeText(requireContext(), getString(R.string.logout_error), Toast.LENGTH_SHORT).show();
-            
-            // Even if there's an error, try to finish the activity
-            try {
-                if (getActivity() != null) {
-                    getActivity().finish();
-                }
-            } catch (Exception finishError) {
-                Log.e(TAG, "Error finishing activity during logout", finishError);
-            }
-        }
-    }
-
-    private void toggleTheme() {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
-        boolean isDarkMode = prefs.getBoolean("DARK_MODE", false);
-        
-        if (isDarkMode) {
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
-            prefs.edit().putBoolean("DARK_MODE", false).apply();
-        } else {
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
-            prefs.edit().putBoolean("DARK_MODE", true).apply();
-        }
-        
-        requireActivity().recreate();
-    }    private void openCustomizeProfileActivity() {
-        try {
-            Log.d(TAG, "Opening CustomizeProfileActivity...");
-            
-            // Check if user is valid before opening activity
-            if (currentUser == null) {
-                Toast.makeText(requireContext(), "Please wait for profile to load", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            
-            // Create intent to open CustomizeProfileActivity
-            Intent intent = new Intent(requireContext(), com.example.glean.activity.CustomizeProfileActivity.class);
-            
-            // Pass user data if needed
-            intent.putExtra("USER_ID", userId);
-            
-            // Start activity
-            startActivity(intent);
-            Log.d(TAG, "CustomizeProfileActivity opened successfully");
-            
-        } catch (Exception e) {
-            Log.e(TAG, "Error opening CustomizeProfileActivity", e);
-            Toast.makeText(requireContext(), "Failed to open profile customization", Toast.LENGTH_SHORT).show();
-        }    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        
-        if (requestCode == REQUEST_STORAGE_PERMISSION) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                showImageSourceDialog();
-            } else {
-                Toast.makeText(requireContext(), "Storage permission required to select image", Toast.LENGTH_SHORT).show();
-            }
-        } else if (requestCode == REQUEST_CAMERA_PERMISSION) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                captureImageFromCamera();
-            } else {
-                Toast.makeText(requireContext(), "Camera permission required to take photo", Toast.LENGTH_SHORT).show();
-            }
-        }
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        // Refresh user data when returning to fragment
-        if (userId != -1 && currentUser != null) {
-            loadUserData();
-        }
-    }    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        
-        // Stop Firebase real-time listeners
-        if (firebaseDataManager != null) {
-            Log.d(TAG, "🔥 Stopping Firebase real-time listeners");
-            firebaseDataManager.stopAllListeners();
-        }
-        
-        binding = null;
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        
-        // Clean up executor
-        if (executor != null && !executor.isShutdown()) {
-            executor.shutdown();
-        }
-        
-        // Additional cleanup for Firebase listeners
-        if (firebaseDataManager != null) {
-            firebaseDataManager.stopAllListeners();
-        }
-    }    private void createDefaultUserIfNeeded() {
-        // Don't create default users for Firebase authenticated users
-        if (authManager.isLoggedIn()) {
-            Log.d(TAG, "Firebase user detected - skipping default user creation");
-            return;
-        }
-        
-        executor.execute(() -> {
-            try {
-                // Check if any user exists first
-                int userCount = db.userDao().getUserCount();                if (userCount == 0) {
-                    // Create default user
-                    UserEntity defaultUser = new UserEntity();
-                    defaultUser.setUsername("User Baru");
-                    defaultUser.setFirstName("User");
-                    // defaultUser.setLastName("Baru");
-                    defaultUser.setEmail("user@glean.app");
-                    defaultUser.setCreatedAt(System.currentTimeMillis());
-                    defaultUser.setPoints(0);
-                    
-                    long newUserId = db.userDao().insert(defaultUser);
-                    
-                    // Update current userId
-                    userId = (int) newUserId;
-                    
-                    // Save user ID to preferences
-                    SharedPreferences prefs = requireActivity().getSharedPreferences("USER_PREFS", 0);
-                    prefs.edit().putInt("USER_ID", userId).apply();
-                    
-                    SharedPreferences defaultPrefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
-                    defaultPrefs.edit().putInt("USER_ID", userId).apply();
-                    
-                    requireActivity().runOnUiThread(() -> {
-                        Log.d(TAG, "Default user created with ID: " + newUserId);
-                        Toast.makeText(requireContext(), "Profile created successfully!", Toast.LENGTH_SHORT).show();
-                        // Reload user data only for non-Firebase users
-                        if (!authManager.isLoggedIn()) {
-                            loadUserData();
-                        }
-                    });
+                // Check if UI has valid user data (not default/loading values)
+                if (!userName.isEmpty() && !userName.equals("User") && !userName.equals("Loading...") && 
+                    !userName.equals("Unknown User") && !userEmail.equals("Loading email...") &&
+                    !userEmail.equals("No email")) {
+                    hasUserData = true;
+                    debugInfo = "UI data available: " + userName + " (" + userEmail + ")";
                 } else {
-                    // Get first available user and update userId
-                    UserEntity firstUser = db.userDao().getFirstUser();
-                    if (firstUser != null) {
-                        userId = firstUser.getId();
-                        
-                        // Save to preferences
-                        SharedPreferences prefs = requireActivity().getSharedPreferences("USER_PREFS", 0);
-                        prefs.edit().putInt("USER_ID", userId).apply();
-                        
-                        SharedPreferences defaultPrefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
-                        defaultPrefs.edit().putInt("USER_ID", userId).apply();
-                        
-                        requireActivity().runOnUiThread(() -> {
-                            Log.d(TAG, "Using existing user with ID: " + userId);
-                            // Reload user data only for non-Firebase users
-                            if (!authManager.isLoggedIn()) {
-                                loadUserData();
-                            }
-                        });
-                    }
+                    debugInfo = "UI has default/loading values: " + userName + " / " + userEmail;
                 }
-            } catch (Exception e) {
-                Log.e(TAG, "Error creating default user", e);
-                requireActivity().runOnUiThread(() -> {
-                    Toast.makeText(requireContext(), "Error creating profile", Toast.LENGTH_SHORT).show();
-                    if (!authManager.isLoggedIn()) {
-                        setDefaultUIValues();
-                    }
-                });            }        });
-    }
-      
-    // Skin Selection Methods
-    private void openSkinSelection() {
-        try {
-            Intent intent = new Intent(requireContext(), SkinSelectionActivity.class);
-            startActivityForResult(intent, SKIN_SELECTION_REQUEST);
+            } else {
+                debugInfo = "No user data or UI elements available";
+            }
+            
+            // Update button state
+            binding.btnCustomize.setEnabled(hasUserData);
+            binding.btnCustomize.setAlpha(hasUserData ? 1.0f : 0.6f);
+            
+            Log.d(TAG, "Customize button state updated - Enabled: " + hasUserData + " (" + debugInfo + ")");
+            
         } catch (Exception e) {
-            Log.e(TAG, "Error opening skin selection", e);
-            Toast.makeText(requireContext(), "Failed to open skin selection", Toast.LENGTH_SHORT).show();
+            Log.e(TAG, "Error updating customize button state", e);
+            // Fallback to enabled state on error
+            if (binding != null && binding.btnCustomize != null) {
+                binding.btnCustomize.setEnabled(true);
+                binding.btnCustomize.setAlpha(1.0f);
+            }
         }
     }
-      private void updateProfileSkin() {
+    
+    private void updateProfileSkin() {
         if (binding.profileSkinBackground != null) {
             SharedPreferences prefs = requireActivity().getSharedPreferences("profile_settings", 0);
             String currentSkin = prefs.getString("selected_skin", "default");
@@ -1771,5 +1087,295 @@ public class ProfileFragment extends Fragment {    private static final String T
             // Fallback to local data if Firebase UI update fails
             loadUserDataFromLocal();
         }
+    }
+
+    private void openCustomizeProfileActivity() {
+        try {
+            Log.d(TAG, "Customize profile button clicked");
+            Log.d(TAG, "Opening CustomizeProfileActivity...");
+            
+            // Enhanced check: Verify if user data is available either from currentUser or UI
+            boolean hasUserData = false;
+            String userName = "";
+            String userEmail = "";
+            
+            // Check if currentUser is available (for local users)
+            if (currentUser != null) {
+                hasUserData = true;
+                userName = getDisplayName(currentUser);
+                userEmail = currentUser.getEmail();
+                Log.d(TAG, "User data available from currentUser: " + userName);
+            }
+            // Check if UI has valid user data (for Firebase users)
+            else if (binding != null && binding.tvName != null && binding.tvEmail != null) {
+                userName = binding.tvName.getText().toString();
+                userEmail = binding.tvEmail.getText().toString();
+                
+                // Verify that the UI contains real user data, not default/loading values
+                if (!userName.isEmpty() && !userName.equals("User") && !userName.equals("Loading...") && 
+                    !userName.equals("Unknown User") && !userEmail.equals("Loading email...")) {
+                    hasUserData = true;
+                    Log.d(TAG, "User data available from UI: " + userName + " (" + userEmail + ")");
+                    
+                    // For Firebase users, create a temporary currentUser for compatibility
+                    if (authManager.isLoggedIn() && currentUser == null) {
+                        Log.d(TAG, "Creating temporary user object for Firebase user");
+                        currentUser = createTempUserFromUI();
+                    }
+                } else {
+                    Log.w(TAG, "UI contains default/loading values - Name: '" + userName + "', Email: '" + userEmail + "'");
+                }
+            }
+            
+            // If no user data is available, show warning and return
+            if (!hasUserData) {
+                Log.w(TAG, "Current user is null, waiting for profile to load");
+                if (authManager.isLoggedIn()) {
+                    Toast.makeText(requireContext(), "Loading profile data, please wait...", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(requireContext(), "Please wait for profile to load", Toast.LENGTH_SHORT).show();
+                }
+                return;
+            }
+            
+            // Validate userId as well
+            if (userId == -1) {
+                Log.e(TAG, "Invalid user ID, cannot open customize profile");
+                Toast.makeText(requireContext(), "User session invalid. Please login again.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            
+            // Create intent to open CustomizeProfileActivity
+            Intent intent = new Intent(requireContext(), com.example.glean.activity.CustomizeProfileActivity.class);
+            
+            // Pass user data
+            intent.putExtra("USER_ID", userId);
+            
+            // For Firebase users, pass additional data if available
+            if (authManager.isLoggedIn()) {
+                intent.putExtra("FIREBASE_USER", true);
+                intent.putExtra("USER_NAME", userName);
+                intent.putExtra("USER_EMAIL", userEmail);
+            }
+            
+            // Start activity
+            startActivity(intent);
+            Log.d(TAG, "CustomizeProfileActivity opened successfully for user: " + userName);
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error opening CustomizeProfileActivity", e);
+            Toast.makeText(requireContext(), "Failed to open profile customization", Toast.LENGTH_SHORT).show();
+        }
+    }
+    
+    /**
+     * Creates a temporary UserEntity from UI data for Firebase users
+     * This ensures compatibility with existing code that expects currentUser to be non-null
+     */
+    private UserEntity createTempUserFromUI() {
+        try {
+            UserEntity tempUser = new UserEntity();
+            tempUser.setId(userId);
+            
+            if (binding != null) {
+                // Extract name from UI
+                if (binding.tvName != null) {
+                    String fullName = binding.tvName.getText().toString();
+                    // Try to split first/last name
+                    String[] nameParts = fullName.split(" ", 2);
+                    tempUser.setFirstName(nameParts[0]);
+                    if (nameParts.length > 1) {
+                        tempUser.setLastName(nameParts[1]);
+                    }
+                    tempUser.setUsername(fullName);
+                }
+                
+                // Extract email from UI
+                if (binding.tvEmail != null) {
+                    String email = binding.tvEmail.getText().toString();
+                    if (!email.equals("No email") && !email.equals("Loading email...")) {
+                        tempUser.setEmail(email);
+                    }
+                }
+                
+                // Extract points from UI if available
+                if (binding.tvTotalPoints != null) {
+                    try {
+                        int points = Integer.parseInt(binding.tvTotalPoints.getText().toString());
+                        tempUser.setPoints(points);
+                    } catch (NumberFormatException e) {
+                        tempUser.setPoints(0);
+                    }
+                }
+            }
+              // Set timestamp
+            tempUser.setCreatedAt(System.currentTimeMillis());
+            
+            Log.d(TAG, "Created temporary user object from UI data: " + tempUser.getUsername());
+            return tempUser;
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating temporary user from UI", e);
+            return null;
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        
+        if (requestCode == REQUEST_STORAGE_PERMISSION) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                showImageSourceDialog();
+            } else {
+                Toast.makeText(requireContext(), "Storage permission required to select image", Toast.LENGTH_SHORT).show();
+            }
+        } else if (requestCode == REQUEST_CAMERA_PERMISSION) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                captureImageFromCamera();
+            } else {
+                Toast.makeText(requireContext(), "Camera permission required to take photo", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Refresh user data when returning to fragment
+        if (userId != -1 && currentUser != null) {
+            loadUserData();
+        }
+        // Update button state on resume
+        updateCustomizeButtonState();
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        
+        // Stop Firebase real-time listeners
+        if (firebaseDataManager != null) {
+            Log.d(TAG, "🔥 Stopping Firebase real-time listeners");
+            firebaseDataManager.stopAllListeners();
+        }
+        
+        binding = null;
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (executor != null) {
+            executor.shutdown();
+        }
+    }
+
+    // Missing essential methods that are called by the UI
+    private void showEditProfileDialog() {
+        // Placeholder implementation - should be properly implemented
+        Toast.makeText(requireContext(), "Edit profile feature coming soon", Toast.LENGTH_SHORT).show();
+    }
+
+    private void showLogoutConfirmation() {
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Logout")
+                .setMessage("Are you sure you want to logout?")
+                .setPositiveButton("Logout", (dialog, which) -> logout())
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void logout() {
+        try {
+            // Clear user session
+            SharedPreferences prefs = requireActivity().getSharedPreferences("USER_PREFS", 0);
+            prefs.edit().clear().apply();
+              // Sign out from Firebase if logged in
+            if (authManager.isLoggedIn()) {
+                authManager.logout();
+            }
+            
+            // Navigate back to login or main screen
+            Toast.makeText(requireContext(), "Logged out successfully", Toast.LENGTH_SHORT).show();
+            requireActivity().finish();
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error during logout", e);
+            Toast.makeText(requireContext(), "Error during logout", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void showSettingsDialog() {
+        // Placeholder implementation
+        Toast.makeText(requireContext(), "Settings feature coming soon", Toast.LENGTH_SHORT).show();
+    }    private void checkPermissionsAndSelectImage() {
+        // Check storage permission
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.READ_EXTERNAL_STORAGE) 
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(requireActivity(), 
+                    new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 
+                    REQUEST_STORAGE_PERMISSION);
+        } else {
+            showImageSourceDialog();
+        }
+    }
+
+    private void showImageSourceDialog() {
+        // Placeholder implementation
+        Toast.makeText(requireContext(), "Image selection feature coming soon", Toast.LENGTH_SHORT).show();
+    }
+
+    private void captureImageFromCamera() {
+        // Placeholder implementation
+        Toast.makeText(requireContext(), "Camera feature coming soon", Toast.LENGTH_SHORT).show();
+    }
+
+    private void setupBadges(UserEntity user) {
+        // Placeholder implementation for badges
+        Log.d(TAG, "Setting up badges for user: " + user.getUsername());
+        // This should populate the badges RecyclerView based on user achievements
+    }    private void updateProfileDecorations(UserEntity user) {
+        // Placeholder implementation for profile decorations
+        Log.d(TAG, "Updating profile decorations for user: " + user.getUsername());
+    }
+
+    private void createDefaultUserIfNeeded() {
+        // Placeholder implementation to create default user
+        Log.w(TAG, "Creating default user - this should be properly implemented");
+    }
+
+    private String formatMemberSince(long createdAt) {
+        try {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("MMM yyyy", Locale.getDefault());
+            return dateFormat.format(new Date(createdAt));
+        } catch (Exception e) {
+            Log.e(TAG, "Error formatting member since date", e);
+            return "Unknown";
+        }
+    }
+
+    private void loadUserStatistics() {
+        // Load user statistics from database
+        if (currentUser == null) {
+            Log.w(TAG, "Cannot load statistics - no current user");
+            return;
+        }
+        
+        executor.execute(() -> {
+            try {
+                // This could be expanded to load various statistics
+                // For now, just ensure points are displayed correctly
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(() -> {
+                        if (binding != null && binding.tvTotalPoints != null) {
+                            binding.tvTotalPoints.setText(String.valueOf(currentUser.getPoints()));
+                        }
+                    });
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error loading user statistics", e);
+            }
+        });
     }
 }

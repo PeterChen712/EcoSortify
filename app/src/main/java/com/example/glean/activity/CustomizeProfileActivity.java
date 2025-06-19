@@ -30,67 +30,163 @@ public class CustomizeProfileActivity extends AppCompatActivity {
     private boolean hasChanges = false;
       // Tab titles
     private String[] tabTitles;
-    
-    @Override
+      @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        binding = ActivityCustomizeProfileBinding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());
         
-        // Get user ID
-        SharedPreferences prefs = getSharedPreferences("USER_PREFS", 0);
-        userId = prefs.getInt("USER_ID", -1);
-        
-        if (userId == -1) {
-            Log.e(TAG, "No user ID found");
-            Toast.makeText(this, getString(R.string.user_not_found_error), Toast.LENGTH_SHORT).show();
-            finish();
-            return;
-        }
-          // Initialize tab titles
-        tabTitles = new String[]{getString(R.string.badges_tab), getString(R.string.backgrounds_tab)};
-        
-        setupUI();
-        setupTabs();
-    }
-    
-    private void setupUI() {
-        // Back button
-        binding.btnBack.setOnClickListener(v -> {
-            if (hasChanges) {
-                showUnsavedChangesDialog();
-            } else {
+        try {
+            Log.d(TAG, "CustomizeProfileActivity onCreate started");
+            
+            binding = ActivityCustomizeProfileBinding.inflate(getLayoutInflater());
+            setContentView(binding.getRoot());
+            
+            Log.d(TAG, "Layout inflated successfully");
+            
+            // Show toast to confirm activity opened
+            Toast.makeText(this, "Customize Profile opened", Toast.LENGTH_SHORT).show();
+            
+            // Get user ID from Intent first, then SharedPreferences
+            userId = getIntent().getIntExtra("USER_ID", -1);
+            if (userId == -1) {
+                SharedPreferences prefs = getSharedPreferences("USER_PREFS", 0);
+                userId = prefs.getInt("USER_ID", -1);
+            }
+            
+            Log.d(TAG, "User ID: " + userId);
+            
+            if (userId == -1) {
+                Log.e(TAG, "No user ID found");
+                Toast.makeText(this, "User not found. Please try again.", Toast.LENGTH_SHORT).show();
                 finish();
+                return;
             }
-        });
-        
-        // Save button
-        binding.btnSave.setOnClickListener(v -> saveChanges());
+        } catch (Exception e) {
+            Log.e(TAG, "Error in onCreate", e);
+            Toast.makeText(this, "Error opening profile customization: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            finish();
+            return;        }
+          try {
+            // Initialize tab titles with fallback
+            try {
+                tabTitles = new String[]{getString(R.string.badges_tab), getString(R.string.backgrounds_tab)};
+            } catch (Exception stringException) {
+                Log.w(TAG, "Error getting string resources, using fallback", stringException);
+                tabTitles = new String[]{"Badges", "Backgrounds"};
+            }
+            
+            Log.d(TAG, "Setting up UI");
+            setupUI();
+            
+            Log.d(TAG, "Setting up tabs");
+            setupTabs();
+            
+            Log.d(TAG, "CustomizeProfileActivity onCreate completed successfully");
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error setting up UI or tabs", e);
+            Toast.makeText(this, "Error setting up interface: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            finish();
+        }
     }
-    
-    private void setupTabs() {
-        // Setup ViewPager2 with adapter
-        tabAdapter = new TabAdapter(this);
-        binding.viewPager.setAdapter(tabAdapter);
-        
-        // Connect TabLayout with ViewPager2
-        new TabLayoutMediator(binding.tabLayout, binding.viewPager,
-                (tab, position) -> tab.setText(tabTitles[position])
-        ).attach();
-        
-        // Listen for tab changes
-        binding.tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
-            @Override
-            public void onTabSelected(TabLayout.Tab tab) {
-                Log.d(TAG, "Tab selected: " + tab.getPosition());
+      private void setupUI() {
+        try {
+            Log.d(TAG, "Setting up UI components");
+            
+            // Check if binding is not null
+            if (binding == null) {
+                Log.e(TAG, "Binding is null in setupUI");
+                Toast.makeText(this, "Error: View binding is null", Toast.LENGTH_SHORT).show();
+                finish();
+                return;
             }
             
-            @Override
-            public void onTabUnselected(TabLayout.Tab tab) {}
+            // Back button
+            if (binding.btnBack != null) {
+                binding.btnBack.setOnClickListener(v -> {
+                    Log.d(TAG, "Back button clicked");
+                    if (hasChanges) {
+                        showUnsavedChangesDialog();
+                    } else {
+                        finish();
+                    }
+                });
+                Log.d(TAG, "Back button listener set");
+            } else {
+                Log.w(TAG, "Back button is null");
+            }
             
-            @Override
-            public void onTabReselected(TabLayout.Tab tab) {}
-        });
+            // Save button
+            if (binding.btnSave != null) {
+                binding.btnSave.setOnClickListener(v -> {
+                    Log.d(TAG, "Save button clicked");
+                    saveChanges();
+                });
+                Log.d(TAG, "Save button listener set");
+            } else {
+                Log.w(TAG, "Save button is null");
+            }
+            
+            Log.d(TAG, "UI setup completed");
+        } catch (Exception e) {
+            Log.e(TAG, "Error in setupUI", e);
+            Toast.makeText(this, "Error setting up UI: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+      private void setupTabs() {
+        try {
+            Log.d(TAG, "Setting up tabs");
+            
+            // Check if binding components are not null
+            if (binding == null) {
+                Log.e(TAG, "Binding is null in setupTabs");
+                return;
+            }
+            
+            if (binding.viewPager == null) {
+                Log.e(TAG, "ViewPager is null");
+                return;
+            }
+            
+            if (binding.tabLayout == null) {
+                Log.e(TAG, "TabLayout is null");
+                return;
+            }
+            
+            // Setup ViewPager2 with adapter
+            tabAdapter = new TabAdapter(this);
+            binding.viewPager.setAdapter(tabAdapter);
+            Log.d(TAG, "ViewPager adapter set");
+            
+            // Connect TabLayout with ViewPager2
+            new TabLayoutMediator(binding.tabLayout, binding.viewPager,
+                    (tab, position) -> {
+                        if (position < tabTitles.length) {
+                            tab.setText(tabTitles[position]);
+                        }
+                    }
+            ).attach();
+            Log.d(TAG, "TabLayoutMediator attached");
+            
+            // Listen for tab changes
+            binding.tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+                @Override
+                public void onTabSelected(TabLayout.Tab tab) {
+                    Log.d(TAG, "Tab selected: " + tab.getPosition());
+                }
+                
+                @Override
+                public void onTabUnselected(TabLayout.Tab tab) {}
+                
+                @Override
+                public void onTabReselected(TabLayout.Tab tab) {}
+            });
+            Log.d(TAG, "Tab listener added");
+            
+            Log.d(TAG, "Tabs setup completed successfully");
+        } catch (Exception e) {
+            Log.e(TAG, "Error in setupTabs", e);
+            Toast.makeText(this, "Error setting up tabs: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
     }
     
     private void saveChanges() {        // Save changes from both fragments
