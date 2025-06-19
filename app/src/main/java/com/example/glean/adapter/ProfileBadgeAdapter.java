@@ -18,78 +18,24 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ProfileBadgeAdapter extends RecyclerView.Adapter<ProfileBadgeAdapter.BadgeViewHolder> {
-    
-    private final Context context;
+      private final Context context;
     private List<Badge> badges;
-    private List<String> selectedBadgeIds = new ArrayList<>();
     private final OnBadgeClickListener listener;
     
     public interface OnBadgeClickListener {
         void onBadgeClick(Badge badge);
-    }
-      public ProfileBadgeAdapter(Context context, List<Badge> badges, OnBadgeClickListener listener) {
+    }    public ProfileBadgeAdapter(Context context, List<Badge> badges, OnBadgeClickListener listener) {
         this.context = context;
-        this.badges = badges;
+        this.badges = badges != null ? new ArrayList<>(badges) : new ArrayList<>();
         this.listener = listener;
-        loadSelectedBadges();
     }
-    
-    public ProfileBadgeAdapter(Context context, List<Badge> badges) {
+      public ProfileBadgeAdapter(Context context, List<Badge> badges) {
         this.context = context;
-        this.badges = badges;
+        this.badges = badges != null ? new ArrayList<>(badges) : new ArrayList<>();
         this.listener = null;
-        loadSelectedBadges();
     }
-    
-    private void loadSelectedBadges() {
-        SharedPreferences prefs = context.getSharedPreferences("profile_settings", 0);
-        String selectedBadgesJson = prefs.getString("selected_badges", "");
-        
-        selectedBadgeIds.clear();
-        if (selectedBadgesJson.isEmpty()) {
-            // Migrate from old single badge system
-            String legacyBadge = prefs.getString("active_badge", "starter");
-            selectedBadgeIds.add(legacyBadge);
-        } else {
-            // Parse comma-separated selected badges
-            try {
-                String[] badgeArray = selectedBadgesJson.split(",");
-                for (String badge : badgeArray) {
-                    if (!badge.trim().isEmpty()) {
-                        selectedBadgeIds.add(badge.trim());
-                    }
-                }
-            } catch (Exception e) {
-                selectedBadgeIds.add("starter"); // Fallback
-            }
-        }
-        
-        if (selectedBadgeIds.isEmpty()) {
-            selectedBadgeIds.add("starter"); // Ensure at least one badge
-        }
-        
-        // Filter badges to only show selected ones
-        filterSelectedBadges();
-    }
-    
-    private void filterSelectedBadges() {
-        if (badges == null) return;
-        
-        List<Badge> filteredBadges = new ArrayList<>();
-        for (String selectedId : selectedBadgeIds) {
-            for (Badge badge : badges) {
-                if (badge.getType().equals(selectedId) && filteredBadges.size() < 3) {
-                    filteredBadges.add(badge);
-                    break;
-                }
-            }
-        }
-        badges = filteredBadges;
-    }
-    
-    public void updateBadges(List<Badge> newBadges) {
-        this.badges = newBadges;
-        loadSelectedBadges(); // Refresh selected badges and filter
+      public void updateBadges(List<Badge> newBadges) {
+        this.badges = newBadges != null ? new ArrayList<>(newBadges) : new ArrayList<>();
         notifyDataSetChanged();
     }
     
@@ -117,10 +63,8 @@ public class ProfileBadgeAdapter extends RecyclerView.Adapter<ProfileBadgeAdapte
         } else {
             // Fallback icon based on badge type
             holder.ivBadgeIcon.setImageResource(getDefaultIcon(badge.getType()));
-        }
-          // Show "Selected" indicator for all badges (since these are all selected badges)
-        boolean isSelected = selectedBadgeIds.contains(badge.getType());
-        holder.ivSelected.setVisibility(isSelected ? View.VISIBLE : View.GONE);
+        }        // Show "Selected" indicator for all badges (since these are all selected badges displayed in profile)
+        holder.ivSelected.setVisibility(View.VISIBLE);
         
         // Always hide lock indicator since these are earned badges in profile view
         holder.ivLocked.setVisibility(View.GONE);

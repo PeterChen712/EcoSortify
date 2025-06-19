@@ -1287,12 +1287,51 @@ public class ProfileFragment extends Fragment {    private static final String T
         if (executor != null) {
             executor.shutdown();
         }
-    }
-
-    // Missing essential methods that are called by the UI
+    }    // Missing essential methods that are called by the UI
     private void showEditProfileDialog() {
-        // Placeholder implementation - should be properly implemented
-        Toast.makeText(requireContext(), "Edit profile feature coming soon", Toast.LENGTH_SHORT).show();
+        if (currentUser == null) {
+            Toast.makeText(requireContext(), "User data not loaded", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        DialogEditProfileBinding dialogBinding = DialogEditProfileBinding.inflate(getLayoutInflater());
+        
+        // Pre-fill current user data
+        dialogBinding.etName.setText(currentUser.getUsername());
+        dialogBinding.etEmail.setText(currentUser.getEmail());
+        dialogBinding.etEmail.setEnabled(false); // Email is read-only
+        
+        // Create and show dialog
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(requireContext())
+                .setView(dialogBinding.getRoot());
+        
+        BottomSheetDialog dialog = new BottomSheetDialog(requireContext());
+        dialog.setContentView(dialogBinding.getRoot());
+        
+        // Set up button listeners
+        dialogBinding.btnCancel.setOnClickListener(v -> dialog.dismiss());
+        
+        dialogBinding.btnSave.setOnClickListener(v -> {
+            String newName = dialogBinding.etName.getText().toString().trim();
+            String newPassword = dialogBinding.etPassword.getText().toString().trim();
+            
+            // Validate name
+            if (newName.isEmpty()) {
+                dialogBinding.etName.setError("Name cannot be empty");
+                return;
+            }
+            
+            // Validate password if provided
+            if (!newPassword.isEmpty() && newPassword.length() < 8) {
+                dialogBinding.etPassword.setError("Password must be at least 8 characters");
+                return;
+            }
+            
+            // Update user data
+            updateUserProfile(newName, newPassword, dialog);
+        });
+        
+        dialog.show();
     }
 
     private void showLogoutConfirmation() {
@@ -1348,16 +1387,27 @@ public class ProfileFragment extends Fragment {    private static final String T
         // Placeholder implementation
         Toast.makeText(requireContext(), "Camera feature coming soon", Toast.LENGTH_SHORT).show();
     }    private void setupBadges(UserEntity user) {
-        // Load badges from Firebase
+        if (binding == null || binding.rvBadges == null) {
+            Log.w(TAG, "Cannot setup badges - binding or RecyclerView is null");
+            return;
+        }
+        
+        Log.d(TAG, "Setting up badges for user: " + user.getUsername());
+        
+        // Load badges from Firebase first, then fallback to SharedPreferences
         FirebaseDataManager firebaseDataManager = FirebaseDataManager.getInstance(requireContext());
         
         firebaseDataManager.loadProfileCustomization(new FirebaseDataManager.ProfileDataCallback() {
             @Override
             public void onProfileLoaded(FirebaseDataManager.UserProfile profile) {
                 List<String> selectedBadgeIds = profile.getSelectedBadges();
+                
+                // Ensure we have at least one badge
                 if (selectedBadgeIds.isEmpty()) {
-                    selectedBadgeIds.add("starter"); // Ensure at least one badge
+                    selectedBadgeIds.add("starter");
                 }
+                
+                Log.d(TAG, "Loaded selected badges from Firebase: " + selectedBadgeIds);
                 
                 List<Badge> selectedBadges = new ArrayList<>();
                 for (String badgeId : selectedBadgeIds) {
@@ -1368,42 +1418,82 @@ public class ProfileFragment extends Fragment {    private static final String T
                 }
                 
                 // Update UI with selected badges
-                if (binding != null && binding.rvBadges != null) {
-                    ProfileBadgeAdapter adapter = new ProfileBadgeAdapter(requireContext(), selectedBadges);
-                    binding.rvBadges.setAdapter(adapter);
-                    binding.rvBadges.setLayoutManager(new GridLayoutManager(requireContext(), Math.min(selectedBadges.size(), 3)));
-                }
-                
-                Log.d(TAG, "Badges loaded from Firebase: " + selectedBadgeIds.size() + " badges");
+                updateBadgeDisplay(selectedBadges);
             }
             
             @Override
             public void onError(String error) {
+                Log.w(TAG, "Failed to load badges from Firebase: " + error + ". Falling back to SharedPreferences.");
+                
                 // Fallback to SharedPreferences
-                SharedPreferences prefs = requireActivity().getSharedPreferences("profile_settings", 0);
-                String selectedBadgesStr = prefs.getString("selected_badges", "starter");
-                String[] badgeArray = selectedBadgesStr.split(",");
-                
-                List<Badge> selectedBadges = new ArrayList<>();
-                for (String badgeId : badgeArray) {
-                    if (!badgeId.trim().isEmpty()) {
-                        Badge badge = createBadgeFromId(badgeId.trim(), user);
-                        if (badge != null) {
-                            selectedBadges.add(badge);
-                        }
-                    }
-                }
-                
-                // Update UI with selected badges
-                if (binding != null && binding.rvBadges != null) {
-                    ProfileBadgeAdapter adapter = new ProfileBadgeAdapter(requireContext(), selectedBadges);
-                    binding.rvBadges.setAdapter(adapter);
-                    binding.rvBadges.setLayoutManager(new GridLayoutManager(requireContext(), Math.min(selectedBadges.size(), 3)));
-                }
-                
-                Log.d(TAG, "Badges loaded from SharedPreferences (fallback): " + selectedBadges.size() + " badges");
+                loadBadgesFromSharedPreferences(user);
             }
         });
+    }
+    
+    private void loadBadgesFromSharedPreferences(UserEntity user) {
+        SharedPreferences prefs = requireActivity().getSharedPreferences("profile_settings", 0);
+        String selectedBadgesStr = prefs.getString("selected_badges", "");
+        
+        List<String> selectedBadgeIds = new ArrayList<>();
+        
+        if (selectedBadgesStr.isEmpty()) {
+            // Try legacy single badge system
+            String legacyBadge = prefs.getString("active_badge", "starter");
+            selectedBadgeIds.add(legacyBadge);
+        } else {
+            // Parse comma-separated badges
+            String[] badgeArray = selectedBadgesStr.split(",");
+            for (String badgeId : badgeArray) {
+                if (!badgeId.trim().isEmpty()) {
+                    selectedBadgeIds.add(badgeId.trim());
+                }
+            }
+        }
+        
+        // Ensure we have at least one badge
+        if (selectedBadgeIds.isEmpty()) {
+            selectedBadgeIds.add("starter");
+        }
+        
+        Log.d(TAG, "Loaded selected badges from SharedPreferences: " + selectedBadgeIds);
+        
+        List<Badge> selectedBadges = new ArrayList<>();
+        for (String badgeId : selectedBadgeIds) {
+            Badge badge = createBadgeFromId(badgeId, user);
+            if (badge != null) {
+                selectedBadges.add(badge);
+            }
+        }
+        
+        updateBadgeDisplay(selectedBadges);
+    }
+    
+    private void updateBadgeDisplay(List<Badge> selectedBadges) {
+        if (binding == null || binding.rvBadges == null) {
+            Log.w(TAG, "Cannot update badge display - binding or RecyclerView is null");
+            return;
+        }
+        
+        if (selectedBadges.isEmpty()) {
+            Log.w(TAG, "No badges to display");
+            return;
+        }
+        
+        try {
+            requireActivity().runOnUiThread(() -> {
+                ProfileBadgeAdapter adapter = new ProfileBadgeAdapter(requireContext(), selectedBadges);
+                binding.rvBadges.setAdapter(adapter);
+                
+                // Set layout manager with proper column count
+                int columns = Math.min(selectedBadges.size(), 3);
+                binding.rvBadges.setLayoutManager(new GridLayoutManager(requireContext(), columns));
+                
+                Log.d(TAG, "Badge display updated with " + selectedBadges.size() + " badges in " + columns + " columns");
+            });
+        } catch (Exception e) {
+            Log.e(TAG, "Error updating badge display", e);
+        }
     }
     
     private Badge createBadgeFromId(String badgeId, UserEntity user) {
@@ -1485,5 +1575,75 @@ public class ProfileFragment extends Fragment {    private static final String T
                 Log.e(TAG, "Error loading user statistics", e);
             }
         });
+    }
+    
+    private void updateUserProfile(String newName, String newPassword, BottomSheetDialog dialog) {
+        // Show loading state
+        dialog.setCancelable(false);
+        
+        executor.execute(() -> {
+            try {
+                // Update local database
+                currentUser.setUsername(newName);
+                
+                // Update password if provided
+                if (!newPassword.isEmpty()) {
+                    // In a real app, you'd hash the password
+                    currentUser.setPassword(newPassword);
+                }
+                
+                db.userDao().update(currentUser);
+                  // Update Firebase if logged in
+                if (authManager.isLoggedIn() && NetworkUtil.isNetworkAvailable(requireContext())) {
+                    // For now, just sync all user data since there's no specific profile update method
+                    firebaseDataManager.syncAllUserData(new FirebaseDataManager.DataSyncCallback() {
+                        @Override
+                        public void onSuccess() {
+                            requireActivity().runOnUiThread(() -> {
+                                Toast.makeText(requireContext(), "Profile updated successfully", Toast.LENGTH_SHORT).show();
+                                dialog.dismiss();
+                                loadUserData(); // Refresh UI
+                            });
+                        }
+                        
+                        @Override
+                        public void onError(String error) {
+                            requireActivity().runOnUiThread(() -> {
+                                Log.w(TAG, "Failed to sync profile to Firebase: " + error);
+                                Toast.makeText(requireContext(), "Profile updated locally", Toast.LENGTH_SHORT).show();
+                                dialog.dismiss();
+                                loadUserData(); // Refresh UI
+                            });
+                        }
+                    });
+                } else {
+                    requireActivity().runOnUiThread(() -> {
+                        Toast.makeText(requireContext(), "Profile updated", Toast.LENGTH_SHORT).show();
+                        dialog.dismiss();
+                        loadUserData(); // Refresh UI
+                    });
+                }
+                
+            } catch (Exception e) {
+                Log.e(TAG, "Error updating profile", e);
+                requireActivity().runOnUiThread(() -> {
+                    Toast.makeText(requireContext(), "Error updating profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    dialog.setCancelable(true);
+                });
+            }
+        });
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        
+        if (requestCode == SKIN_SELECTION_REQUEST && resultCode == Activity.RESULT_OK) {
+            // Profile customization was updated, refresh badges
+            Log.d(TAG, "Profile customization updated, refreshing badges");
+            if (currentUser != null) {
+                setupBadges(currentUser);
+            }
+        }
     }
 }
