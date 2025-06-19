@@ -675,8 +675,7 @@ public class FirebaseAuthManager {
             instance = null;
         }
     }
-    
-    /**
+      /**
      * Send password reset email
      */
     public void sendPasswordResetEmail(String email, AuthCallback callback) {
@@ -695,5 +694,44 @@ public class FirebaseAuthManager {
                         callback.onFailure(error);
                     }
                 });
+    }
+    
+    /**
+     * Get current Firebase user's display name
+     */
+    public String getUserDisplayName() {
+        if (mAuth != null && mAuth.getCurrentUser() != null) {
+            return mAuth.getCurrentUser().getDisplayName();
+        }
+        return null;
+    }
+      /**
+     * Get current Firebase user's email (from Firebase Auth)
+     */
+    public String getFirebaseUserEmail() {
+        if (mAuth != null && mAuth.getCurrentUser() != null) {
+            return mAuth.getCurrentUser().getEmail();
+        }
+        return null;
+    }
+    
+    /**
+     * Get current Firebase user's photo URL
+     */
+    public String getUserPhotoUrl() {
+        if (mAuth != null && mAuth.getCurrentUser() != null && mAuth.getCurrentUser().getPhotoUrl() != null) {
+            return mAuth.getCurrentUser().getPhotoUrl().toString();
+        }
+        return null;
+    }
+    
+    /**
+     * Get current Firebase user object
+     */
+    public FirebaseUser getCurrentFirebaseUser() {
+        if (mAuth != null) {
+            return mAuth.getCurrentUser();
+        }
+        return null;
     }
 }

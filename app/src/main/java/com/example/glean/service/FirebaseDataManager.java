@@ -244,14 +244,26 @@ public class FirebaseDataManager {
                         callback.onError(e.getMessage());
                         return;
                     }
-                    
-                    if (documentSnapshot != null && documentSnapshot.exists()) {
+                      if (documentSnapshot != null && documentSnapshot.exists()) {
                         UserProfile profile = documentSnapshot.toObject(UserProfile.class);
                         if (profile != null) {
+                            // Validate and complete profile data
+                            profile = validateAndCompleteProfile(profile);
+                            
                             // Update local database
                             updateLocalProfileData(profile);
                             callback.onProfileLoaded(profile);
+                        } else {
+                            Log.w(TAG, "Profile data is null, creating fallback profile");
+                            // Create a fallback profile with Firebase Auth data
+                            UserProfile fallbackProfile = validateAndCompleteProfile(null);
+                            callback.onProfileLoaded(fallbackProfile);
                         }
+                    } else {
+                        Log.w(TAG, "Profile document doesn't exist, creating fallback profile");
+                        // Create a fallback profile with Firebase Auth data  
+                        UserProfile fallbackProfile = validateAndCompleteProfile(null);
+                        callback.onProfileLoaded(fallbackProfile);
                     }
                 });
     }
@@ -582,26 +594,43 @@ public class FirebaseDataManager {
     }
       /**
      * Update data profile di database lokal
-     */
-    private void updateLocalProfileData(UserProfile profile) {
+     */    private void updateLocalProfileData(UserProfile profile) {
         // Clear any cached profile data from previous user first
         this.userProfile = null;
         
         executor.execute(() -> {
             try {
-                UserEntity user = localDb.userDao().getUserByIdSync(getCurrentLocalUserId());                if (user != null) {
-                    // Update user data with Firebase data
-                    user.setFirstName(profile.getFirstName());
-                    user.setLastName(profile.getLastName());
-                    if (profile.getAvatarUrl() != null && !profile.getAvatarUrl().isEmpty()) {
-                        user.setProfileImagePath(profile.getAvatarUrl());
+                UserEntity user = localDb.userDao().getUserByIdSync(getCurrentLocalUserId());
+                
+                if (user != null) {
+                    // Update user data with Firebase data using enhanced getters
+                    String firstName = profile.getFirstName();
+                    String lastName = profile.getLastName();
+                    String email = profile.getEmail();
+                    String avatarUrl = profile.getAvatarUrl();
+                    String badgeUrl = profile.getBadgeUrl();
+                    
+                    if (firstName != null && !firstName.isEmpty()) {
+                        user.setFirstName(firstName);
                     }
-                    if (profile.getBadgeUrl() != null && !profile.getBadgeUrl().isEmpty()) {
-                        user.setActiveDecoration(profile.getBadgeUrl());
+                    if (lastName != null && !lastName.isEmpty()) {
+                        user.setLastName(lastName);
                     }
-                      // Update user in database
+                    if (email != null && !email.isEmpty()) {
+                        user.setEmail(email);
+                    }
+                    if (avatarUrl != null && !avatarUrl.isEmpty()) {
+                        user.setProfileImagePath(avatarUrl);
+                    }
+                    if (badgeUrl != null && !badgeUrl.isEmpty()) {
+                        user.setActiveDecoration(badgeUrl);
+                    }
+                    
+                    // Update user in database
                     localDb.userDao().update(user);
-                    Log.d(TAG, "Local profile updated from Firebase");
+                    Log.d(TAG, "Local profile updated from Firebase with enhanced data mapping");
+                } else {
+                    Log.w(TAG, "Local user not found, cannot update profile data");
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Error updating local profile", e);
@@ -1115,8 +1144,7 @@ public class FirebaseDataManager {
         public long getLastUpdated() { return lastUpdated; }
         public void setLastUpdated(long lastUpdated) { this.lastUpdated = lastUpdated; }
     }
-    
-    public static class UserProfile {
+      public static class UserProfile {
         private String userId;
         private String username;
         private String firstName;
@@ -1125,6 +1153,18 @@ public class FirebaseDataManager {
         private String avatarUrl;
         private String badgeUrl;
         private long lastUpdated;
+        
+        // Additional fields to handle various Firebase document structures
+        private String fullName;           // For Firebase documents with combined name
+        private String nama;               // For Indonesian field names
+        private String photoURL;           // Alternative photo field name
+        private String profileImagePath;   // Alternative image path field
+        private int totalPoints;           // Stats might be stored in profile
+        private double totalKm;            // Distance data in profile
+        private int currentPoints;         // Current points field
+        private double totalPloggingDistance; // Full distance field name
+        private int totalTrashCollected;   // Trash collection data
+        private int currentLevel;          // User level
         
         public UserProfile() {} // Required for Firebase
         
@@ -1140,23 +1180,72 @@ public class FirebaseDataManager {
             this.lastUpdated = lastUpdated;
         }
         
-        // Getters and setters
+        // Getters and setters for main fields
         public String getUserId() { return userId; }
         public void setUserId(String userId) { this.userId = userId; }
         
         public String getUsername() { return username; }
         public void setUsername(String username) { this.username = username; }
         
-        public String getFirstName() { return firstName; }
+        public String getFirstName() { 
+            // Fallback logic: try firstName, then fullName, then nama
+            if (firstName != null && !firstName.isEmpty()) {
+                return firstName;
+            } else if (fullName != null && !fullName.isEmpty()) {
+                // Extract first name from fullName
+                String[] parts = fullName.split(" ");
+                return parts.length > 0 ? parts[0] : fullName;
+            } else if (nama != null && !nama.isEmpty()) {
+                String[] parts = nama.split(" ");
+                return parts.length > 0 ? parts[0] : nama;
+            }
+            return firstName;
+        }
         public void setFirstName(String firstName) { this.firstName = firstName; }
         
-        public String getLastName() { return lastName; }
+        public String getLastName() { 
+            // Fallback logic: try lastName, then extract from fullName or nama
+            if (lastName != null && !lastName.isEmpty()) {
+                return lastName;
+            } else if (fullName != null && !fullName.isEmpty()) {
+                String[] parts = fullName.split(" ");
+                if (parts.length > 1) {
+                    StringBuilder lastNameBuilder = new StringBuilder();
+                    for (int i = 1; i < parts.length; i++) {
+                        if (i > 1) lastNameBuilder.append(" ");
+                        lastNameBuilder.append(parts[i]);
+                    }
+                    return lastNameBuilder.toString();
+                }
+            } else if (nama != null && !nama.isEmpty()) {
+                String[] parts = nama.split(" ");
+                if (parts.length > 1) {
+                    StringBuilder lastNameBuilder = new StringBuilder();
+                    for (int i = 1; i < parts.length; i++) {
+                        if (i > 1) lastNameBuilder.append(" ");
+                        lastNameBuilder.append(parts[i]);
+                    }
+                    return lastNameBuilder.toString();
+                }
+            }
+            return lastName;
+        }
         public void setLastName(String lastName) { this.lastName = lastName; }
         
         public String getEmail() { return email; }
         public void setEmail(String email) { this.email = email; }
         
-        public String getAvatarUrl() { return avatarUrl; }
+        public String getAvatarUrl() { 
+            // Fallback logic: try avatarUrl, then photoURL, then profileImagePath
+            if (avatarUrl != null && !avatarUrl.isEmpty()) {
+                return avatarUrl;
+            } else if (photoURL != null && !photoURL.isEmpty()) {
+                return photoURL;
+            } else if (profileImagePath != null && !profileImagePath.isEmpty()) {
+                return profileImagePath;
+            }
+            return avatarUrl;
+        }
         public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
         
         public String getBadgeUrl() { return badgeUrl; }
@@ -1164,6 +1253,108 @@ public class FirebaseDataManager {
         
         public long getLastUpdated() { return lastUpdated; }
         public void setLastUpdated(long lastUpdated) { this.lastUpdated = lastUpdated; }
+        
+        // Additional getters and setters for Firebase field mapping
+        public String getFullName() { return fullName; }
+        public void setFullName(String fullName) { 
+            this.fullName = fullName;
+            // Auto-populate firstName and lastName if they are empty
+            if ((firstName == null || firstName.isEmpty()) && fullName != null && !fullName.isEmpty()) {
+                String[] parts = fullName.split(" ");
+                if (parts.length > 0) {
+                    firstName = parts[0];
+                    if (parts.length > 1) {
+                        StringBuilder lastNameBuilder = new StringBuilder();
+                        for (int i = 1; i < parts.length; i++) {
+                            if (i > 1) lastNameBuilder.append(" ");
+                            lastNameBuilder.append(parts[i]);
+                        }
+                        lastName = lastNameBuilder.toString();
+                    }
+                }
+            }
+        }
+        
+        public String getNama() { return nama; }
+        public void setNama(String nama) { 
+            this.nama = nama;
+            // Auto-populate firstName and lastName if they are empty
+            if ((firstName == null || firstName.isEmpty()) && nama != null && !nama.isEmpty()) {
+                String[] parts = nama.split(" ");
+                if (parts.length > 0) {
+                    firstName = parts[0];
+                    if (parts.length > 1) {
+                        StringBuilder lastNameBuilder = new StringBuilder();
+                        for (int i = 1; i < parts.length; i++) {
+                            if (i > 1) lastNameBuilder.append(" ");
+                            lastNameBuilder.append(parts[i]);
+                        }
+                        lastName = lastNameBuilder.toString();
+                    }
+                }
+            }
+        }
+        
+        public String getPhotoURL() { return photoURL; }
+        public void setPhotoURL(String photoURL) { 
+            this.photoURL = photoURL;
+            // Auto-populate avatarUrl if empty
+            if ((avatarUrl == null || avatarUrl.isEmpty()) && photoURL != null && !photoURL.isEmpty()) {
+                avatarUrl = photoURL;
+            }
+        }
+        
+        public String getProfileImagePath() { return profileImagePath; }
+        public void setProfileImagePath(String profileImagePath) { 
+            this.profileImagePath = profileImagePath;
+            // Auto-populate avatarUrl if empty
+            if ((avatarUrl == null || avatarUrl.isEmpty()) && profileImagePath != null && !profileImagePath.isEmpty()) {
+                avatarUrl = profileImagePath;
+            }
+        }
+        
+        public int getTotalPoints() { return totalPoints; }
+        public void setTotalPoints(int totalPoints) { this.totalPoints = totalPoints; }
+        
+        public double getTotalKm() { return totalKm; }
+        public void setTotalKm(double totalKm) { this.totalKm = totalKm; }
+        
+        public int getCurrentPoints() { return currentPoints; }
+        public void setCurrentPoints(int currentPoints) { this.currentPoints = currentPoints; }
+        
+        public double getTotalPloggingDistance() { return totalPloggingDistance; }
+        public void setTotalPloggingDistance(double totalPloggingDistance) { this.totalPloggingDistance = totalPloggingDistance; }
+        
+        public int getTotalTrashCollected() { return totalTrashCollected; }
+        public void setTotalTrashCollected(int totalTrashCollected) { this.totalTrashCollected = totalTrashCollected; }
+        
+        public int getCurrentLevel() { return currentLevel; }
+        public void setCurrentLevel(int currentLevel) { this.currentLevel = currentLevel; }
+        
+        /**
+         * Get the display name for UI purposes
+         */
+        public String getDisplayName() {
+            String first = getFirstName();
+            String last = getLastName();
+            
+            if (first != null && !first.isEmpty()) {
+                if (last != null && !last.isEmpty()) {
+                    return first + " " + last;
+                }
+                return first;
+            } else if (fullName != null && !fullName.isEmpty()) {
+                return fullName;
+            } else if (nama != null && !nama.isEmpty()) {
+                return nama;
+            } else if (username != null && !username.isEmpty()) {
+                return username;
+            } else if (email != null && !email.isEmpty()) {
+                return email.split("@")[0]; // Use email prefix as fallback
+            }
+            
+            return "User";
+        }
     }
     
     /**
@@ -1402,5 +1593,52 @@ public class FirebaseDataManager {
     private void logUserSwitch(String previousUserId, String newUserId) {
         Log.d(TAG, "🔄 [USER-SWITCH] User changed from: " + previousUserId + " to: " + newUserId);
         Log.d(TAG, "🧹 [USER-SWITCH] Clearing all cached data...");
+    }
+    
+    /**
+     * Validate and complete profile data using Firebase Auth as fallback
+     */
+    private UserProfile validateAndCompleteProfile(UserProfile profile) {
+        if (profile == null) {
+            profile = new UserProfile();
+        }
+        
+        try {
+            // Get Firebase Auth user for fallback data
+            FirebaseAuthManager authManager = FirebaseAuthManager.getInstance(context);
+            
+            if (authManager.isLoggedIn()) {
+                // Complete missing fields with Firebase Auth data
+                if ((profile.getFirstName() == null || profile.getFirstName().isEmpty()) &&
+                    (profile.getFullName() == null || profile.getFullName().isEmpty()) &&
+                    (profile.getNama() == null || profile.getNama().isEmpty())) {
+                    
+                    String firebaseDisplayName = authManager.getUserDisplayName();
+                    if (firebaseDisplayName != null && !firebaseDisplayName.isEmpty()) {
+                        profile.setFullName(firebaseDisplayName);
+                    }
+                }
+                  if (profile.getEmail() == null || profile.getEmail().isEmpty()) {
+                    String firebaseEmail = authManager.getFirebaseUserEmail();
+                    if (firebaseEmail != null && !firebaseEmail.isEmpty()) {
+                        profile.setEmail(firebaseEmail);
+                    }
+                }
+                
+                if (profile.getAvatarUrl() == null || profile.getAvatarUrl().isEmpty()) {
+                    String firebasePhotoUrl = authManager.getUserPhotoUrl();
+                    if (firebasePhotoUrl != null && !firebasePhotoUrl.isEmpty()) {
+                        profile.setPhotoURL(firebasePhotoUrl);
+                    }
+                }
+            }
+            
+            Log.d(TAG, "✅ Profile data validated and completed");
+            
+        } catch (Exception e) {
+            Log.w(TAG, "Error validating profile data", e);
+        }
+        
+        return profile;
     }
 }

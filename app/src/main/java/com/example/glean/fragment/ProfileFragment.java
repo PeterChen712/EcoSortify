@@ -392,8 +392,7 @@ public class ProfileFragment extends Fragment {    private static final String T
             Log.e(TAG, "Error setting up Firebase real-time sync", e);
         }
     }
-    
-    /**
+      /**
      * Set up real-time listeners after fresh data is loaded
      */
     private void setupRealTimeListeners() {
@@ -432,13 +431,25 @@ public class ProfileFragment extends Fragment {    private static final String T
                 @Override
                 public void onError(String error) {
                     Log.w(TAG, "Firebase profile listener error: " + error);
+                    // If profile listener fails, try to use Firebase Auth data as fallback
+                    if (getActivity() != null) {
+                        getActivity().runOnUiThread(() -> {
+                            updateUIWithFirebaseAuthFallback();
+                        });
+                    }
                 }
             });
+            
+            // Also immediately try to get Firebase Auth user data as initial fallback
+            // This ensures we have some user data displayed even if Firestore profile is empty
+            updateUIWithFirebaseAuthFallback();
             
             Log.d(TAG, "🔥 Real-time Firebase listeners activated");
             
         } catch (Exception e) {
             Log.e(TAG, "Error setting up Firebase real-time sync", e);
+            // Fallback to Firebase Auth data if real-time setup fails
+            updateUIWithFirebaseAuthFallback();
         }
     }
     
@@ -482,42 +493,150 @@ public class ProfileFragment extends Fragment {    private static final String T
     
     /**
      * Update UI with real-time Firebase profile data
-     */
-    private void updateUIWithFirebaseProfile(com.example.glean.service.FirebaseDataManager.UserProfile profile) {
+     */    private void updateUIWithFirebaseProfile(com.example.glean.service.FirebaseDataManager.UserProfile profile) {
         try {
-            if (binding != null && currentUser != null) {
-                // Update name if changed
-                if (profile.getFirstName() != null && !profile.getFirstName().equals(currentUser.getFirstName())) {
-                    currentUser.setFirstName(profile.getFirstName());
-                    if (binding.tvName != null) {
-                        String displayName = profile.getFirstName();
-                        if (profile.getLastName() != null && !profile.getLastName().isEmpty()) {
-                            displayName += " " + profile.getLastName();
-                        }
-                        binding.tvName.setText(displayName);
-                    }
+            if (binding != null) {
+                // Update name display with enhanced fallback logic
+                String displayName = profile.getDisplayName();
+                if (binding.tvName != null) {
+                    binding.tvName.setText(displayName);
                 }
-                
-                // Update profile image if changed
-                if (profile.getAvatarUrl() != null && !profile.getAvatarUrl().equals(currentUser.getProfileImagePath())) {
-                    currentUser.setProfileImagePath(profile.getAvatarUrl());
-                    loadProfileImage(currentUser);
-                }
-                
-                // Update local database
-                executor.execute(() -> {
+                  // Update email with fallback to Firebase Auth if not in profile
+                String email = profile.getEmail();
+                if ((email == null || email.isEmpty()) && authManager.isLoggedIn()) {
+                    // Fallback to Firebase Auth user email
                     try {
-                        if (profile.getLastName() != null) {
-                            currentUser.setLastName(profile.getLastName());
+                        String firebaseEmail = authManager.getFirebaseUserEmail();
+                        if (firebaseEmail != null && !firebaseEmail.isEmpty()) {
+                            email = firebaseEmail;
                         }
-                        db.userDao().update(currentUser);
                     } catch (Exception e) {
-                        Log.e(TAG, "Error updating local user with Firebase profile", e);
+                        Log.w(TAG, "Could not get email from Firebase Auth", e);
                     }
-                });
+                }
+                if (binding.tvEmail != null) {
+                    binding.tvEmail.setText(email != null && !email.isEmpty() ? email : "No email");
+                }
+                
+                // Update profile image with enhanced fallback logic
+                String avatarUrl = profile.getAvatarUrl();
+                if ((avatarUrl == null || avatarUrl.isEmpty()) && authManager.isLoggedIn()) {
+                    // Fallback to Firebase Auth user photo
+                    try {
+                        String firebasePhotoUrl = authManager.getUserPhotoUrl();
+                        if (firebasePhotoUrl != null && !firebasePhotoUrl.isEmpty()) {
+                            avatarUrl = firebasePhotoUrl;
+                        }
+                    } catch (Exception e) {
+                        Log.w(TAG, "Could not get photo URL from Firebase Auth", e);
+                    }
+                }
+                
+                // Update local user data if available
+                if (currentUser != null) {
+                    // Update current user object with profile data
+                    String firstName = profile.getFirstName();
+                    String lastName = profile.getLastName();
+                    
+                    if (firstName != null && !firstName.isEmpty()) {
+                        currentUser.setFirstName(firstName);
+                    }
+                    if (lastName != null && !lastName.isEmpty()) {
+                        currentUser.setLastName(lastName);
+                    }
+                    if (email != null && !email.isEmpty()) {
+                        currentUser.setEmail(email);
+                    }
+                    if (avatarUrl != null && !avatarUrl.isEmpty()) {
+                        currentUser.setProfileImagePath(avatarUrl);
+                    }
+                    
+                    // Load the updated profile image
+                    loadProfileImage(currentUser);
+                    
+                    // Update local database
+                    executor.execute(() -> {
+                        try {
+                            db.userDao().update(currentUser);
+                            Log.d(TAG, "Local user updated with Firebase profile data");
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error updating local user with Firebase profile", e);
+                        }
+                    });
+                } else {
+                    // Create a temporary user object for image loading if currentUser is null
+                    UserEntity tempUser = new UserEntity();
+                    tempUser.setFirstName(profile.getFirstName());
+                    tempUser.setLastName(profile.getLastName());
+                    tempUser.setEmail(email);
+                    tempUser.setProfileImagePath(avatarUrl);
+                    loadProfileImage(tempUser);
+                }
+                
+                Log.d(TAG, "UI updated with Firebase profile: " + displayName);
+                
             }
         } catch (Exception e) {
             Log.e(TAG, "Error updating UI with Firebase profile", e);
+            // Try to fallback to Firebase Auth data directly
+            updateUIWithFirebaseAuthFallback();
+        }
+    }
+      /**
+     * Fallback method to update UI with Firebase Auth user data when profile is not available
+     */
+    private void updateUIWithFirebaseAuthFallback() {
+        try {
+            if (!authManager.isLoggedIn()) {
+                Log.d(TAG, "User not logged in, skipping Firebase Auth fallback");
+                return;
+            }
+            
+            Log.d(TAG, "🔄 Using Firebase Auth fallback for profile data");
+              // Get data from Firebase Auth
+            String firebaseName = authManager.getUserDisplayName();
+            String firebaseEmail = authManager.getFirebaseUserEmail();
+            String firebasePhotoUrl = authManager.getUserPhotoUrl();
+            
+            Log.d(TAG, "🔄 Firebase Auth data - Name: " + firebaseName + ", Email: " + firebaseEmail + ", Photo: " + (firebasePhotoUrl != null ? "Available" : "None"));
+            
+            if (binding != null) {
+                // Update name
+                if (binding.tvName != null) {
+                    String displayName = firebaseName;
+                    if (displayName == null || displayName.isEmpty()) {
+                        displayName = firebaseEmail != null ? firebaseEmail.split("@")[0] : "User";
+                    }
+                    binding.tvName.setText(displayName);
+                    Log.d(TAG, "🔄 Updated name display to: " + displayName);
+                }
+                
+                // Update email
+                if (binding.tvEmail != null) {
+                    String emailDisplay = firebaseEmail != null && !firebaseEmail.isEmpty() ? firebaseEmail : "No email";
+                    binding.tvEmail.setText(emailDisplay);
+                    Log.d(TAG, "🔄 Updated email display to: " + emailDisplay);
+                }
+                
+                // Load profile image if available
+                if (firebasePhotoUrl != null && !firebasePhotoUrl.isEmpty()) {
+                    Log.d(TAG, "🔄 Loading Firebase Auth profile image");
+                    if (currentUser != null) {
+                        currentUser.setProfileImagePath(firebasePhotoUrl);
+                        loadProfileImage(currentUser);
+                    } else {
+                        // Create temporary user for image loading
+                        UserEntity tempUser = new UserEntity();
+                        tempUser.setProfileImagePath(firebasePhotoUrl);
+                        loadProfileImage(tempUser);
+                    }
+                }
+            }
+            
+            Log.d(TAG, "✅ Firebase Auth fallback data applied successfully");
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error applying Firebase Auth fallback", e);
         }
     }
     
@@ -1423,7 +1542,7 @@ public class ProfileFragment extends Fragment {    private static final String T
                     UserEntity defaultUser = new UserEntity();
                     defaultUser.setUsername("User Baru");
                     defaultUser.setFirstName("User");
-                    defaultUser.setLastName("Baru");
+                    // defaultUser.setLastName("Baru");
                     defaultUser.setEmail("user@glean.app");
                     defaultUser.setCreatedAt(System.currentTimeMillis());
                     defaultUser.setPoints(0);
