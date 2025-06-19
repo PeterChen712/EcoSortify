@@ -26,10 +26,7 @@
             android:paddingTop="@dimen/header_spacing_large"
             android:paddingBottom="24dp"
             android:paddingStart="20dp"
-            android:paddingEnd="20dp">
-
-
-        <!-- Daily Tips Carousel Section -->
+            android:paddingEnd="20dp">        <!-- Daily Tips Carousel Section -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -62,6 +59,110 @@
                 android:orientation="horizontal" />
 
         </LinearLayout>
+
+        <!-- Quick Actions Cards -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:text="Aksi Cepat 🚀"
+                android:textColor="@color/text_primary"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:weightSum="2">                <!-- Quick Action 1: Klasifikasi Sampah -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardClassifyTrash"
+                    android:layout_width="0dp"
+                    android:layout_height="120dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="4dp"
+                    app:cardBackgroundColor="@color/environmental_green"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?android:attr/selectableItemBackground">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:padding="16dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🗂️"
+                            android:textSize="32sp"
+                            android:layout_marginBottom="8dp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Klasifikasi Sampah"
+                            android:textSize="13sp"
+                            android:textStyle="bold"
+                            android:textColor="@android:color/white"
+                            android:gravity="center" />
+
+                    </LinearLayout>
+
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Quick Action 2: Game Edukatif -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardEducationGame"
+                    android:layout_width="0dp"
+                    android:layout_height="120dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="4dp"
+                    app:cardBackgroundColor="@color/light_blue"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?android:attr/selectableItemBackground">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:padding="16dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🎮"
+                            android:textSize="32sp"
+                            android:layout_marginBottom="8dp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Game Edukatif"
+                            android:textSize="13sp"
+                            android:textStyle="bold"
+                            android:textColor="@android:color/white"
+                            android:gravity="center" />
+
+                    </LinearLayout>
+
+                </com.google.android.material.card.MaterialCardView>
+
+            </LinearLayout>        </LinearLayout>
 
         <!-- About App Card -->
         <com.google.android.material.card.MaterialCardView

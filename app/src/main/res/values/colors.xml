@@ -144,12 +144,14 @@
     <color name="silver">#C0C0C0</color>
     <color name="bronze">#CD7F32</color>
     <color name="highlight_background">#E8F5E8</color>
-    
-    <!-- Daily Tips Card Colors -->
+      <!-- Daily Tips Card Colors -->
     <color name="tip_card_green">#4CAF50</color>
     <color name="tip_card_blue">#42A5F5</color>
     <color name="tip_card_yellow">#FFA726</color>
     <color name="tip_card_teal">#26A69A</color>
     <color name="tip_card_purple">#AB47BC</color>
     <color name="tip_card_indigo">#5C6BC0</color>
+    
+    <!-- Additional Quick Action Colors -->
+    <color name="light_blue">#42A5F5</color>
 </resources>

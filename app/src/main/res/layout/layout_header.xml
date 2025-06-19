@@ -2,23 +2,44 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="112dp"
+    android:layout_height="140dp"
     android:background="@drawable/curved_header_background"
     android:paddingHorizontal="16dp"
-    android:paddingTop="12dp"
-    android:paddingBottom="12dp"
-    android:orientation="horizontal"
-    android:gravity="center_vertical">
+    android:paddingTop="20dp"
+    android:paddingBottom="20dp"
+    android:orientation="vertical"
+    android:gravity="center">
+
+    <!-- Welcome Text -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Selamat Datang di"
+        android:textSize="16sp"
+        android:textColor="@color/header_text_primary"
+        android:alpha="0.8"
+        android:fontFamily="sans-serif"
+        android:layout_marginBottom="4dp" />
 
     <!-- App Title -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:text="Ecosortify"
-        android:textSize="24sp"
+        android:text="🌱 Ecosortify"
+        android:textSize="28sp"
         android:textStyle="bold"
         android:textColor="@color/header_text_primary"
-        android:fontFamily="sans-serif-medium" />
+        android:fontFamily="sans-serif-medium"
+        android:layout_marginBottom="8dp" />
+
+    <!-- Subtitle -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Mari Jaga Lingkungan Bersama"
+        android:textSize="14sp"
+        android:textColor="@color/header_text_primary"
+        android:alpha="0.9"
+        android:fontFamily="sans-serif" />
 
 </LinearLayout>
