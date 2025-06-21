@@ -36,18 +36,17 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:gravity="center_vertical">
-
-                <androidx.cardview.widget.CardView
+                android:gravity="center_vertical">                <androidx.cardview.widget.CardView
                     android:layout_width="80dp"
                     android:layout_height="60dp"
                     app:cardCornerRadius="8dp"
                     app:cardElevation="2dp">
 
-                    <View
+                    <ImageView
                         android:id="@+id/viewCurrentSkinPreview"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
+                        android:scaleType="centerCrop"
                         android:background="@drawable/profile_skin_default" />
 
                 </androidx.cardview.widget.CardView>

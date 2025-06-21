@@ -64,9 +64,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingBottom="32dp">
-
-            <!-- Profile Skin Background Section -->
+            android:paddingBottom="32dp">            <!-- Profile Skin Background Section -->
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:id="@+id/profileSkinBackground"
                 android:layout_width="match_parent"
@@ -75,7 +73,19 @@
                 android:paddingStart="24dp"
                 android:paddingTop="32dp"
                 android:paddingEnd="24dp"
-                android:paddingBottom="24dp">                <!-- Profile Picture with Frame -->
+                android:paddingBottom="24dp">
+                
+                <!-- Background ImageView for GIF support -->
+                <ImageView
+                    android:id="@+id/profileSkinBackgroundImage"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:scaleType="centerCrop"
+                    android:visibility="gone"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent" /><!-- Profile Picture with Frame -->
                 <FrameLayout
                     android:id="@+id/profilePictureFrame"
                     android:layout_width="120dp"

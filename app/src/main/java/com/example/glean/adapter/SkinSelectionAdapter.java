@@ -11,6 +11,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.glean.R;
 import com.example.glean.model.ProfileSkin;
 
@@ -65,13 +66,25 @@ public class SkinSelectionAdapter extends RecyclerView.Adapter<SkinSelectionAdap
     public SkinViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(context).inflate(R.layout.item_skin_selection, parent, false);
         return new SkinViewHolder(view);
-    }
-      @Override
+    }    @Override
     public void onBindViewHolder(@NonNull SkinViewHolder holder, int position) {
         ProfileSkin skin = skins.get(position);
         
-        // Set skin preview
-        holder.viewSkinPreview.setBackgroundResource(skin.getDrawableResource());
+        // Set skin preview with Glide support for GIF
+        if (skin.isGif()) {
+            // Use Glide for GIF animations
+            Glide.with(context)
+                    .asGif()
+                    .load(skin.getDrawableResource())
+                    .centerCrop()
+                    .into(holder.viewSkinPreview);
+        } else {
+            // Use regular method for static images
+            Glide.with(context)
+                    .load(skin.getDrawableResource())
+                    .centerCrop()
+                    .into(holder.viewSkinPreview);
+        }
         
         // Set skin name
         holder.tvSkinName.setText(skin.getName());
@@ -158,7 +171,7 @@ public class SkinSelectionAdapter extends RecyclerView.Adapter<SkinSelectionAdap
     public int getItemCount() {
         return skins.size();
     }    static class SkinViewHolder extends RecyclerView.ViewHolder {
-        View viewSkinPreview;
+        ImageView viewSkinPreview;
         ImageView ivSelected;
         ImageView ivStatusIcon;
         TextView tvSkinName;

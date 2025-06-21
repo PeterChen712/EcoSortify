@@ -13,6 +13,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 
+import com.bumptech.glide.Glide;
 import com.example.glean.R;
 import com.example.glean.activity.CustomizeProfileActivity;
 import com.example.glean.adapter.SkinSelectionAdapter;
@@ -169,15 +170,18 @@ public class SkinSelectionFragment extends Fragment implements SkinSelectionAdap
         }
           // Ensure selectedSkinId is not null, default to "default" if null
         String currentSelectedSkin = (selectedSkinId != null) ? selectedSkinId : "default";
-        
-        // Default skin (always owned)
+          // Default skin (always owned)
         skins.add(new ProfileSkin("default", "Default Green", 0, R.drawable.profile_skin_default, true, currentSelectedSkin.equals("default")));
         
-        // Premium skins
+        // Premium static skins
         skins.add(new ProfileSkin("nature", "Nature", 100, R.drawable.profile_skin_nature, ownedSkins.contains("nature"), currentSelectedSkin.equals("nature")));
         skins.add(new ProfileSkin("ocean", "Ocean", 150, R.drawable.profile_skin_ocean, ownedSkins.contains("ocean"), currentSelectedSkin.equals("ocean")));
         skins.add(new ProfileSkin("sunset", "Sunset", 200, R.drawable.profile_skin_sunset, ownedSkins.contains("sunset"), currentSelectedSkin.equals("sunset")));
         skins.add(new ProfileSkin("galaxy", "Galaxy", 300, R.drawable.profile_skin_galaxy, ownedSkins.contains("galaxy"), currentSelectedSkin.equals("galaxy")));
+        
+        // Premium animated GIF skins
+        skins.add(new ProfileSkin("animated_nature", "Animated Nature", 250, R.raw.bg_animated_nature, ownedSkins.contains("animated_nature"), currentSelectedSkin.equals("animated_nature"), true));
+        skins.add(new ProfileSkin("animated_ocean", "Animated Ocean", 350, R.raw.bg_animated_ocean, ownedSkins.contains("animated_ocean"), currentSelectedSkin.equals("animated_ocean"), true));
         
         return skins;
     }
@@ -192,13 +196,25 @@ public class SkinSelectionFragment extends Fragment implements SkinSelectionAdap
         }        // Return default skin if not found
         return new ProfileSkin("default", "Default Green", 0, R.drawable.profile_skin_default, true, false);
     }
-    
-    private void updateCurrentSkinDisplay(ProfileSkin skin) {
+      private void updateCurrentSkinDisplay(ProfileSkin skin) {
         if (binding.tvCurrentSkinName != null) {
             binding.tvCurrentSkinName.setText(skin.getName());
         }
         if (binding.viewCurrentSkinPreview != null) {
-            binding.viewCurrentSkinPreview.setBackgroundResource(skin.getDrawableResource());
+            if (skin.isGif()) {
+                // Use Glide for GIF animations
+                Glide.with(this)
+                        .asGif()
+                        .load(skin.getDrawableResource())
+                        .centerCrop()
+                        .into(binding.viewCurrentSkinPreview);
+            } else {
+                // Use Glide for static images too for consistency
+                Glide.with(this)
+                        .load(skin.getDrawableResource())
+                        .centerCrop()
+                        .into(binding.viewCurrentSkinPreview);
+            }
         }
     }
     

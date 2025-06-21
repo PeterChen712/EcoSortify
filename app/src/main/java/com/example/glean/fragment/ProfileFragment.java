@@ -986,32 +986,27 @@ public class ProfileFragment extends Fragment {    private static final String T
             FirebaseDataManager firebaseDataManager = FirebaseDataManager.getInstance(requireContext());
               firebaseDataManager.loadProfileCustomization(new FirebaseDataManager.ProfileDataCallback() {
                 @Override
-                public void onProfileLoaded(FirebaseDataManager.UserProfile profile) {
-                    // Check if fragment is still active and binding is not null
+                public void onProfileLoaded(FirebaseDataManager.UserProfile profile) {                    // Check if fragment is still active and binding is not null
                     if (binding != null && isAdded() && !isDetached()) {
                         String currentSkin = profile.getActiveBackground();
-                        int skinResource = getSkinResource(currentSkin);
-                        binding.profileSkinBackground.setBackgroundResource(skinResource);
+                        setSkinBackground(currentSkin);
                         Log.d(TAG, "Profile skin updated from Firebase to: " + currentSkin);
                     }
                 }
                   @Override
-                public void onError(String error) {
-                    // Check if fragment is still active and binding is not null
+                public void onError(String error) {                    // Check if fragment is still active and binding is not null
                     if (binding != null && isAdded() && !isDetached()) {
                         // Fallback to SharedPreferences
                         SharedPreferences prefs = requireActivity().getSharedPreferences("profile_settings", 0);
                         String currentSkin = prefs.getString("selected_skin", "default");
-                        int skinResource = getSkinResource(currentSkin);
-                        binding.profileSkinBackground.setBackgroundResource(skinResource);
+                        setSkinBackground(currentSkin);
                         Log.d(TAG, "Profile skin updated from SharedPreferences (fallback) to: " + currentSkin);
                     }
                 }
             });
         }
     }
-    
-    private int getSkinResource(String skinId) {
+      private int getSkinResource(String skinId) {
         switch (skinId) {
             case "nature":
                 return R.drawable.profile_skin_nature;
@@ -1021,8 +1016,37 @@ public class ProfileFragment extends Fragment {    private static final String T
                 return R.drawable.profile_skin_sunset;
             case "galaxy":
                 return R.drawable.profile_skin_galaxy;
+            case "animated_nature":
+                return R.raw.bg_animated_nature;
+            case "animated_ocean":
+                return R.raw.bg_animated_ocean;
             default:
                 return R.drawable.profile_skin_default;
+        }
+    }
+      private boolean isGifSkin(String skinId) {
+        return "animated_nature".equals(skinId) || "animated_ocean".equals(skinId);
+    }
+    
+    private void setSkinBackground(String skinId) {
+        if (binding == null) return;
+        
+        int skinResource = getSkinResource(skinId);
+        
+        if (isGifSkin(skinId)) {
+            // For GIF backgrounds, use ImageView with Glide
+            binding.profileSkinBackground.setBackground(null); // Remove drawable background
+            binding.profileSkinBackgroundImage.setVisibility(View.VISIBLE);
+            
+            Glide.with(this)
+                    .asGif()
+                    .load(skinResource)
+                    .centerCrop()
+                    .into(binding.profileSkinBackgroundImage);
+        } else {
+            // For static backgrounds, use traditional method
+            binding.profileSkinBackgroundImage.setVisibility(View.GONE);
+            binding.profileSkinBackground.setBackgroundResource(skinResource);
         }
     }
   

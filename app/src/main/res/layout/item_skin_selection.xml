@@ -21,21 +21,20 @@
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="100dp"
-            android:layout_marginBottom="8dp">
-
-            <androidx.cardview.widget.CardView
+            android:layout_marginBottom="8dp">            <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 app:cardCornerRadius="8dp"
                 app:cardElevation="1dp">
 
-                <View
+                <ImageView
                     android:id="@+id/viewSkinPreview"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
                     android:background="@drawable/profile_skin_default" />
 
-            </androidx.cardview.widget.CardView>            <!-- Selection Check Mark -->
+            </androidx.cardview.widget.CardView><!-- Selection Check Mark -->
             <ImageView
                 android:id="@+id/ivSelected"
                 android:layout_width="24dp"
