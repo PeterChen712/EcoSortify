@@ -60,6 +60,15 @@
             android:text="Purchase"
             android:textSize="12sp" />
 
+        <ImageView
+            android:id="@+id/iv_status_icon"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_gravity="end|bottom"
+            android:layout_margin="8dp"
+            android:visibility="gone"
+            android:contentDescription="Status Icon" />
+
     </LinearLayout>
 
 </androidx.cardview.widget.CardView>

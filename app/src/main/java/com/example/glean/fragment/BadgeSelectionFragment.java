@@ -102,10 +102,14 @@ public class BadgeSelectionFragment extends Fragment implements BadgeSelectionAd
             }
         });
     }
-    
-    private void loadCurrentBadgeFromPreferences() {
+      private void loadCurrentBadgeFromPreferences() {
+        // Check if fragment is still attached
+        if (!isAdded() || getActivity() == null) {
+            return;
+        }
+        
         // Get current selected badges from user preferences
-        SharedPreferences prefs = requireActivity().getSharedPreferences("profile_settings", 0);
+        SharedPreferences prefs = getActivity().getSharedPreferences("profile_settings", 0);
         String selectedBadgesJson = prefs.getString("selected_badges", "");
         
         if (selectedBadgesJson.isEmpty()) {
@@ -293,37 +297,43 @@ public class BadgeSelectionFragment extends Fragment implements BadgeSelectionAd
                     selectedBadgeIds,
                     userProfile.getOwnedBackgrounds(),
                     userProfile.getActiveBackground(),
-                    new FirebaseDataManager.ProfileCustomizationCallback() {
-                        @Override
+                    new FirebaseDataManager.ProfileCustomizationCallback() {                        @Override
                         public void onSuccess() {
                             Log.d(TAG, "Badge selection saved to Firebase: " + String.join(",", selectedBadgeIds));
                             
-                            // Also save to SharedPreferences for backward compatibility
-                            SharedPreferences prefs = requireActivity().getSharedPreferences("profile_settings", 0);
-                            String selectedBadgesJson = String.join(",", selectedBadgeIds);
-                            prefs.edit().putString("selected_badges", selectedBadgesJson).apply();
-                            prefs.edit().putString("active_badge", selectedBadgeIds.get(0)).apply();
+                            // Check if fragment is still attached before accessing activity
+                            if (isAdded() && getActivity() != null) {
+                                // Also save to SharedPreferences for backward compatibility
+                                SharedPreferences prefs = getActivity().getSharedPreferences("profile_settings", 0);
+                                String selectedBadgesJson = String.join(",", selectedBadgeIds);
+                                prefs.edit().putString("selected_badges", selectedBadgesJson).apply();
+                                prefs.edit().putString("active_badge", selectedBadgeIds.get(0)).apply();
+                            }
                         }
                         
                         @Override
                         public void onError(String error) {
                             Log.e(TAG, "Error saving badge selection to Firebase: " + error);
                             
-                            // Fallback to SharedPreferences only
-                            SharedPreferences prefs = requireActivity().getSharedPreferences("profile_settings", 0);
-                            String selectedBadgesJson = String.join(",", selectedBadgeIds);
-                            prefs.edit().putString("selected_badges", selectedBadgesJson).apply();
-                            prefs.edit().putString("active_badge", selectedBadgeIds.get(0)).apply();
-                            Log.d(TAG, "Badge selection saved to SharedPreferences as fallback: " + selectedBadgesJson);
+                            // Check if fragment is still attached before accessing activity
+                            if (isAdded() && getActivity() != null) {
+                                // Fallback to SharedPreferences only
+                                SharedPreferences prefs = getActivity().getSharedPreferences("profile_settings", 0);
+                                String selectedBadgesJson = String.join(",", selectedBadgeIds);
+                                prefs.edit().putString("selected_badges", selectedBadgesJson).apply();
+                                prefs.edit().putString("active_badge", selectedBadgeIds.get(0)).apply();
+                                Log.d(TAG, "Badge selection saved to SharedPreferences as fallback: " + selectedBadgesJson);
+                            }
                         }
-                    });
-            } else {
+                    });            } else {
                 // Fallback to SharedPreferences only
-                SharedPreferences prefs = requireActivity().getSharedPreferences("profile_settings", 0);
-                String selectedBadgesJson = String.join(",", selectedBadgeIds);
-                prefs.edit().putString("selected_badges", selectedBadgesJson).apply();
-                prefs.edit().putString("active_badge", selectedBadgeIds.get(0)).apply();
-                Log.d(TAG, "Badge selection saved to SharedPreferences: " + selectedBadgesJson);
+                if (isAdded() && getActivity() != null) {
+                    SharedPreferences prefs = getActivity().getSharedPreferences("profile_settings", 0);
+                    String selectedBadgesJson = String.join(",", selectedBadgeIds);
+                    prefs.edit().putString("selected_badges", selectedBadgesJson).apply();
+                    prefs.edit().putString("active_badge", selectedBadgeIds.get(0)).apply();
+                    Log.d(TAG, "Badge selection saved to SharedPreferences: " + selectedBadgesJson);
+                }
             }
         }
     }

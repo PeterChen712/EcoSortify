@@ -35,9 +35,7 @@
                     android:layout_height="match_parent"
                     android:background="@drawable/profile_skin_default" />
 
-            </androidx.cardview.widget.CardView>
-
-            <!-- Selection Check Mark -->
+            </androidx.cardview.widget.CardView>            <!-- Selection Check Mark -->
             <ImageView
                 android:id="@+id/ivSelected"
                 android:layout_width="24dp"
@@ -50,39 +48,19 @@
                 app:tint="@color/white"
                 android:visibility="gone"
                 tools:visibility="visible"
-                android:contentDescription="Selected Skin" />
-
-            <!-- Lock Icon and Price for Locked Skins -->
-            <LinearLayout
-                android:id="@+id/layoutLocked"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:orientation="vertical"
-                android:gravity="center"
-                android:background="@drawable/rounded_background_dark_alpha"
-                android:padding="8dp"
+                android:contentDescription="Selected Skin" />            <!-- Status Icon (Locked/Buy/Owned) -->
+            <ImageView
+                android:id="@+id/ivStatusIcon"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_gravity="bottom|end"
+                android:layout_margin="8dp"
+                android:background="@drawable/circle_white_background"
+                android:padding="6dp"
                 android:visibility="gone"
-                tools:visibility="visible">
-
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_lock"
-                    app:tint="@color/white"
-                    android:contentDescription="Locked Skin" />
-
-                <TextView
-                    android:id="@+id/tvPrice"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="100 pts"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/white"
-                    android:layout_marginTop="4dp" />
-
-            </LinearLayout>
+                tools:visibility="visible"
+                android:contentDescription="Status Icon"
+                android:elevation="2dp" />
 
         </FrameLayout>
 
@@ -97,9 +75,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:orientation="vertical">
-
-                <!-- Skin Name -->
+                android:orientation="vertical">                <!-- Skin Name -->
                 <TextView
                     android:id="@+id/tvSkinName"
                     android:layout_width="match_parent"
@@ -108,39 +84,21 @@
                     android:textSize="14sp"
                     android:textStyle="bold"
                     android:textColor="@color/text_primary"
-                    android:maxLines="1"
+                    android:maxLines="2"
                     android:ellipsize="end" />
 
-                <!-- Status Text -->
+                <!-- Price Text (only shown for purchasable items) -->
                 <TextView
-                    android:id="@+id/tvStatus"
+                    android:id="@+id/tvPriceInfo"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Owned"
                     android:textSize="12sp"
                     android:textColor="@color/environmental_green"
                     android:layout_marginTop="2dp"
                     android:maxLines="1"
                     android:ellipsize="end"
-                    tools:text="100 points" />
-
-            </LinearLayout>
-
-            <!-- Purchase Button -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnPurchase"
-                android:layout_width="wrap_content"
-                android:layout_height="32dp"
-                android:text="Buy"
-                android:textSize="12sp"
-                android:textAllCaps="false"
-                android:minWidth="60dp"
-                android:layout_marginStart="8dp"
-                app:backgroundTint="@color/primary_color"
-                app:cornerRadius="16dp"
-                android:visibility="gone"
-                tools:visibility="visible"
-                style="@style/Widget.Material3.Button.UnelevatedButton" />
+                    android:visibility="gone"
+                    tools:text="100 points" />            </LinearLayout>
 
         </LinearLayout>
 

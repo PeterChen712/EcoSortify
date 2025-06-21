@@ -5,15 +5,14 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.glean.R;
 import com.example.glean.model.ProfileSkin;
-import com.google.android.material.button.MaterialButton;
 
 import java.util.List;
 
@@ -42,10 +41,23 @@ public class SkinSelectionAdapter extends RecyclerView.Adapter<SkinSelectionAdap
         this.userPoints = points;
         notifyDataSetChanged();
     }
-    
-    public void updateSelectedSkin(String selectedId) {
+      public void updateSelectedSkin(String selectedId) {
         this.selectedSkinId = selectedId;
         notifyDataSetChanged();
+    }
+    
+    private void showPurchaseConfirmationDialog(ProfileSkin skin) {
+        new AlertDialog.Builder(context)
+                .setTitle("Konfirmasi Pembelian")
+                .setMessage("Apakah Anda yakin ingin membeli skin \"" + skin.getName() + "\" seharga " + skin.getPrice() + " poin?")
+                .setPositiveButton("Ya, Beli", (dialog, which) -> {
+                    if (listener != null) {
+                        listener.onSkinPurchase(skin);
+                    }
+                })
+                .setNegativeButton("Batal", null)
+                .setIcon(R.drawable.ic_shopping_cart)
+                .show();
     }
     
     @NonNull
@@ -54,8 +66,7 @@ public class SkinSelectionAdapter extends RecyclerView.Adapter<SkinSelectionAdap
         View view = LayoutInflater.from(context).inflate(R.layout.item_skin_selection, parent, false);
         return new SkinViewHolder(view);
     }
-    
-    @Override
+      @Override
     public void onBindViewHolder(@NonNull SkinViewHolder holder, int position) {
         ProfileSkin skin = skins.get(position);
         
@@ -68,13 +79,20 @@ public class SkinSelectionAdapter extends RecyclerView.Adapter<SkinSelectionAdap
         // Show/hide selection indicator
         boolean isSelected = skin.getId().equals(selectedSkinId);
         holder.ivSelected.setVisibility(isSelected ? View.VISIBLE : View.GONE);
-        
-        if (skin.isUnlocked()) {
-            // Skin is owned
-            holder.layoutLocked.setVisibility(View.GONE);
-            holder.tvStatus.setText("Owned");
-            holder.tvStatus.setTextColor(context.getResources().getColor(R.color.environmental_green));
-            holder.btnPurchase.setVisibility(View.GONE);
+          if (skin.isUnlocked()) {
+            // Skin is owned - show checkmark icon
+            holder.tvPriceInfo.setVisibility(View.GONE);
+            
+            // Show owned status icon
+            holder.ivStatusIcon.setVisibility(View.VISIBLE);
+            holder.ivStatusIcon.setImageResource(R.drawable.ic_check);
+            holder.ivStatusIcon.setBackgroundResource(R.drawable.circle_green_background);
+            holder.ivStatusIcon.setContentDescription("Owned");
+            
+            // Add tooltip on click
+            holder.ivStatusIcon.setOnClickListener(v -> {
+                android.widget.Toast.makeText(context, "Skin dimiliki", android.widget.Toast.LENGTH_SHORT).show();
+            });
             
             // Set click listener for selection
             holder.itemView.setOnClickListener(v -> {
@@ -88,34 +106,44 @@ public class SkinSelectionAdapter extends RecyclerView.Adapter<SkinSelectionAdap
             
         } else {
             // Skin is locked
-            holder.layoutLocked.setVisibility(View.VISIBLE);
-            holder.tvPrice.setText(skin.getPrice() + " pts");
-            
             // Check if user can afford it
             boolean canAfford = userPoints >= skin.getPrice();
             
             if (canAfford) {
-                holder.tvStatus.setText(skin.getPrice() + " points");
-                holder.tvStatus.setTextColor(context.getResources().getColor(R.color.accent));
-                holder.btnPurchase.setVisibility(View.VISIBLE);
-                holder.btnPurchase.setEnabled(true);
-                holder.btnPurchase.setText("Buy");
+                // Show price info only
+                holder.tvPriceInfo.setVisibility(View.VISIBLE);
+                holder.tvPriceInfo.setText(skin.getPrice() + " points");
+                holder.tvPriceInfo.setTextColor(context.getResources().getColor(R.color.accent));
                 
-                // Set purchase click listener
-                holder.btnPurchase.setOnClickListener(v -> {
-                    if (listener != null) {
-                        listener.onSkinPurchase(skin);
-                    }
+                // Show shopping cart status icon
+                holder.ivStatusIcon.setVisibility(View.VISIBLE);
+                holder.ivStatusIcon.setImageResource(R.drawable.ic_shopping_cart);
+                holder.ivStatusIcon.setBackgroundResource(R.drawable.circle_white_background);
+                holder.ivStatusIcon.setContentDescription("Available for Purchase");
+                
+                // Set purchase click listener on icon with confirmation dialog
+                holder.ivStatusIcon.setOnClickListener(v -> {
+                    showPurchaseConfirmationDialog(skin);
                 });
                 
                 holder.itemView.setAlpha(1.0f);
                 
             } else {
-                holder.tvStatus.setText("Need " + skin.getPrice() + " points");
-                holder.tvStatus.setTextColor(context.getResources().getColor(R.color.text_secondary));
-                holder.btnPurchase.setVisibility(View.VISIBLE);
-                holder.btnPurchase.setEnabled(false);
-                holder.btnPurchase.setText("Locked");
+                // Show need more points info
+                holder.tvPriceInfo.setVisibility(View.VISIBLE);
+                holder.tvPriceInfo.setText("Need " + skin.getPrice() + " points");
+                holder.tvPriceInfo.setTextColor(context.getResources().getColor(R.color.text_secondary));
+                
+                // Show lock status icon
+                holder.ivStatusIcon.setVisibility(View.VISIBLE);
+                holder.ivStatusIcon.setImageResource(R.drawable.ic_lock);
+                holder.ivStatusIcon.setBackgroundResource(R.drawable.circle_gray_background);
+                holder.ivStatusIcon.setContentDescription("Locked");
+                
+                // Add tooltip on click
+                holder.ivStatusIcon.setOnClickListener(v -> {
+                    android.widget.Toast.makeText(context, "Terkunci - Butuh " + skin.getPrice() + " poin", android.widget.Toast.LENGTH_SHORT).show();
+                });
                 
                 holder.itemView.setAlpha(0.6f);
             }
@@ -129,26 +157,20 @@ public class SkinSelectionAdapter extends RecyclerView.Adapter<SkinSelectionAdap
     @Override
     public int getItemCount() {
         return skins.size();
-    }
-    
-    static class SkinViewHolder extends RecyclerView.ViewHolder {
+    }    static class SkinViewHolder extends RecyclerView.ViewHolder {
         View viewSkinPreview;
         ImageView ivSelected;
-        LinearLayout layoutLocked;
-        TextView tvPrice;
+        ImageView ivStatusIcon;
         TextView tvSkinName;
-        TextView tvStatus;
-        MaterialButton btnPurchase;
+        TextView tvPriceInfo;
         
         public SkinViewHolder(@NonNull View itemView) {
             super(itemView);
             viewSkinPreview = itemView.findViewById(R.id.viewSkinPreview);
             ivSelected = itemView.findViewById(R.id.ivSelected);
-            layoutLocked = itemView.findViewById(R.id.layoutLocked);
-            tvPrice = itemView.findViewById(R.id.tvPrice);
+            ivStatusIcon = itemView.findViewById(R.id.ivStatusIcon);
             tvSkinName = itemView.findViewById(R.id.tvSkinName);
-            tvStatus = itemView.findViewById(R.id.tvStatus);
-            btnPurchase = itemView.findViewById(R.id.btnPurchase);
+            tvPriceInfo = itemView.findViewById(R.id.tvPriceInfo);
         }
     }
 }

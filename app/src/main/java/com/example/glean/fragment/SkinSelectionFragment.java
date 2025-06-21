@@ -229,15 +229,19 @@ public class SkinSelectionFragment extends Fragment implements SkinSelectionAdap
         }
     }    @Override
     public void onSkinPurchase(ProfileSkin skin) {
+        Log.d(TAG, "Attempting to purchase skin: " + skin.getName() + " for " + skin.getPrice() + " points. Current points: " + currentUser.getPoints());
+        
         if (currentUser.getPoints() >= skin.getPrice()) {
             // Use Firebase to purchase background
             firebaseDataManager.purchaseBackground(skin.getId(), skin.getPrice(), 
                 new FirebaseDataManager.ProfileCustomizationCallback() {
                     @Override
                     public void onSuccess() {
-                        // Update current user points locally
-                        int newPoints = currentUser.getPoints() - skin.getPrice();
-                        currentUser.setPoints(newPoints);
+                        Log.d(TAG, "Purchase successful, reloading user data to get updated points");
+                        
+                        // Points are already deducted by Firebase, just reload user data
+                        // This will automatically update currentUser object and UI
+                        loadUserData();
                         
                         // Update profile data
                         if (userProfile != null) {
@@ -249,14 +253,13 @@ public class SkinSelectionFragment extends Fragment implements SkinSelectionAdap
                         
                         // Update UI
                         skin.setUnlocked(true);
-                        updateUserPointsDisplay();
                         adapter.notifyDataSetChanged();
                         
                         Toast.makeText(requireContext(), 
                                 "Successfully purchased " + skin.getName() + "!", 
                                 Toast.LENGTH_SHORT).show();
                         
-                        Log.d(TAG, "Skin purchased: " + skin.getName() + ", Points remaining: " + newPoints);
+                        Log.d(TAG, "Skin purchased: " + skin.getName() + " - UI updated");
                     }
                     
                     @Override
