@@ -160,12 +160,23 @@ public class StatsFragment extends Fragment {
     }
 
     private void loadTrashData() {
-        if (userId != -1) {
-            executor.execute(() -> {
+        if (userId != -1) {            executor.execute(() -> {
                 // Get all trash data for this user
                 trashList = db.trashDao().getTrashByUserIdSync(userId);
                 
+                // Check if fragment is still attached to activity
+                if (!isAdded() || getActivity() == null) {
+                    Log.d("StatsFragment", "⚠️ Fragment not attached, skipping trash data UI update");
+                    return;
+                }
+                
                 requireActivity().runOnUiThread(() -> {
+                    // Double check in case fragment was detached during the runOnUiThread call
+                    if (!isAdded() || getActivity() == null) {
+                        Log.d("StatsFragment", "⚠️ Fragment detached during UI thread execution, skipping trash data update");
+                        return;
+                    }
+                    
                     binding.progressIndicator.setVisibility(View.GONE);
                     updateTrashAnalytics();
                 });
@@ -593,12 +604,23 @@ public class StatsFragment extends Fragment {
      */
     private void setupRealTimeStatsSync() {
         Log.d("StatsFragment", "🔥 Setting up real-time Firebase stats sync with local data merge");
-        
-        // Subscribe to real-time stats updates
+          // Subscribe to real-time stats updates
         dataManager.subscribeToUserStats(new FirebaseDataManager.StatsDataCallback() {
             @Override
             public void onStatsLoaded(FirebaseDataManager.UserStats stats) {
+                // Check if fragment is still attached to activity
+                if (!isAdded() || getActivity() == null) {
+                    Log.d("StatsFragment", "⚠️ Fragment not attached, skipping stats update");
+                    return;
+                }
+                
                 requireActivity().runOnUiThread(() -> {
+                    // Double check in case fragment was detached during the runOnUiThread call
+                    if (!isAdded() || getActivity() == null) {
+                        Log.d("StatsFragment", "⚠️ Fragment detached during UI thread execution, skipping stats update");
+                        return;
+                    }
+                    
                     Log.d("StatsFragment", "🔥 Real-time Firebase stats received: " + stats.toString());
                     Log.d("StatsFragment", "📊 Firebase Data - Points: " + stats.getTotalPoints() + 
                           ", Distance: " + stats.getTotalDistance() + ", Sessions: " + stats.getTotalSessions());
@@ -614,10 +636,21 @@ public class StatsFragment extends Fragment {
                     Log.d("StatsFragment", "✅ UI updated with Firebase stats and local charts");
                 });
             }
-            
-            @Override
+              @Override
             public void onError(String error) {
+                // Check if fragment is still attached to activity
+                if (!isAdded() || getActivity() == null) {
+                    Log.d("StatsFragment", "⚠️ Fragment not attached, skipping error handling");
+                    return;
+                }
+                
                 requireActivity().runOnUiThread(() -> {
+                    // Double check in case fragment was detached during the runOnUiThread call
+                    if (!isAdded() || getActivity() == null) {
+                        Log.d("StatsFragment", "⚠️ Fragment detached during UI thread execution, skipping error handling");
+                        return;
+                    }
+                    
                     Log.w("StatsFragment", "❌ Firebase stats error: " + error);
                     Log.w("StatsFragment", "Continuing with local data display");
                     
@@ -750,8 +783,7 @@ public class StatsFragment extends Fragment {
      */
     private void refreshLocalDataForCharts() {
         Log.d("StatsFragment", "🔄 Refreshing local data for charts and analytics");
-        
-        if (userId != -1) {
+          if (userId != -1) {
             executor.execute(() -> {
                 try {
                     // Get latest records for chart calculations
@@ -761,7 +793,19 @@ public class StatsFragment extends Fragment {
                     Log.d("StatsFragment", "📊 Latest local data: " + latestRecords.size() + 
                           " records, " + latestTrash.size() + " trash items");
                     
+                    // Check if fragment is still attached to activity
+                    if (!isAdded() || getActivity() == null) {
+                        Log.d("StatsFragment", "⚠️ Fragment not attached, skipping local data refresh UI update");
+                        return;
+                    }
+                    
                     requireActivity().runOnUiThread(() -> {
+                        // Double check in case fragment was detached during the runOnUiThread call
+                        if (!isAdded() || getActivity() == null) {
+                            Log.d("StatsFragment", "⚠️ Fragment detached during UI thread execution, skipping local data refresh");
+                            return;
+                        }
+                        
                         // Update local lists for chart calculations
                         recordList = latestRecords != null ? latestRecords : new ArrayList<>();
                         trashList = latestTrash != null ? latestTrash : new ArrayList<>();
