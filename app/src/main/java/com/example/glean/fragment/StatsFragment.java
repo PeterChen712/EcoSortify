@@ -242,24 +242,31 @@ public class StatsFragment extends Fragment {
         
         return weeklyDistance;
     }
-    
-    private void setupWeeklyDistanceChart() {
+      private void setupWeeklyDistanceChart() {
         LineChart chart = binding.lineChartWeeklyDistance;
         TextView emptyState = binding.tvChartEmptyState;
         
+        Log.d("StatsFragment", "📈 Setting up weekly distance chart");
+        
         // Get daily distance data for the last 7 days
         Map<String, Float> dailyDistances = calculateDailyDistances();
+        
+        Log.d("StatsFragment", "📊 Chart data check - Daily distances map size: " + dailyDistances.size());
+        Log.d("StatsFragment", "📊 All distances zero check: " + allDistancesZero(dailyDistances));
         
         if (dailyDistances.isEmpty() || allDistancesZero(dailyDistances)) {
             // Show empty state
             chart.setVisibility(View.GONE);
             emptyState.setVisibility(View.VISIBLE);
+            Log.d("StatsFragment", "📈 Showing empty chart state - no valid distance data");
             return;
         }
         
         // Hide empty state and show chart
         chart.setVisibility(View.VISIBLE);
         emptyState.setVisibility(View.GONE);
+        
+        Log.d("StatsFragment", "📈 Building chart with valid data");
         
         // Prepare data entries
         List<Entry> entries = new ArrayList<>();
@@ -356,13 +363,20 @@ public class StatsFragment extends Fragment {
         
         // Refresh chart
         chart.invalidate();
-    }
-      private Map<String, Float> calculateDailyDistances() {
+    }      private Map<String, Float> calculateDailyDistances() {
         Map<String, Float> dailyDistances = new HashMap<>();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
         
         // Get records from the last 7 days
         long oneWeekAgo = System.currentTimeMillis() - (7 * 24 * 60 * 60 * 1000L);
+        
+        Log.d("StatsFragment", "📈 Calculating daily distances for last 7 days");
+        Log.d("StatsFragment", "📊 Total records to process: " + (recordList != null ? recordList.size() : 0));
+        
+        if (recordList == null || recordList.isEmpty()) {
+            Log.d("StatsFragment", "⚠️ No records available for distance calculation");
+            return dailyDistances;
+        }
         
         for (RecordEntity record : recordList) {
             if (record.getCreatedAt() >= oneWeekAgo) {
@@ -371,34 +385,43 @@ public class StatsFragment extends Fragment {
                 float newDistance = currentDistance + record.getDistance();
                 dailyDistances.put(dateKey, newDistance);
                 
-                // Debug logging for small distances
-                Log.d("StatsFragment", "Date: " + dateKey + ", Record distance: " + 
-                    record.getDistance() + "m, Total distance: " + newDistance + "m");
+                Log.d("StatsFragment", "📊 Date: " + dateKey + ", Record distance: " + 
+                    record.getDistance() + "m, Daily total: " + newDistance + "m");
             }
         }
         
+        Log.d("StatsFragment", "✅ Daily distances calculated: " + dailyDistances.toString());
         return dailyDistances;
-    }
-      private boolean allDistancesZero(Map<String, Float> dailyDistances) {
-        for (Float distance : dailyDistances.values()) {
+    }      private boolean allDistancesZero(Map<String, Float> dailyDistances) {
+        Log.d("StatsFragment", "🔍 Checking if all distances are zero...");
+        
+        for (Map.Entry<String, Float> entry : dailyDistances.entrySet()) {
+            Float distance = entry.getValue();
+            Log.d("StatsFragment", "🔍 Date: " + entry.getKey() + ", Distance: " + distance + "m");
+            
             if (distance > 0.01) { // Consider distances > 0.01 meters as valid
+                Log.d("StatsFragment", "✅ Found valid distance: " + distance + "m");
                 return false;
             }
         }
+        
+        Log.d("StatsFragment", "⚠️ All distances are zero or very small");
         return true;
-    }
-
-    private void updateTrashAnalytics() {
+    }private void updateTrashAnalytics() {
         LinearLayout trashItemsContainer = binding.llTrashItems;
         TextView emptyState = binding.tvTrashEmptyState;
         
         // Clear existing views
         trashItemsContainer.removeAllViews();
         
+        Log.d("StatsFragment", "🗑️ Updating trash analytics - Total trash items: " + 
+              (trashList != null ? trashList.size() : 0));
+        
         if (trashList == null || trashList.isEmpty()) {
             // Show empty state
             emptyState.setVisibility(View.VISIBLE);
             trashItemsContainer.setVisibility(View.GONE);
+            Log.d("StatsFragment", "📊 No trash data found - showing empty state");
             return;
         }
         
@@ -416,7 +439,10 @@ public class StatsFragment extends Fragment {
             }
             
             trashTypeCount.put(trashType, trashTypeCount.getOrDefault(trashType, 0) + 1);
+            Log.d("StatsFragment", "🗑️ Trash item: " + trashType + " (Record ID: " + trash.getRecordId() + ")");
         }
+        
+        Log.d("StatsFragment", "📊 Trash type summary: " + trashTypeCount.toString());
         
         // Create UI elements for each trash type
         for (Map.Entry<String, Integer> entry : trashTypeCount.entrySet()) {
@@ -426,6 +452,8 @@ public class StatsFragment extends Fragment {
             View trashItemView = createTrashTypeItem(trashType, count);
             trashItemsContainer.addView(trashItemView);
         }
+        
+        Log.d("StatsFragment", "✅ Trash analytics updated with " + trashTypeCount.size() + " types");
     }
 
     private View createTrashTypeItem(String trashType, int count) {
@@ -537,13 +565,13 @@ public class StatsFragment extends Fragment {
             return;
         }
         
-        // CRITICAL FIX: For logged-in users, ONLY load Firebase data, not local data
-        Log.d("StatsFragment", "🔥 Loading ONLY Firebase data for logged-in user");
+        // ENHANCED FIX: Load local data first for immediate display, then sync with Firebase
+        Log.d("StatsFragment", "🔥 Loading local data first, then syncing with Firebase for logged-in user");
         
-        // Clear any cached/local data first to prevent display of stale data
-        clearLocalDisplayData();
+        // Load local data immediately for better UX
+        loadLocalDataForImediateDisplay();
         
-        // Force refresh data from Firebase FIRST (don't load local data)
+        // Then sync with Firebase in background
         dataManager.forceRefreshUserDataAfterLogin(new FirebaseDataManager.DataSyncCallback() {
             @Override
             public void onSuccess() {
@@ -554,19 +582,17 @@ public class StatsFragment extends Fragment {
             @Override
             public void onError(String error) {
                 Log.w("StatsFragment", "⚠️ Failed to load fresh Firebase data: " + error);
-                // Only fallback to local data if Firebase completely fails
-                Log.w("StatsFragment", "Falling back to local data due to Firebase error");
-                loadData();
+                // Continue with local data if Firebase fails
+                Log.w("StatsFragment", "Continuing with local data due to Firebase error");
                 binding.progressIndicator.setVisibility(View.GONE);
             }
         });
-    }
-      /**
+    }    /**
      * Set up real-time statistics synchronization
-     * ENHANCED: Prioritize Firebase data over local data
+     * ENHANCED: Merge Firebase data with local data for complete picture
      */
     private void setupRealTimeStatsSync() {
-        Log.d("StatsFragment", "🔥 Setting up real-time Firebase stats sync (Firebase data only)");
+        Log.d("StatsFragment", "🔥 Setting up real-time Firebase stats sync with local data merge");
         
         // Subscribe to real-time stats updates
         dataManager.subscribeToUserStats(new FirebaseDataManager.StatsDataCallback() {
@@ -577,11 +603,15 @@ public class StatsFragment extends Fragment {
                     Log.d("StatsFragment", "📊 Firebase Data - Points: " + stats.getTotalPoints() + 
                           ", Distance: " + stats.getTotalDistance() + ", Sessions: " + stats.getTotalSessions());
                     
-                    // CRITICAL: Update UI with Firebase data (not local data)
+                    // ENHANCED: Update UI with Firebase data and refresh local data for charts
                     updateUIWithFirebaseStats(stats);
+                    
+                    // Refresh local data for charts and trash analytics (important for recent sessions)
+                    refreshLocalDataForCharts();
+                    
                     binding.progressIndicator.setVisibility(View.GONE);
                     
-                    Log.d("StatsFragment", "✅ UI updated with Firebase stats successfully");
+                    Log.d("StatsFragment", "✅ UI updated with Firebase stats and local charts");
                 });
             }
             
@@ -589,10 +619,9 @@ public class StatsFragment extends Fragment {
             public void onError(String error) {
                 requireActivity().runOnUiThread(() -> {
                     Log.w("StatsFragment", "❌ Firebase stats error: " + error);
-                    Log.w("StatsFragment", "Fallback: Loading local data due to Firebase error");
+                    Log.w("StatsFragment", "Continuing with local data display");
                     
-                    // Only use local data as absolute fallback
-                    loadData();
+                    // Keep using local data that was already loaded
                     binding.progressIndicator.setVisibility(View.GONE);
                 });
             }
@@ -610,23 +639,28 @@ public class StatsFragment extends Fragment {
                 Log.w("StatsFragment", "⚠️ Firebase sync error: " + error);
             }
         });
-    }
-      private void updateUIWithFirebaseStats(FirebaseDataManager.UserStats stats) {
+    }    private void updateUIWithFirebaseStats(FirebaseDataManager.UserStats stats) {
         Log.d("StatsFragment", "🔄 Updating UI with Firebase stats data...");
         Log.d("StatsFragment", "📊 Updating - Points: " + stats.getTotalPoints() + 
               ", Distance: " + stats.getTotalDistance() + ", Sessions: " + stats.getTotalSessions());
         
-        // Update UI with Firebase stats data (NEVER use local data here)
+        // Update main statistics with Firebase data
         binding.tvTotalPoints.setText(String.valueOf(stats.getTotalPoints()));
         binding.tvTotalDistance.setText(stats.getTotalDistance() > 0 ? 
             String.format(Locale.getDefault(), "%.2f", stats.getTotalDistance() / 1000) : "0,00");
-        
-        // Update other stats
         binding.tvTotalRuns.setText(String.valueOf(stats.getTotalSessions()));
         
-        // Calculate and display achievements/badges count based on points
+        // Calculate and display achievements/badges count based on Firebase points
         int badgeCount = calculateBadgeCount(stats.getTotalPoints());
         binding.tvAchievements.setText(String.valueOf(badgeCount));
+        
+        // Update average time calculation with Firebase data
+        if (stats.getTotalSessions() > 0 && stats.getTotalDuration() > 0) {
+            long avgDuration = stats.getTotalDuration() / stats.getTotalSessions();
+            binding.tvAverageTime.setText(formatDuration(avgDuration / 1000)); // Convert to seconds
+        } else {
+            binding.tvAverageTime.setText("0 menit");
+        }
         
         // Update progress bars and other UI elements based on Firebase data
         updateProgressBars(stats);
@@ -654,25 +688,139 @@ public class StatsFragment extends Fragment {
         Log.d("StatsFragment", "Progress - Distance: " + progressDistance + "%, Points: " + 
               progressPoints + "%, Sessions: " + progressSessions + "%");
     }
-    
-    /**
+      /**
      * Clear local display data to prevent showing cached/stale data
-     * This ensures UI starts fresh before Firebase data loads
+     * ENHANCED: Show loading placeholders instead of clearing everything
      */
     private void clearLocalDisplayData() {
-        Log.d("StatsFragment", "🧹 Clearing local display data to prevent stale data");
+        Log.d("StatsFragment", "🧹 Setting loading placeholders while Firebase data loads");
         
-        // Reset all statistics displays to show loading state or empty values
-        binding.tvTotalPoints.setText("--");
-        binding.tvTotalDistance.setText("--");
-        binding.tvTotalRuns.setText("--");
-        binding.tvAchievements.setText("--");
+        // Show loading placeholders instead of clearing everything
+        binding.tvTotalPoints.setText("...");
+        binding.tvTotalDistance.setText("...");
+        binding.tvTotalRuns.setText("...");
+        binding.tvAchievements.setText("...");
+        binding.tvAverageTime.setText("...");
         
-        // Clear any other cached data
-        recordList.clear();
-        trashList.clear();
-        dataLoaded = false;
+        // Don't clear recordList and trashList to preserve chart data
+        // Charts will be refreshed when new data arrives
         
-        Log.d("StatsFragment", "🧹 Local display data cleared successfully");
+        Log.d("StatsFragment", "🧹 Loading placeholders set, preserving chart data");
+    }
+    
+    /**
+     * Load local data immediately for better user experience
+     * This ensures users see their latest plogging data right after session completion
+     */
+    private void loadLocalDataForImediateDisplay() {
+        Log.d("StatsFragment", "📊 Loading local data for immediate display");
+        
+        if (userId != -1) {
+            // Load user data
+            db.userDao().getUserById(userId).observe(getViewLifecycleOwner(), userEntity -> {
+                if (userEntity != null) {
+                    user = userEntity;
+                    Log.d("StatsFragment", "✅ Local user data loaded: " + user.getPoints() + " points");
+                }
+            });
+              
+            // Load record data
+            db.recordDao().getRecordsByUserId(userId).observe(getViewLifecycleOwner(), records -> {
+                if (records != null && !records.isEmpty()) {
+                    recordList = records;
+                    Log.d("StatsFragment", "✅ Local records loaded: " + records.size() + " sessions");
+                    updateUserStats();
+                    loadTrashData(); // Load trash data after records are loaded
+                    dataLoaded = true;
+                } else {
+                    recordList = new ArrayList<>();
+                    updateUserStats();
+                    loadTrashData(); // Still load trash data even if no records
+                }
+            });        
+        } else {
+            updateUserStats();
+            loadTrashData(); // Still load trash data
+        }
+    }
+    
+    /**
+     * Refresh local data specifically for charts and analytics
+     * This ensures charts show the most recent local data including just-completed sessions
+     */
+    private void refreshLocalDataForCharts() {
+        Log.d("StatsFragment", "🔄 Refreshing local data for charts and analytics");
+        
+        if (userId != -1) {
+            executor.execute(() -> {
+                try {
+                    // Get latest records for chart calculations
+                    List<RecordEntity> latestRecords = db.recordDao().getRecordsByUserIdSync(userId);
+                    List<TrashEntity> latestTrash = db.trashDao().getTrashByUserIdSync(userId);
+                    
+                    Log.d("StatsFragment", "📊 Latest local data: " + latestRecords.size() + 
+                          " records, " + latestTrash.size() + " trash items");
+                    
+                    requireActivity().runOnUiThread(() -> {
+                        // Update local lists for chart calculations
+                        recordList = latestRecords != null ? latestRecords : new ArrayList<>();
+                        trashList = latestTrash != null ? latestTrash : new ArrayList<>();
+                        
+                        // Refresh charts and analytics with latest local data
+                        setupWeeklyDistanceChart();
+                        updateTrashAnalytics();
+                        
+                        Log.d("StatsFragment", "✅ Charts refreshed with latest local data");
+                    });
+                } catch (Exception e) {
+                    Log.e("StatsFragment", "Error refreshing local data for charts", e);
+                }
+            });
+        }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        
+        // ENHANCED: Always refresh data when fragment resumes
+        // This is crucial for showing data after plogging session completion
+        Log.d("StatsFragment", "📱 Fragment resumed - refreshing data");
+        
+        if (!NetworkUtil.isNetworkAvailable(requireContext())) {
+            showNetworkError();
+            return;
+        }
+        
+        if (!authManager.isLoggedIn()) {
+            // For guest users, reload local data
+            loadData();
+        } else {
+            // For logged-in users, refresh both local and Firebase data
+            loadDataWithFirebaseSync();
+        }
+    }
+    
+    /**
+     * Force refresh all statistics data
+     * Call this method when returning from plogging session to ensure fresh data
+     */
+    public void forceRefreshStats() {
+        Log.d("StatsFragment", "🔄 Force refresh stats triggered");
+        
+        if (!isAdded() || binding == null) {
+            Log.w("StatsFragment", "⚠️ Fragment not ready for refresh");
+            return;
+        }
+        
+        binding.progressIndicator.setVisibility(View.VISIBLE);
+        
+        if (!authManager.isLoggedIn()) {
+            // For guest users, reload local data
+            loadData();
+        } else {
+            // For logged-in users, force refresh both local and Firebase data
+            loadDataWithFirebaseSync();
+        }
     }
 }
