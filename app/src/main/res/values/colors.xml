@@ -18,7 +18,10 @@
     <color name="white">#FFFFFF</color>
     <color name="black">#000000</color>
     <color name="gray">#757575</color>
-    <color name="light_gray">#EEEEEE</color><!-- Text colors -->
+    <color name="light_gray">#EEEEEE</color>
+    <color name="overlay_dark">#80000000</color> <!-- Semi-transparent black overlay -->
+    
+    <!-- Text colors -->
     <color name="text_primary">#212121</color>
     <color name="text_primary_dark">#212121</color>
     <color name="text_secondary">#757575</color>

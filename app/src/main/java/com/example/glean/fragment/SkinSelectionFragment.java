@@ -21,6 +21,7 @@ import com.example.glean.databinding.FragmentSkinSelectionBinding;
 import com.example.glean.db.AppDatabase;
 import com.example.glean.model.ProfileSkin;
 import com.example.glean.model.UserEntity;
+import com.example.glean.model.UserProfile;
 import com.example.glean.service.FirebaseDataManager;
 
 import java.util.ArrayList;
@@ -34,9 +35,8 @@ public class SkinSelectionFragment extends Fragment implements SkinSelectionAdap
     private UserEntity currentUser;
     private List<ProfileSkin> availableSkins;
     private String selectedSkinId = "default"; // Initialize with default value
-    private String originalSkinId = null;
-    private FirebaseDataManager firebaseDataManager;
-    private FirebaseDataManager.UserProfile userProfile;
+    private String originalSkinId = null;    private FirebaseDataManager firebaseDataManager;
+    private UserProfile userProfile;
     
     @Nullable
     @Override
@@ -83,7 +83,7 @@ public class SkinSelectionFragment extends Fragment implements SkinSelectionAdap
       private void loadCurrentSkin() {
         // Load profile customization from Firebase
         firebaseDataManager.loadProfileCustomization(new FirebaseDataManager.ProfileDataCallback() {            @Override
-            public void onProfileLoaded(FirebaseDataManager.UserProfile profile) {
+            public void onProfileLoaded(UserProfile profile) {
                 userProfile = profile;
                 
                 String currentSkinId = profile.getActiveBackground();

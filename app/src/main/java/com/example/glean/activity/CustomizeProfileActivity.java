@@ -16,6 +16,7 @@ import androidx.viewpager2.widget.ViewPager2;
 
 import com.example.glean.R;
 import com.example.glean.databinding.ActivityCustomizeProfileBinding;
+import com.example.glean.fragment.AvatarSelectionFragment;
 import com.example.glean.fragment.BadgeSelectionFragment;
 import com.example.glean.fragment.SkinSelectionFragment;
 import com.google.android.material.tabs.TabLayout;
@@ -65,13 +66,12 @@ public class CustomizeProfileActivity extends AppCompatActivity {
             Toast.makeText(this, "Error opening profile customization: " + e.getMessage(), Toast.LENGTH_LONG).show();
             finish();
             return;        }
-          try {
-            // Initialize tab titles with fallback
+          try {            // Initialize tab titles with fallback
             try {
-                tabTitles = new String[]{getString(R.string.badges_tab), getString(R.string.backgrounds_tab)};
+                tabTitles = new String[]{getString(R.string.avatars_tab), getString(R.string.badges_tab), getString(R.string.backgrounds_tab)};
             } catch (Exception stringException) {
                 Log.w(TAG, "Error getting string resources, using fallback", stringException);
-                tabTitles = new String[]{"Badges", "Backgrounds"};
+                tabTitles = new String[]{"Avatars", "Badges", "Backgrounds"};
             }
             
             Log.d(TAG, "Setting up UI");
@@ -189,12 +189,22 @@ public class CustomizeProfileActivity extends AppCompatActivity {
         }
     }
     
-    private void saveChanges() {        // Save changes from both fragments
+    private void saveChanges() {        // Save changes from all fragments
         FragmentStateAdapter adapter = (FragmentStateAdapter) binding.viewPager.getAdapter();
+        
+        // Save avatar selection
+        try {
+            Fragment avatarFragment = getSupportFragmentManager().findFragmentByTag("f0");
+            if (avatarFragment instanceof AvatarSelectionFragment) {
+                ((AvatarSelectionFragment) avatarFragment).saveSelection();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error saving avatar selection", e);
+        }
         
         // Save badge selection
         try {
-            Fragment badgeFragment = getSupportFragmentManager().findFragmentByTag("f0");
+            Fragment badgeFragment = getSupportFragmentManager().findFragmentByTag("f1");
             if (badgeFragment instanceof BadgeSelectionFragment) {
                 ((BadgeSelectionFragment) badgeFragment).saveSelection();
             }
@@ -204,7 +214,7 @@ public class CustomizeProfileActivity extends AppCompatActivity {
         
         // Save skin selection  
         try {
-            Fragment skinFragment = getSupportFragmentManager().findFragmentByTag("f1");
+            Fragment skinFragment = getSupportFragmentManager().findFragmentByTag("f2");
             if (skinFragment instanceof SkinSelectionFragment) {
                 ((SkinSelectionFragment) skinFragment).saveSelection();
             }
@@ -256,23 +266,24 @@ public class CustomizeProfileActivity extends AppCompatActivity {
         public TabAdapter(@NonNull FragmentActivity fragmentActivity) {
             super(fragmentActivity);
         }
-        
-        @NonNull
+          @NonNull
         @Override
         public Fragment createFragment(int position) {
             switch (position) {
                 case 0:
-                    return new BadgeSelectionFragment();
+                    return new AvatarSelectionFragment();
                 case 1:
+                    return new BadgeSelectionFragment();
+                case 2:
                     return new SkinSelectionFragment();
                 default:
-                    return new BadgeSelectionFragment();
+                    return new AvatarSelectionFragment();
             }
         }
         
         @Override
         public int getItemCount() {
-            return 2; // Badge and Skin tabs
+            return 3; // Avatar, Badge and Skin tabs
         }
     }
 }

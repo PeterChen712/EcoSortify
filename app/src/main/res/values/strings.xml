@@ -45,8 +45,8 @@
     <string name="error_opening_settings">Error buka pengaturan</string>
     <string name="logout_title">Logout</string>
     <string name="logout_message">Yakin mau logout?</string>
-    <string name="logout">Logout</string>
-      <!-- CustomizeProfile Activity -->
+    <string name="logout">Logout</string>    <!-- CustomizeProfile Activity -->
+    <string name="avatars_tab">Avatar</string>
     <string name="badges_tab">Lencana</string>
     <string name="backgrounds_tab">Background</string>
     <string name="user_not_found_error">Error: User gak ditemukan</string>

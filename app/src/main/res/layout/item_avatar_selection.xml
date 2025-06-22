@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    android:background="@drawable/avatar_normal_border"
+    android:clickable="true"
+    android:focusable="true">
+
+    <!-- Main Content -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp"
+        android:gravity="center">
+
+        <!-- Avatar Image -->
+        <ImageView
+            android:id="@+id/iv_avatar"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:src="@drawable/avatar_default"
+            android:scaleType="centerCrop"
+            android:background="@drawable/circle_background" />
+
+        <!-- Avatar Name -->
+        <TextView
+            android:id="@+id/tv_avatar_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Avatar"
+            android:textSize="12sp"
+            android:textColor="@color/text_primary"
+            android:textAlignment="center"
+            android:layout_marginTop="8dp"
+            android:maxLines="2"
+            android:ellipsize="end" />
+
+        <!-- Required Points (for locked avatars) -->
+        <TextView
+            android:id="@+id/tv_required_points"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="100 points"
+            android:textSize="10sp"
+            android:textColor="@color/accent_color"
+            android:textAlignment="center"
+            android:layout_marginTop="4dp"
+            android:visibility="gone" />
+
+    </LinearLayout>
+
+    <!-- Selection Indicator -->
+    <View
+        android:id="@+id/selection_indicator"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_gravity="top|end"
+        android:layout_margin="4dp"
+        android:background="@drawable/ic_check"
+        android:backgroundTint="@color/primary_color"
+        android:visibility="gone" />    <!-- Lock Overlay (for locked avatars) -->
+    <FrameLayout
+        android:id="@+id/lock_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/overlay_dark"
+        android:visibility="gone">
+
+        <ImageView
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_gravity="center"
+            android:src="@drawable/ic_lock"
+            app:tint="@color/white" />
+
+    </FrameLayout>
+
+</FrameLayout>

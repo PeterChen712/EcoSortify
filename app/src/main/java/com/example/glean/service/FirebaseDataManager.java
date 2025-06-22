@@ -23,11 +23,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import com.example.glean.model.UserStats;
+import com.example.glean.model.RankingUser;
+import com.example.glean.model.UserProfile;
 
-/**
- * Manager untuk sinkronisasi data statistik, ranking, dan profile user dengan Firebase
- * Menghandle real-time synchronization untuk semua data user
- */
 public class FirebaseDataManager {
     
     private static final String TAG = "FirebaseDataManager";
@@ -923,15 +922,13 @@ public class FirebaseDataManager {
             }
         });
     }
-      /**
-     * Update data profile di database lokal
-     */    private void updateLocalProfileData(UserProfile profile) {
-        // Clear any cached profile data from previous user first
+    private void updateLocalProfileData(UserProfile profile) {
         this.userProfile = null;
         
         executor.execute(() -> {
             try {
-                UserEntity user = localDb.userDao().getUserByIdSync(getCurrentLocalUserId());
+                int localUserId = getCurrentLocalUserId();
+                UserEntity user = localDb.userDao().getUserByIdSync(localUserId);
                 
                 if (user != null) {
                     // Update user data with Firebase data using enhanced getters
@@ -955,6 +952,11 @@ public class FirebaseDataManager {
                     }
                     if (badgeUrl != null && !badgeUrl.isEmpty()) {
                         user.setActiveDecoration(badgeUrl);
+                    }
+                      // Sync activeBackground from Firebase to activeAvatar in local database
+                    if (profile.getActiveBackground() != null && !profile.getActiveBackground().isEmpty()) {
+                        user.setActiveAvatar(profile.getActiveBackground());
+                        Log.d(TAG, "✅ Synced activeBackground (" + profile.getActiveBackground() + ") to local activeAvatar");
                     }
                     
                     // Update user in database
@@ -1444,327 +1446,8 @@ public class FirebaseDataManager {
         return authManager != null ? authManager.getCurrentLocalUserId() : -1;
     }
 
-    // Data classes for Firebase
-    public static class UserStats {
-        private int totalPoints;
-        private double totalDistance;
-        private int totalTrashCollected;
-        private int totalSessions;
-        private long totalDuration;
-        private long lastUpdated;
-        
-        public UserStats() {} // Required for Firebase
-        
-        public UserStats(int totalPoints, double totalDistance, int totalTrashCollected, 
-                        int totalSessions, long totalDuration, long lastUpdated) {
-            this.totalPoints = totalPoints;
-            this.totalDistance = totalDistance;
-            this.totalTrashCollected = totalTrashCollected;
-            this.totalSessions = totalSessions;
-            this.totalDuration = totalDuration;
-            this.lastUpdated = lastUpdated;
-        }
-        
-        // Getters and setters
-        public int getTotalPoints() { return totalPoints; }
-        public void setTotalPoints(int totalPoints) { this.totalPoints = totalPoints; }
-        
-        public double getTotalDistance() { return totalDistance; }
-        public void setTotalDistance(double totalDistance) { this.totalDistance = totalDistance; }
-        
-        public int getTotalTrashCollected() { return totalTrashCollected; }
-        public void setTotalTrashCollected(int totalTrashCollected) { this.totalTrashCollected = totalTrashCollected; }
-        
-        public int getTotalSessions() { return totalSessions; }
-        public void setTotalSessions(int totalSessions) { this.totalSessions = totalSessions; }
-        
-        public long getTotalDuration() { return totalDuration; }
-        public void setTotalDuration(long totalDuration) { this.totalDuration = totalDuration; }
-        
-        public long getLastUpdated() { return lastUpdated; }
-        public void setLastUpdated(long lastUpdated) { this.lastUpdated = lastUpdated; }
-        
-        @Override
-        public String toString() {
-            return "UserStats{points=" + totalPoints + ", distance=" + totalDistance + 
-                   ", trash=" + totalTrashCollected + ", sessions=" + totalSessions + "}";
-        }
-    }
-      public static class RankingUser {
-        private String userId;
-        private String username;
-        private String fullName;
-        private String photoURL;  // Add photoURL field
-        private int totalPoints;
-        private double totalDistance;
-        private int totalTrashCollected;
-        private long lastUpdated;
-        
-        public RankingUser() {} // Required for Firebase
-        
-        public RankingUser(String userId, String username, String fullName, int totalPoints, 
-                          double totalDistance, int totalTrashCollected, long lastUpdated) {
-            this.userId = userId;
-            this.username = username;
-            this.fullName = fullName;
-            this.totalPoints = totalPoints;
-            this.totalDistance = totalDistance;
-            this.totalTrashCollected = totalTrashCollected;
-            this.lastUpdated = lastUpdated;
-        }
-        
-        // Getters and setters
-        public String getUserId() { return userId; }
-        public void setUserId(String userId) { this.userId = userId; }
-        
-        public String getUsername() { return username; }
-        public void setUsername(String username) { this.username = username; }
-        
-        public String getFullName() { return fullName; }
-        public void setFullName(String fullName) { this.fullName = fullName; }
-        
-        public String getPhotoURL() { return photoURL; }
-        public void setPhotoURL(String photoURL) { this.photoURL = photoURL; }
-        
-        public int getTotalPoints() { return totalPoints; }
-        public void setTotalPoints(int totalPoints) { this.totalPoints = totalPoints; }
-        
-        public double getTotalDistance() { return totalDistance; }
-        public void setTotalDistance(double totalDistance) { this.totalDistance = totalDistance; }
-        
-        public int getTotalTrashCollected() { return totalTrashCollected; }
-        public void setTotalTrashCollected(int totalTrashCollected) { this.totalTrashCollected = totalTrashCollected; }
-        
-        public long getLastUpdated() { return lastUpdated; }
-        public void setLastUpdated(long lastUpdated) { this.lastUpdated = lastUpdated; }
-    }
-      public static class UserProfile {
-        private String userId;
-        private String username;
-        private String firstName;
-        private String lastName;
-        private String email;
-        private String avatarUrl;
-        private String badgeUrl;
-        private long lastUpdated;        // Additional fields to handle various Firebase document structures
-        private String fullName;           // For Firebase documents with combined name
-        private String nama;               // For Indonesian field names
-        private String photoURL;           // Alternative photo field name
-        private String profileImagePath;   // Alternative image path field
-        private int totalPoints;           // Stats might be stored in profile
-        private double totalKm;            // Distance data in profile
-        private int currentPoints;         // Current points field
-        private double totalPloggingDistance; // Full distance field name
-        private int totalTrashCollected;   // Trash collection data
-        private int currentLevel;          // User level
-        
-        // Profile customization fields
-        private List<String> selectedBadges;       // Array/List of selected badges (max 3)
-        private List<String> ownedBackgrounds;     // Array/List of owned backgrounds
-        private String activeBackground;           // Currently active background ID
-        
-        public UserProfile() {} // Required for Firebase
-        
-        public UserProfile(String userId, String username, String firstName, String lastName,
-                          String email, String avatarUrl, String badgeUrl, long lastUpdated) {
-            this.userId = userId;
-            this.username = username;
-            this.firstName = firstName;
-            this.lastName = lastName;
-            this.email = email;
-            this.avatarUrl = avatarUrl;
-            this.badgeUrl = badgeUrl;
-            this.lastUpdated = lastUpdated;
-        }
-        
-        // Getters and setters for main fields
-        public String getUserId() { return userId; }
-        public void setUserId(String userId) { this.userId = userId; }
-        
-        public String getUsername() { return username; }
-        public void setUsername(String username) { this.username = username; }
-        
-        public String getFirstName() { 
-            // Fallback logic: try firstName, then fullName, then nama
-            if (firstName != null && !firstName.isEmpty()) {
-                return firstName;
-            } else if (fullName != null && !fullName.isEmpty()) {
-                // Extract first name from fullName
-                String[] parts = fullName.split(" ");
-                return parts.length > 0 ? parts[0] : fullName;
-            } else if (nama != null && !nama.isEmpty()) {
-                String[] parts = nama.split(" ");
-                return parts.length > 0 ? parts[0] : nama;
-            }
-            return firstName;
-        }
-        public void setFirstName(String firstName) { this.firstName = firstName; }
-        
-        public String getLastName() { 
-            // Fallback logic: try lastName, then extract from fullName or nama
-            if (lastName != null && !lastName.isEmpty()) {
-                return lastName;
-            } else if (fullName != null && !fullName.isEmpty()) {
-                String[] parts = fullName.split(" ");
-                if (parts.length > 1) {
-                    StringBuilder lastNameBuilder = new StringBuilder();
-                    for (int i = 1; i < parts.length; i++) {
-                        if (i > 1) lastNameBuilder.append(" ");
-                        lastNameBuilder.append(parts[i]);
-                    }
-                    return lastNameBuilder.toString();
-                }
-            } else if (nama != null && !nama.isEmpty()) {
-                String[] parts = nama.split(" ");
-                if (parts.length > 1) {
-                    StringBuilder lastNameBuilder = new StringBuilder();
-                    for (int i = 1; i < parts.length; i++) {
-                        if (i > 1) lastNameBuilder.append(" ");
-                        lastNameBuilder.append(parts[i]);
-                    }
-                    return lastNameBuilder.toString();
-                }
-            }
-            return lastName;
-        }
-        public void setLastName(String lastName) { this.lastName = lastName; }
-        
-        public String getEmail() { return email; }
-        public void setEmail(String email) { this.email = email; }
-        
-        public String getAvatarUrl() { 
-            // Fallback logic: try avatarUrl, then photoURL, then profileImagePath
-            if (avatarUrl != null && !avatarUrl.isEmpty()) {
-                return avatarUrl;
-            } else if (photoURL != null && !photoURL.isEmpty()) {
-                return photoURL;
-            } else if (profileImagePath != null && !profileImagePath.isEmpty()) {
-                return profileImagePath;
-            }
-            return avatarUrl;
-        }
-        public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
-        
-        public String getBadgeUrl() { return badgeUrl; }
-        public void setBadgeUrl(String badgeUrl) { this.badgeUrl = badgeUrl; }
-        
-        public long getLastUpdated() { return lastUpdated; }
-        public void setLastUpdated(long lastUpdated) { this.lastUpdated = lastUpdated; }
-        
-        // Additional getters and setters for Firebase field mapping
-        public String getFullName() { return fullName; }
-        public void setFullName(String fullName) { 
-            this.fullName = fullName;
-            // Auto-populate firstName and lastName if they are empty
-            if ((firstName == null || firstName.isEmpty()) && fullName != null && !fullName.isEmpty()) {
-                String[] parts = fullName.split(" ");
-                if (parts.length > 0) {
-                    firstName = parts[0];
-                    if (parts.length > 1) {
-                        StringBuilder lastNameBuilder = new StringBuilder();
-                        for (int i = 1; i < parts.length; i++) {
-                            if (i > 1) lastNameBuilder.append(" ");
-                            lastNameBuilder.append(parts[i]);
-                        }
-                        lastName = lastNameBuilder.toString();
-                    }
-                }
-            }
-        }
-        
-        public String getNama() { return nama; }
-        public void setNama(String nama) { 
-            this.nama = nama;
-            // Auto-populate firstName and lastName if they are empty
-            if ((firstName == null || firstName.isEmpty()) && nama != null && !nama.isEmpty()) {
-                String[] parts = nama.split(" ");
-                if (parts.length > 0) {
-                    firstName = parts[0];
-                    if (parts.length > 1) {
-                        StringBuilder lastNameBuilder = new StringBuilder();
-                        for (int i = 1; i < parts.length; i++) {
-                            if (i > 1) lastNameBuilder.append(" ");
-                            lastNameBuilder.append(parts[i]);
-                        }
-                        lastName = lastNameBuilder.toString();
-                    }
-                }
-            }
-        }
-        
-        public String getPhotoURL() { return photoURL; }
-        public void setPhotoURL(String photoURL) { 
-            this.photoURL = photoURL;
-            // Auto-populate avatarUrl if empty
-            if ((avatarUrl == null || avatarUrl.isEmpty()) && photoURL != null && !photoURL.isEmpty()) {
-                avatarUrl = photoURL;
-            }
-        }
-        
-        public String getProfileImagePath() { return profileImagePath; }
-        public void setProfileImagePath(String profileImagePath) { 
-            this.profileImagePath = profileImagePath;
-            // Auto-populate avatarUrl if empty
-            if ((avatarUrl == null || avatarUrl.isEmpty()) && profileImagePath != null && !profileImagePath.isEmpty()) {
-                avatarUrl = profileImagePath;
-            }
-        }
-        
-        public int getTotalPoints() { return totalPoints; }
-        public void setTotalPoints(int totalPoints) { this.totalPoints = totalPoints; }
-        
-        public double getTotalKm() { return totalKm; }
-        public void setTotalKm(double totalKm) { this.totalKm = totalKm; }
-        
-        public int getCurrentPoints() { return currentPoints; }
-        public void setCurrentPoints(int currentPoints) { this.currentPoints = currentPoints; }
-        
-        public double getTotalPloggingDistance() { return totalPloggingDistance; }
-        public void setTotalPloggingDistance(double totalPloggingDistance) { this.totalPloggingDistance = totalPloggingDistance; }
-        
-        public int getTotalTrashCollected() { return totalTrashCollected; }
-        public void setTotalTrashCollected(int totalTrashCollected) { this.totalTrashCollected = totalTrashCollected; }        public int getCurrentLevel() { return currentLevel; }
-        public void setCurrentLevel(int currentLevel) { this.currentLevel = currentLevel; }
-        
-        // Profile customization getters and setters
-        public List<String> getSelectedBadges() { 
-            return selectedBadges != null ? selectedBadges : new ArrayList<>(); 
-        }
-        public void setSelectedBadges(List<String> selectedBadges) { this.selectedBadges = selectedBadges; }
-          public List<String> getOwnedBackgrounds() { 
-            return ownedBackgrounds != null ? ownedBackgrounds : new ArrayList<>(); 
-        }
-        public void setOwnedBackgrounds(List<String> ownedBackgrounds) { this.ownedBackgrounds = ownedBackgrounds; }
-        
-        public String getActiveBackground() { 
-            return activeBackground != null ? activeBackground : "default"; 
-        }
-        public void setActiveBackground(String activeBackground) { this.activeBackground = activeBackground; }
-        
-        /**
-         * Get the display name for UI purposes
-         */
-        public String getDisplayName() {
-            String first = getFirstName();
-            String last = getLastName();
-            
-            if (first != null && !first.isEmpty()) {
-                if (last != null && !last.isEmpty()) {
-                    return first + " " + last;
-                }
-                return first;
-            } else if (fullName != null && !fullName.isEmpty()) {
-                return fullName;
-            } else if (nama != null && !nama.isEmpty()) {
-                return nama;
-            } else if (username != null && !username.isEmpty()) {
-                return username;
-            } else if (email != null && !email.isEmpty()) {
-                return email.split("@")[0]; // Use email prefix as fallback
-            }
-              return "User";
-        }
-    }
+    
+    
     
     /**
      * Update user points in Firebase after purchase
@@ -1831,8 +1514,9 @@ public class FirebaseDataManager {
     /**
      * Update profile customization data in Firebase
      */
+    
     public void updateProfileCustomization(List<String> selectedBadges, List<String> ownedBackgrounds, 
-                                         String activeBackground, ProfileCustomizationCallback callback) {
+                                        String activeBackground, ProfileCustomizationCallback callback) {
         if (!isUserLoggedIn()) {
             callback.onError("User not logged in");
             return;
@@ -1851,6 +1535,24 @@ public class FirebaseDataManager {
                 .update(updates)
                 .addOnSuccessListener(aVoid -> {
                     Log.d(TAG, "Profile customization updated successfully");
+                    
+                    // Sync to local database immediately after Firebase update
+                    executor.execute(() -> {
+                        try {
+                            int localUserId = getCurrentLocalUserId();
+                            if (localUserId != -1) {
+                                UserEntity localUser = localDb.userDao().getUserByIdSync(localUserId);
+                                if (localUser != null) {
+                                    localUser.setActiveAvatar(activeBackground);
+                                    localDb.userDao().update(localUser);
+                                    Log.d(TAG, "✅ Synced new activeBackground to local activeAvatar: " + activeBackground);
+                                }
+                            }
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error syncing avatar to local database", e);
+                        }
+                    });
+                    
                     callback.onSuccess();
                 })
                 .addOnFailureListener(e -> {

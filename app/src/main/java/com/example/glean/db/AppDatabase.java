@@ -27,7 +27,7 @@ import com.example.glean.db.Converters;
         TrashEntity.class,
         LocationPointEntity.class
     },
-    version = 18, // Increment version after removing news entities
+    version = 19, // Increment version to fix schema integrity error
     exportSchema = false
 )
 @TypeConverters({Converters.class})
@@ -64,11 +64,20 @@ public abstract class AppDatabase extends RoomDatabase {
         }
         return INSTANCE;
     }
-    
-    /**
+      /**
      * Close the database instance
      */
     public static void destroyInstance() {
+        if (INSTANCE != null) {
+            INSTANCE.close();
+            INSTANCE = null;
+        }
+    }
+    
+    /**
+     * Force close and clear database instance - useful for schema issues
+     */
+    public static synchronized void clearInstance() {
         if (INSTANCE != null) {
             INSTANCE.close();
             INSTANCE = null;

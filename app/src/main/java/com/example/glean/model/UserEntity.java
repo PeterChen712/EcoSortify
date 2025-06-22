@@ -13,21 +13,20 @@ public class UserEntity {
     private String password;
     private String username;
     private String firstName;
-    private String lastName;
-    private String profileImagePath;
+    private String lastName;    private String profileImagePath;
+    private String activeAvatar; // Avatar ID for local avatar system
     private long createdAt;
     private int points;
     private String decorations;
     private String activeDecoration;
-    
-    // Default constructor
+      // Default constructor
     public UserEntity() {
         this.createdAt = System.currentTimeMillis();
         this.points = 0;
         this.decorations = "";
         this.activeDecoration = "";
-    }
-      // Constructor with required fields
+        this.activeAvatar = "default"; // Default avatar
+    }    // Constructor with required fields
     @Ignore
     public UserEntity(String email, String password) {
         this.email = email;
@@ -36,8 +35,8 @@ public class UserEntity {
         this.points = 0;
         this.decorations = "";
         this.activeDecoration = "";
-    }
-      // Constructor with email, password, and username
+        this.activeAvatar = "default"; // Default avatar
+    }      // Constructor with email, password, and username
     @Ignore
     public UserEntity(String email, String password, String username) {
         this.email = email;
@@ -47,6 +46,7 @@ public class UserEntity {
         this.points = 0;
         this.decorations = "";
         this.activeDecoration = "";
+        this.activeAvatar = "default"; // Default avatar
     }
     
     // Getters and Setters
@@ -138,13 +138,20 @@ public class UserEntity {
     public void setDecorations(String decorations) { 
         this.decorations = decorations; 
     }
-    
-    public String getActiveDecoration() { 
+      public String getActiveDecoration() { 
         return activeDecoration; 
     }
     
     public void setActiveDecoration(String activeDecoration) { 
         this.activeDecoration = activeDecoration; 
+    }
+    
+    public String getActiveAvatar() { 
+        return activeAvatar; 
+    }
+    
+    public void setActiveAvatar(String activeAvatar) { 
+        this.activeAvatar = activeAvatar; 
     }
     
     // Utility methods

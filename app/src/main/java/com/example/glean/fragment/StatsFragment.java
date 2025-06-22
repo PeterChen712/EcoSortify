@@ -26,6 +26,7 @@ import com.example.glean.db.AppDatabase;
 import com.example.glean.model.RecordEntity;
 import com.example.glean.model.TrashEntity;
 import com.example.glean.model.UserEntity;
+import com.example.glean.model.UserStats;
 import com.example.glean.service.FirebaseDataManager;
 import com.example.glean.util.NetworkUtil;
 import com.github.mikephil.charting.charts.LineChart;
@@ -607,7 +608,7 @@ public class StatsFragment extends Fragment {
           // Subscribe to real-time stats updates
         dataManager.subscribeToUserStats(new FirebaseDataManager.StatsDataCallback() {
             @Override
-            public void onStatsLoaded(FirebaseDataManager.UserStats stats) {
+            public void onStatsLoaded(UserStats stats) {
                 // Check if fragment is still attached to activity
                 if (!isAdded() || getActivity() == null) {
                     Log.d("StatsFragment", "⚠️ Fragment not attached, skipping stats update");
@@ -672,7 +673,7 @@ public class StatsFragment extends Fragment {
                 Log.w("StatsFragment", "⚠️ Firebase sync error: " + error);
             }
         });
-    }    private void updateUIWithFirebaseStats(FirebaseDataManager.UserStats stats) {
+    }    private void updateUIWithFirebaseStats(UserStats stats) {
         Log.d("StatsFragment", "🔄 Updating UI with Firebase stats data...");
         Log.d("StatsFragment", "📊 Updating - Points: " + stats.getTotalPoints() + 
               ", Distance: " + stats.getTotalDistance() + ", Sessions: " + stats.getTotalSessions());
@@ -703,7 +704,7 @@ public class StatsFragment extends Fragment {
               ", Distance: " + binding.tvTotalDistance.getText() + ", Sessions: " + binding.tvTotalRuns.getText());
     }
     
-    private void updateProgressBars(FirebaseDataManager.UserStats stats) {
+    private void updateProgressBars(UserStats stats) {
         // Update distance progress (example: target 100km per month)
         float targetDistance = 100000; // 100km in meters
         float progressDistance = Math.min((float)stats.getTotalDistance() / targetDistance * 100, 100);

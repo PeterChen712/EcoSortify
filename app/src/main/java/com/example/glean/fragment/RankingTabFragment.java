@@ -321,16 +321,14 @@ public class RankingTabFragment extends Fragment {
       private void loadRankingDataWithFirebase() {
         showLoading(true);
         
-        Log.d(TAG, "🏆 Starting Firebase ranking data load for " + (isPointsRanking ? "points" : "distance") + " ranking");
-        
+        Log.d(TAG, "🏆 Starting Firebase ranking data load for " + (isPointsRanking ? "points" : "distance") + " ranking");        
         // Subscribe to real-time ranking updates
         dataManager.subscribeToRanking(new FirebaseDataManager.RankingDataCallback() {
             @Override
-            public void onRankingLoaded(List<FirebaseDataManager.RankingUser> ranking) {
+            public void onRankingLoaded(List<RankingUser> ranking) {
                 requireActivity().runOnUiThread(() -> {
                     Log.d(TAG, "🏆 Received ranking data: " + ranking.size() + " users");
-                    
-                    // Convert Firebase ranking data to local ranking data
+                      // Convert Firebase ranking data to local ranking data
                     List<RankingUser> localRanking = convertFirebaseRankingToLocal(ranking);
                     
                     // Sort based on current tab
@@ -383,15 +381,16 @@ public class RankingTabFragment extends Fragment {
         if (authManager.getCurrentUserId() == null) {
             Log.d(TAG, "⚠️ No current user ID - skipping data sync");
             return;
-        }
-        
+        }        
         Log.d(TAG, "🔄 Current user is Firebase user - skipping local data sync to prevent overwriting Firebase data");
-    }    private List<RankingUser> convertFirebaseRankingToLocal(List<FirebaseDataManager.RankingUser> firebaseRanking) {
+    }
+    
+    private List<RankingUser> convertFirebaseRankingToLocal(List<RankingUser> firebaseRanking) {
         List<RankingUser> localRanking = new ArrayList<>();
         
         Log.d(TAG, "🔄 Converting " + firebaseRanking.size() + " Firebase users to local ranking format");
         
-        for (FirebaseDataManager.RankingUser fbUser : firebaseRanking) {
+        for (RankingUser fbUser : firebaseRanking) {
             try {
                 // Enhanced logging to debug the conversion issue
                 Log.d(TAG, "🔄 Processing Firebase user: " + fbUser.getUserId());

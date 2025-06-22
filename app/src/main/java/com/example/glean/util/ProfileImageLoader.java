@@ -8,6 +8,8 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.example.glean.R;
 import com.example.glean.auth.FirebaseAuthManager;
 import com.example.glean.model.UserEntity;
+import com.example.glean.model.Avatar;
+import com.example.glean.util.AvatarManager;
 
 import java.io.File;
 
@@ -74,11 +76,20 @@ public class ProfileImageLoader {
             return false;
         }
     }
-    
-    /**
-     * Load profile image for current user (check local storage first)
+      /**
+     * Load profile image for current user (uses local avatar system)
      */
     private static void loadOwnProfileImage(Context context, ImageView imageView, UserEntity user) {
+        if (user != null && user.getActiveAvatar() != null) {
+            // Load avatar from local resources using AvatarManager
+            Avatar avatar = AvatarManager.getAvatarById(user.getActiveAvatar());
+            if (avatar != null) {
+                AvatarManager.loadAvatarIntoImageView(context, imageView, avatar);
+                return;
+            }
+        }
+        
+        // Fallback: Try old local image system for backward compatibility
         FirebaseAuthManager authManager = FirebaseAuthManager.getInstance(context);
         String currentUserId;
         
@@ -93,7 +104,7 @@ public class ProfileImageLoader {
             return;
         }
         
-        // Try to load from local storage first
+        // Try to load from old local storage system
         String localImagePath = LocalProfileImageUtil.getLocalProfileImagePath(context, currentUserId);
         
         if (localImagePath != null) {
@@ -102,8 +113,8 @@ public class ProfileImageLoader {
             if (imageFile.exists() && imageFile.canRead()) {
                 Glide.with(context)
                         .load(imageFile)
-                        .placeholder(R.drawable.ic_profile_placeholder)
-                        .error(R.drawable.ic_profile_placeholder)
+                        .placeholder(R.drawable.avatar_default)
+                        .error(R.drawable.avatar_default)
                         .circleCrop()
                         .diskCacheStrategy(DiskCacheStrategy.ALL)
                         .into(imageView);
@@ -111,11 +122,10 @@ public class ProfileImageLoader {
             }
         }
         
-        // No local image found, load placeholder
-        loadPlaceholderImage(context, imageView);
+        // No avatar or local image found, load default avatar
+        loadDefaultAvatar(context, imageView);
     }
-    
-    /**
+      /**
      * Load placeholder image for other users or when local image is not available
      */
     private static void loadPlaceholderImage(Context context, ImageView imageView) {
@@ -123,6 +133,18 @@ public class ProfileImageLoader {
                 .load(R.drawable.ic_profile_placeholder)
                 .circleCrop()
                 .into(imageView);
+    }
+    
+    /**
+     * Load default avatar for users
+     */
+    private static void loadDefaultAvatar(Context context, ImageView imageView) {
+        Avatar defaultAvatar = AvatarManager.getAvatarById("default");
+        if (defaultAvatar != null) {
+            AvatarManager.loadAvatarIntoImageView(context, imageView, defaultAvatar);
+        } else {
+            loadPlaceholderImage(context, imageView);
+        }
     }
     
     /**

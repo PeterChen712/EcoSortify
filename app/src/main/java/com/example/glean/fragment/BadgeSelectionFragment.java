@@ -20,6 +20,7 @@ import com.example.glean.databinding.FragmentBadgeSelectionBinding;
 import com.example.glean.db.AppDatabase;
 import com.example.glean.model.Badge;
 import com.example.glean.model.UserEntity;
+import com.example.glean.model.UserProfile;
 import com.example.glean.service.FirebaseDataManager;
 
 import java.util.ArrayList;
@@ -36,7 +37,7 @@ public class BadgeSelectionFragment extends Fragment implements BadgeSelectionAd
     private List<String> selectedBadgeIds = new ArrayList<>();
     private List<String> originalBadgeIds = new ArrayList<>();
     private FirebaseDataManager firebaseDataManager;
-    private FirebaseDataManager.UserProfile userProfile;
+    private UserProfile userProfile;
     
     @Nullable
     @Override
@@ -76,7 +77,7 @@ public class BadgeSelectionFragment extends Fragment implements BadgeSelectionAd
         // Load profile customization from Firebase
         firebaseDataManager.loadProfileCustomization(new FirebaseDataManager.ProfileDataCallback() {
             @Override
-            public void onProfileLoaded(FirebaseDataManager.UserProfile profile) {
+            public void onProfileLoaded(UserProfile profile) {
                 userProfile = profile;
                 
                 List<String> selectedBadges = profile.getSelectedBadges();

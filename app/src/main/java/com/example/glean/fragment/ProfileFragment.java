@@ -66,6 +66,10 @@ import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.example.glean.model.UserStats;
+import com.example.glean.model.RankingUser;
+import com.example.glean.model.UserProfile;
+
 public class ProfileFragment extends Fragment {    private static final String TAG = "ProfileFragment";    private static final int PICK_IMAGE_REQUEST = 1001;
     private static final int CAMERA_REQUEST = 1002;
     private static final int REQUEST_STORAGE_PERMISSION = 1003;
@@ -421,7 +425,7 @@ public class ProfileFragment extends Fragment {    private static final String T
             // Subscribe to real-time user stats updates
             firebaseDataManager.subscribeToUserStats(new com.example.glean.service.FirebaseDataManager.StatsDataCallback() {
                 @Override
-                public void onStatsLoaded(com.example.glean.service.FirebaseDataManager.UserStats stats) {
+                public void onStatsLoaded(UserStats stats) {
                     if (getActivity() != null) {
                         getActivity().runOnUiThread(() -> {
                             Log.d(TAG, "🔥 Real-time stats update received - Points: " + stats.getTotalPoints());
@@ -440,7 +444,7 @@ public class ProfileFragment extends Fragment {    private static final String T
             // Subscribe to real-time user profile updates
             firebaseDataManager.subscribeToUserProfile(new com.example.glean.service.FirebaseDataManager.ProfileDataCallback() {
                 @Override
-                public void onProfileLoaded(com.example.glean.service.FirebaseDataManager.UserProfile profile) {
+                public void onProfileLoaded(UserProfile profile) {
                     if (getActivity() != null) {
                         getActivity().runOnUiThread(() -> {
                             Log.d(TAG, "🔥 Real-time profile update received");
@@ -477,7 +481,7 @@ public class ProfileFragment extends Fragment {    private static final String T
     /**
      * Update UI with real-time Firebase stats data
      */
-    private void updateUIWithFirebaseStats(com.example.glean.service.FirebaseDataManager.UserStats stats) {
+    private void updateUIWithFirebaseStats(UserStats stats) {
         try {
             if (binding != null) {
                 // Update points display
@@ -513,7 +517,7 @@ public class ProfileFragment extends Fragment {    private static final String T
     }
       /**
      * Update UI with real-time Firebase profile data
-     */    private void updateUIWithFirebaseProfile(com.example.glean.service.FirebaseDataManager.UserProfile profile) {
+     */    private void updateUIWithFirebaseProfile(UserProfile profile) {
         try {
             if (binding != null) {
                 Log.d(TAG, "🔥 Updating UI with Firebase profile data - Name: " + profile.getDisplayName());
@@ -986,7 +990,7 @@ public class ProfileFragment extends Fragment {    private static final String T
             FirebaseDataManager firebaseDataManager = FirebaseDataManager.getInstance(requireContext());
               firebaseDataManager.loadProfileCustomization(new FirebaseDataManager.ProfileDataCallback() {
                 @Override
-                public void onProfileLoaded(FirebaseDataManager.UserProfile profile) {                    // Check if fragment is still active and binding is not null
+                public void onProfileLoaded(UserProfile profile) {                    // Check if fragment is still active and binding is not null
                     if (binding != null && isAdded() && !isDetached()) {
                         String currentSkin = profile.getActiveBackground();
                         setSkinBackground(currentSkin);
