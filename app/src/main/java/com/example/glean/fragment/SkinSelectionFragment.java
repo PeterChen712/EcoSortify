@@ -63,9 +63,8 @@ public class SkinSelectionFragment extends Fragment implements SkinSelectionAdap
     private void loadUserData() {
         if (getActivity() instanceof CustomizeProfileActivity) {
             int userId = ((CustomizeProfileActivity) getActivity()).getUserId();
-            
-            db.userDao().getUserById(userId).observe(getViewLifecycleOwner(), user -> {
-                if (user != null) {
+              db.userDao().getUserById(userId).observe(getViewLifecycleOwner(), user -> {
+                if (user != null && isAdded() && !isRemoving()) {
                     currentUser = user;
                     updateUserPointsDisplay();
                     loadCurrentSkin();
@@ -74,8 +73,13 @@ public class SkinSelectionFragment extends Fragment implements SkinSelectionAdap
             });
         }
     }
-    
-    private void updateUserPointsDisplay() {
+      private void updateUserPointsDisplay() {
+        // Check if binding is null (fragment might be destroyed)
+        if (binding == null || !isAdded() || isRemoving()) {
+            Log.w(TAG, "Fragment not active or binding null, skipping points display update");
+            return;
+        }
+        
         if (binding.tvUserPoints != null && currentUser != null) {
             binding.tvUserPoints.setText(String.valueOf(currentUser.getPoints()));
         }
@@ -94,14 +98,12 @@ public class SkinSelectionFragment extends Fragment implements SkinSelectionAdap
                 
                 originalSkinId = currentSkinId;
                 selectedSkinId = currentSkinId;
-                
-                // Find and display current skin
+                  // Find and display current skin
                 ProfileSkin currentSkin = findSkinById(currentSkinId);
-                if (currentSkin != null) {
+                if (currentSkin != null && isAdded() && !isRemoving()) {
                     updateCurrentSkinDisplay(currentSkin);
                 }
-                
-                loadAvailableSkins();
+                  loadAvailableSkins();
             }
             
             @Override
@@ -124,16 +126,19 @@ public class SkinSelectionFragment extends Fragment implements SkinSelectionAdap
         
         originalSkinId = currentSkinId;
         selectedSkinId = currentSkinId;
-        
-        // Find and display current skin
+          // Find and display current skin
         ProfileSkin currentSkin = findSkinById(currentSkinId);
-        if (currentSkin != null) {
-            updateCurrentSkinDisplay(currentSkin);
+        if (currentSkin != null && isAdded() && !isRemoving()) {
+            updateCurrentSkinDisplay(currentSkin);                }
+                
+                loadAvailableSkins();
+            }private void loadAvailableSkins() {
+        // Check if fragment is still active
+        if (!isAdded() || isRemoving() || binding == null) {
+            Log.w(TAG, "Fragment not active or binding null, skipping skin loading");
+            return;
         }
         
-        loadAvailableSkins();
-    }
-      private void loadAvailableSkins() {
         if (currentUser != null) {
             availableSkins = generateAvailableSkins(currentUser);
             
@@ -195,8 +200,13 @@ public class SkinSelectionFragment extends Fragment implements SkinSelectionAdap
             }
         }        // Return default skin if not found
         return new ProfileSkin("default", "Default Green", 0, R.drawable.profile_skin_default, true, false);
-    }
-      private void updateCurrentSkinDisplay(ProfileSkin skin) {
+    }    private void updateCurrentSkinDisplay(ProfileSkin skin) {
+        // Check if binding is null (fragment might be destroyed)
+        if (binding == null) {
+            Log.w(TAG, "Binding is null, fragment might be destroyed. Skipping skin display update.");
+            return;
+        }
+        
         if (binding.tvCurrentSkinName != null) {
             binding.tvCurrentSkinName.setText(skin.getName());
         }
@@ -217,23 +227,37 @@ public class SkinSelectionFragment extends Fragment implements SkinSelectionAdap
             }
         }
     }
-    
-    private void showEmptyState() {
+      private void showEmptyState() {
+        // Check if binding is null (fragment might be destroyed)
+        if (binding == null) {
+            Log.w(TAG, "Binding is null, fragment might be destroyed. Skipping empty state display.");
+            return;
+        }
+        
         binding.rvSkins.setVisibility(View.GONE);
         binding.layoutEmptySkins.setVisibility(View.VISIBLE);
     }
     
     private void hideEmptyState() {
+        // Check if binding is null (fragment might be destroyed)
+        if (binding == null) {
+            Log.w(TAG, "Binding is null, fragment might be destroyed. Skipping empty state hide.");
+            return;
+        }
+        
         binding.rvSkins.setVisibility(View.VISIBLE);
         binding.layoutEmptySkins.setVisibility(View.GONE);
     }
-    
-    @Override
+      @Override
     public void onSkinClick(ProfileSkin skin) {
         if (skin.isUnlocked()) {
             selectedSkinId = skin.getId();
             adapter.updateSelectedSkin(selectedSkinId);
-            updateCurrentSkinDisplay(skin);
+            
+            // Only update display if fragment is still active
+            if (isAdded() && !isRemoving()) {
+                updateCurrentSkinDisplay(skin);
+            }
             
             // Notify parent activity of changes
             if (getActivity() instanceof CustomizeProfileActivity) {
