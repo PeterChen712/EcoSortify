@@ -183,10 +183,10 @@ public class SkinSelectionFragment extends Fragment implements SkinSelectionAdap
         skins.add(new ProfileSkin("ocean", "Ocean", 150, R.drawable.profile_skin_ocean, ownedSkins.contains("ocean"), currentSelectedSkin.equals("ocean")));
         skins.add(new ProfileSkin("sunset", "Sunset", 200, R.drawable.profile_skin_sunset, ownedSkins.contains("sunset"), currentSelectedSkin.equals("sunset")));
         skins.add(new ProfileSkin("galaxy", "Galaxy", 300, R.drawable.profile_skin_galaxy, ownedSkins.contains("galaxy"), currentSelectedSkin.equals("galaxy")));
-        
-        // Premium animated GIF skins
+          // Premium animated GIF skins
         skins.add(new ProfileSkin("animated_nature", "Animated Nature", 250, R.raw.bg_animated_nature, ownedSkins.contains("animated_nature"), currentSelectedSkin.equals("animated_nature"), true));
         skins.add(new ProfileSkin("animated_ocean", "Animated Ocean", 350, R.raw.bg_animated_ocean, ownedSkins.contains("animated_ocean"), currentSelectedSkin.equals("animated_ocean"), true));
+        skins.add(new ProfileSkin("animated_christmas", "Animated Christmas", 400, R.raw.bg_animated_christhmas, ownedSkins.contains("animated_christmas"), currentSelectedSkin.equals("animated_christmas"), true));
         
         return skins;
     }

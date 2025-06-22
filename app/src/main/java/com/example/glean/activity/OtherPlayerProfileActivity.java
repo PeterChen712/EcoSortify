@@ -280,8 +280,7 @@ public class OtherPlayerProfileActivity extends AppCompatActivity {
      * Get the drawable resource for a skin ID (updated to handle GIF skins)
      */
     private int getSkinResource(String skinId) {
-        switch (skinId) {
-            case "nature":
+        switch (skinId) {            case "nature":
                 return R.drawable.profile_skin_nature;
             case "ocean":
                 return R.drawable.profile_skin_ocean;
@@ -291,6 +290,7 @@ public class OtherPlayerProfileActivity extends AppCompatActivity {
                 return R.drawable.profile_skin_galaxy;
             case "animated_nature":
             case "animated_ocean":
+            case "animated_christmas":
                 // GIF skins should not use this method, fallback to default
                 return R.drawable.profile_skin_default;
             default:
@@ -391,11 +391,11 @@ public class OtherPlayerProfileActivity extends AppCompatActivity {
     /**
      * Check if the skin is a GIF
      */
-    private boolean isGifSkin(String skinId) {
-        // Only return true for GIFs that actually exist in res/raw
+    private boolean isGifSkin(String skinId) {        // Only return true for GIFs that actually exist in res/raw
         switch (skinId) {
             case "animated_nature":
             case "animated_ocean":
+            case "animated_christmas":
                 return true;
             case "animated_sunset":
             case "animated_galaxy":
@@ -436,12 +436,13 @@ public class OtherPlayerProfileActivity extends AppCompatActivity {
       /**
      * Get GIF resource for animated skins
      */
-    private int getGifResource(String skinId) {
-        switch (skinId) {
+    private int getGifResource(String skinId) {        switch (skinId) {
             case "animated_nature":
                 return R.raw.bg_animated_nature;
             case "animated_ocean":
                 return R.raw.bg_animated_ocean;
+            case "animated_christmas":
+                return R.raw.bg_animated_christhmas;
             case "animated_sunset":
                 // This GIF doesn't exist yet, fallback to default
                 return R.drawable.profile_skin_default;

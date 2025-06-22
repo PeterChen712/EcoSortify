@@ -1053,8 +1053,7 @@ public class ProfileFragment extends Fragment {    private static final String T
                 }
             });
         }
-    }
-      private int getSkinResource(String skinId) {
+    }      private int getSkinResource(String skinId) {
         switch (skinId) {
             case "nature":
                 return R.drawable.profile_skin_nature;
@@ -1068,12 +1067,14 @@ public class ProfileFragment extends Fragment {    private static final String T
                 return R.raw.bg_animated_nature;
             case "animated_ocean":
                 return R.raw.bg_animated_ocean;
+            case "animated_christmas":
+                return R.raw.bg_animated_christhmas;
             default:
                 return R.drawable.profile_skin_default;
         }
     }
       private boolean isGifSkin(String skinId) {
-        return "animated_nature".equals(skinId) || "animated_ocean".equals(skinId);
+        return "animated_nature".equals(skinId) || "animated_ocean".equals(skinId) || "animated_christmas".equals(skinId);
     }
     
     private void setSkinBackground(String skinId) {
