@@ -1,15 +1,10 @@
 package com.example.glean.fragment;
 
-import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.provider.MediaStore;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
@@ -25,16 +20,12 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatDelegate;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.GridLayoutManager;
 
 import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.example.glean.R;
 import com.example.glean.activity.SkinSelectionActivity;
 import com.example.glean.adapter.BadgeAdapter;
@@ -48,15 +39,12 @@ import com.example.glean.db.AppDatabase;
 import com.example.glean.model.Badge;
 import com.example.glean.model.UserEntity;
 import com.example.glean.util.NetworkUtil;
-import com.example.glean.util.LocalProfileImageUtil;
 import com.example.glean.util.ProfileImageLoader;
 import com.example.glean.service.FirebaseDataManager;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.yalantis.ucrop.UCrop;
 
-import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -70,24 +58,15 @@ import com.example.glean.model.UserStats;
 import com.example.glean.model.RankingUser;
 import com.example.glean.model.UserProfile;
 
-public class ProfileFragment extends Fragment {    private static final String TAG = "ProfileFragment";    private static final int PICK_IMAGE_REQUEST = 1001;
-    private static final int CAMERA_REQUEST = 1002;
-    private static final int REQUEST_STORAGE_PERMISSION = 1003;
-    private static final int REQUEST_CAMERA_PERMISSION = 1004;
-    private static final int SKIN_SELECTION_REQUEST = 1005;
-    private static final int UCROP_REQUEST = 1006;private FragmentProfileBinding binding;
+public class ProfileFragment extends Fragment {    private static final String TAG = "ProfileFragment";    private static final int SKIN_SELECTION_REQUEST = 1005;private FragmentProfileBinding binding;
       // Firebase components
     private FirebaseAuthManager authManager;
     private FirebaseFirestore firestore;
     private com.example.glean.service.FirebaseDataManager firebaseDataManager;
     
-    private AppDatabase db;
-    private int userId;
+    private AppDatabase db;    private int userId;
     private UserEntity currentUser;
-    private ExecutorService executor;
-    private Uri selectedImageUri;
-    private Uri cameraImageUri;
-    private String profileImagePath;@Override
+    private ExecutorService executor;@Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
           // Initialize Firebase
@@ -262,12 +241,12 @@ public class ProfileFragment extends Fragment {    private static final String T
                 Log.d(TAG, "Logout button clicked");
                 showLogoutConfirmation();
             });
-        }
-          // Profile picture click
+        }        // Profile picture click - redirect to customize profile
         if (binding.ivProfilePic != null) {
             binding.ivProfilePic.setOnClickListener(v -> {
-                Log.d(TAG, "Profile picture clicked");
-                checkPermissionsAndSelectImage();
+                Log.d(TAG, "Profile picture clicked - redirecting to customize profile");
+                Toast.makeText(requireContext(), "Untuk mengubah avatar, gunakan tombol Customize Profile", Toast.LENGTH_SHORT).show();
+                openCustomizeProfileActivity();
             });        }
           // Customize Profile button
         if (binding.btnCustomize != null) {
@@ -546,23 +525,12 @@ public class ProfileFragment extends Fragment {    private static final String T
                     binding.tvEmail.setText(email != null && !email.isEmpty() ? email : "No email");
                     Log.d(TAG, "🔥 Firebase profile email set to: " + email);
                 }
-                  // Update profile image with enhanced fallback logic
-                String avatarUrl = profile.getAvatarUrl();
-                if ((avatarUrl == null || avatarUrl.isEmpty()) && authManager.isLoggedIn()) {
-                    // Fallback to Firebase Auth user photo
-                    try {
-                        String firebasePhotoUrl = authManager.getUserPhotoUrl();
-                        if (firebasePhotoUrl != null && !firebasePhotoUrl.isEmpty()) {
-                            avatarUrl = firebasePhotoUrl;
-                        }
-                    } catch (Exception e) {
-                        Log.w(TAG, "Could not get photo URL from Firebase Auth", e);
-                    }
-                }
+                  // Update profile avatar using activeAvatar field only
+                String activeAvatar = profile.getActiveAvatar();
+                Log.d(TAG, "🔥 Loading avatar from activeAvatar field: " + activeAvatar);
                 
                 // Create final versions for lambda
                 final String finalEmail = email;
-                final String finalAvatarUrl = avatarUrl;
                   // Update local user data if available - but don't let it override UI
                 if (currentUser != null) {
                     // Update current user object with profile data
@@ -577,11 +545,12 @@ public class ProfileFragment extends Fragment {    private static final String T
                     }                    if (finalEmail != null && !finalEmail.isEmpty()) {
                         currentUser.setEmail(finalEmail);
                     }
-                    if (finalAvatarUrl != null && !finalAvatarUrl.isEmpty()) {
-                        currentUser.setProfileImagePath(finalAvatarUrl);
+                    // Set the activeAvatar instead of profileImagePath
+                    if (activeAvatar != null && !activeAvatar.isEmpty()) {
+                        currentUser.setActiveAvatar(activeAvatar);
                     }
                     
-                    // Load the updated profile image
+                    // Load the updated profile image using activeAvatar
                     loadProfileImage(currentUser);
                     
                     // Update local database in background without affecting UI
@@ -601,13 +570,16 @@ public class ProfileFragment extends Fragment {    private static final String T
                     firebaseUser.setFirstName(profile.getFirstName());
                     firebaseUser.setLastName(profile.getLastName());
                     firebaseUser.setUsername(displayName);                    firebaseUser.setEmail(finalEmail);
-                    firebaseUser.setProfileImagePath(finalAvatarUrl);
+                    // Set the activeAvatar instead of profileImagePath
+                    if (activeAvatar != null && !activeAvatar.isEmpty()) {
+                        firebaseUser.setActiveAvatar(activeAvatar);
+                    }
                     firebaseUser.setCreatedAt(System.currentTimeMillis());
                     
                     // Set currentUser for immediate use
                     currentUser = firebaseUser;
                     
-                    // Load the profile image
+                    // Load the profile image using activeAvatar
                     loadProfileImage(firebaseUser);
                     
                     // Try to save/update in local database in background
@@ -620,7 +592,10 @@ public class ProfileFragment extends Fragment {    private static final String T
                                 existingUser.setFirstName(profile.getFirstName());
                                 existingUser.setLastName(profile.getLastName());
                                 existingUser.setUsername(displayName);                                existingUser.setEmail(finalEmail);
-                                existingUser.setProfileImagePath(finalAvatarUrl);
+                                // Set the activeAvatar instead of profileImagePath
+                                if (activeAvatar != null && !activeAvatar.isEmpty()) {
+                                    existingUser.setActiveAvatar(activeAvatar);
+                                }
                                 db.userDao().update(existingUser);
                                 Log.d(TAG, "Updated existing local user with Firebase profile data");
                                 
@@ -651,8 +626,7 @@ public class ProfileFragment extends Fragment {    private static final String T
             // Try to fallback to Firebase Auth data directly
             updateUIWithFirebaseAuthFallback();
         }
-    }
-      /**
+    }    /**
      * Fallback method to update UI with Firebase Auth user data when profile is not available
      */
     private void updateUIWithFirebaseAuthFallback() {
@@ -666,9 +640,8 @@ public class ProfileFragment extends Fragment {    private static final String T
               // Get data from Firebase Auth
             String firebaseName = authManager.getUserDisplayName();
             String firebaseEmail = authManager.getFirebaseUserEmail();
-            String firebasePhotoUrl = authManager.getUserPhotoUrl();
             
-            Log.d(TAG, "🔄 Firebase Auth data - Name: " + firebaseName + ", Email: " + firebaseEmail + ", Photo: " + (firebasePhotoUrl != null ? "Available" : "None"));
+            Log.d(TAG, "🔄 Firebase Auth data - Name: " + firebaseName + ", Email: " + firebaseEmail);
             
             if (binding != null) {
                 // Update name
@@ -687,18 +660,19 @@ public class ProfileFragment extends Fragment {    private static final String T
                     binding.tvEmail.setText(emailDisplay);
                     Log.d(TAG, "🔄 Updated email display to: " + emailDisplay);
                 }
-                  // Load profile image if available
-                if (firebasePhotoUrl != null && !firebasePhotoUrl.isEmpty()) {
-                    Log.d(TAG, "🔄 Loading Firebase Auth profile image");
-                    if (currentUser != null) {
-                        currentUser.setProfileImagePath(firebasePhotoUrl);
-                        loadProfileImage(currentUser);
-                    } else {
-                        // Create temporary user for image loading
-                        UserEntity tempUser = new UserEntity();
-                        tempUser.setProfileImagePath(firebasePhotoUrl);
-                        loadProfileImage(tempUser);
+                  // Load default avatar for new users (no photo URL logic)
+                Log.d(TAG, "🔄 Loading default avatar for Firebase Auth user");
+                if (currentUser != null) {
+                    // Use default avatar if no activeAvatar is set
+                    if (currentUser.getActiveAvatar() == null || currentUser.getActiveAvatar().isEmpty()) {
+                        currentUser.setActiveAvatar("default");
                     }
+                    loadProfileImage(currentUser);
+                } else {
+                    // Create temporary user for image loading with default avatar
+                    UserEntity tempUser = new UserEntity();
+                    tempUser.setActiveAvatar("default");
+                    loadProfileImage(tempUser);
                 }
                 
                 // ENHANCED: Create currentUser from Firebase Auth data if it's null
@@ -726,10 +700,8 @@ public class ProfileFragment extends Fragment {    private static final String T
                         authUser.setEmail(firebaseEmail);
                     }
                     
-                    // Set profile image
-                    if (firebasePhotoUrl != null && !firebasePhotoUrl.isEmpty()) {
-                        authUser.setProfileImagePath(firebasePhotoUrl);
-                    }
+                    // Set default avatar for new users
+                    authUser.setActiveAvatar("default");
                     
                     authUser.setCreatedAt(System.currentTimeMillis());
                     
@@ -1057,11 +1029,10 @@ public class ProfileFragment extends Fragment {    private static final String T
     private void updateUIWithFirebaseData(com.google.firebase.firestore.DocumentSnapshot document) {
         try {
             // Get data from Firebase document
-            String fullName = document.getString("nama");
-            String email = document.getString("email");
+            String fullName = document.getString("nama");            String email = document.getString("email");
             Long totalPoints = document.getLong("totalPoints");
             Double totalKm = document.getDouble("totalKm");
-            String photoURL = document.getString("photoURL");
+            String activeAvatar = document.getString("activeAvatar");
             
             Log.d(TAG, "Firebase data - Name: " + fullName + ", Email: " + email + ", Points: " + totalPoints);
             
@@ -1088,15 +1059,20 @@ public class ProfileFragment extends Fragment {    private static final String T
             // Set member since date
             if (binding.tvMemberSince != null) {
                 binding.tvMemberSince.setText("Member since: Recently joined");
+            }              // Load avatar from activeAvatar field only
+            if (currentUser != null && activeAvatar != null && !activeAvatar.isEmpty()) {
+                currentUser.setActiveAvatar(activeAvatar);
+                ProfileImageLoader.loadProfileImage(requireContext(), binding.ivProfilePic, currentUser);
+            } else if (currentUser != null) {
+                // Use default avatar
+                currentUser.setActiveAvatar("default");
+                ProfileImageLoader.loadProfileImage(requireContext(), binding.ivProfilePic, currentUser);
+            } else {
+                // Fallback if no currentUser
+                UserEntity tempUser = new UserEntity();
+                tempUser.setActiveAvatar("default");
+                ProfileImageLoader.loadProfileImage(requireContext(), binding.ivProfilePic, tempUser);
             }
-              // Load profile image if available
-            if (binding.ivProfilePic != null && photoURL != null && !photoURL.isEmpty()) {
-                com.bumptech.glide.Glide.with(this)
-                        .load(photoURL)
-                        .placeholder(R.drawable.ic_profile)
-                        .error(R.drawable.ic_profile)
-                        .circleCrop()
-                        .into(binding.ivProfilePic);            }
             
             Log.d(TAG, "UI successfully updated with Firebase data");
             
@@ -1236,28 +1212,7 @@ public class ProfileFragment extends Fragment {    private static final String T
             Log.e(TAG, "Error creating temporary user from UI", e);
             return null;
         }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        
-        if (requestCode == REQUEST_STORAGE_PERMISSION) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                showImageSourceDialog();
-            } else {
-                Toast.makeText(requireContext(), "Storage permission required to select image", Toast.LENGTH_SHORT).show();
-            }
-        } else if (requestCode == REQUEST_CAMERA_PERMISSION) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                captureImageFromCamera();
-            } else {
-                Toast.makeText(requireContext(), "Camera permission required to take photo", Toast.LENGTH_SHORT).show();
-            }
-        }
-    }
-
-    @Override
+    }    @Override
     public void onResume() {
         super.onResume();
         // Refresh user data when returning to fragment
@@ -1284,14 +1239,6 @@ public class ProfileFragment extends Fragment {    private static final String T
         super.onDestroy();
         if (executor != null) {
             executor.shutdown();
-        }
-        
-        // Optional: Clean up old profile images periodically
-        // This is done in background and won't block the UI
-        try {
-            LocalProfileImageUtil.cleanupOldProfileImages(requireContext());
-        } catch (Exception e) {
-            // Ignore cleanup errors during destroy
         }
     }// Missing essential methods that are called by the UI
     private void showEditProfileDialog() {
@@ -1357,15 +1304,7 @@ public class ProfileFragment extends Fragment {    private static final String T
                 .setPositiveButton("Logout", (dialog, which) -> logout())
                 .setNegativeButton("Cancel", null)
                 .show();
-    }    private void logout() {
-        try {
-            // Clean up local profile image for current user before logout
-            String currentUserId = getCurrentUserIdForStorage();
-            if (currentUserId != null) {
-                boolean deleted = LocalProfileImageUtil.deleteLocalProfileImage(requireContext(), currentUserId);
-                Log.d(TAG, "Profile image cleanup during logout: " + (deleted ? "successful" : "failed"));
-            }
-            
+    }    private void logout() {        try {
             // Clear user session
             SharedPreferences prefs = requireActivity().getSharedPreferences("USER_PREFS", 0);
             prefs.edit().clear().apply();
@@ -1382,63 +1321,10 @@ public class ProfileFragment extends Fragment {    private static final String T
             Log.e(TAG, "Error during logout", e);
             Toast.makeText(requireContext(), "Error during logout", Toast.LENGTH_SHORT).show();
         }
-    }
-
-    private void showSettingsDialog() {
+    }    private void showSettingsDialog() {
         // Placeholder implementation
         Toast.makeText(requireContext(), "Settings feature coming soon", Toast.LENGTH_SHORT).show();
-    }    private void checkPermissionsAndSelectImage() {
-        // Check storage permission
-        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.READ_EXTERNAL_STORAGE) 
-                != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(requireActivity(), 
-                    new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 
-                    REQUEST_STORAGE_PERMISSION);
-        } else {
-            showImageSourceDialog();
-        }
-    }    private void showImageSourceDialog() {
-        String[] options = {"Pilih dari Galeri", "Ambil Foto Baru"};
-        new MaterialAlertDialogBuilder(requireContext())
-                .setTitle("Ganti Foto Profil")
-                .setItems(options, (dialog, which) -> {
-                    if (which == 0) {
-                        // Pilih dari galeri
-                        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-                        intent.setType("image/*");
-                        startActivityForResult(intent, PICK_IMAGE_REQUEST);
-                    } else if (which == 1) {
-                        // Ambil foto baru
-                        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-                            ActivityCompat.requestPermissions(requireActivity(), new String[]{Manifest.permission.CAMERA}, REQUEST_CAMERA_PERMISSION);
-                        } else {
-                            captureImageFromCamera();
-                        }
-                    }
-                })
-                .setNegativeButton("Batal", null)
-                .show();
-    }
-
-    private void captureImageFromCamera() {
-        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        if (intent.resolveActivity(requireActivity().getPackageManager()) != null) {
-            File photoFile = null;
-            try {
-                String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
-                String imageFileName = "JPEG_" + timeStamp + "_";
-                File storageDir = requireActivity().getExternalFilesDir(null);
-                photoFile = File.createTempFile(imageFileName, ".jpg", storageDir);
-                cameraImageUri = FileProvider.getUriForFile(requireContext(), requireContext().getPackageName() + ".provider", photoFile);
-            } catch (Exception ex) {
-                Toast.makeText(requireContext(), "Gagal membuat file foto", Toast.LENGTH_SHORT).show();
-            }
-            if (photoFile != null) {
-                intent.putExtra(MediaStore.EXTRA_OUTPUT, cameraImageUri);
-                startActivityForResult(intent, CAMERA_REQUEST);
-            }
-        }
-    }    @Override
+    }@Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == SKIN_SELECTION_REQUEST && resultCode == Activity.RESULT_OK) {
@@ -1447,187 +1333,8 @@ public class ProfileFragment extends Fragment {    private static final String T
             if (currentUser != null) {
                 setupBadges(currentUser);
             }
-        } else if (requestCode == PICK_IMAGE_REQUEST && resultCode == Activity.RESULT_OK && data != null && data.getData() != null) {
-            selectedImageUri = data.getData();
-            // Start image cropping
-            startImageCropping(selectedImageUri);
-        } else if (requestCode == CAMERA_REQUEST && resultCode == Activity.RESULT_OK) {
-            if (cameraImageUri != null) {
-                // Start image cropping
-                startImageCropping(cameraImageUri);
-            }
-        } else if (requestCode == UCROP_REQUEST) {
-            handleCropResult(resultCode, data);
-        }
-    }
-    
-    /**
-     * Start image cropping with uCrop
-     */
-    private void startImageCropping(Uri sourceUri) {
-        try {
-            // Create destination file for cropped image
-            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
-            String imageFileName = "CROP_" + timeStamp + ".jpg";
-            File cropDir = new File(requireContext().getCacheDir(), "crop");
-            if (!cropDir.exists()) {
-                cropDir.mkdirs();
-            }
-            File destinationFile = new File(cropDir, imageFileName);
-            Uri destinationUri = Uri.fromFile(destinationFile);
-            
-            // Configure uCrop options
-            UCrop.Options options = new UCrop.Options();
-            options.setCompressionFormat(Bitmap.CompressFormat.JPEG);
-            options.setCompressionQuality(85);
-            options.setMaxBitmapSize(1024);
-            options.setHideBottomControls(false);
-            options.setFreeStyleCropEnabled(false);
-            options.setShowCropFrame(true);
-            options.setShowCropGrid(true);
-            options.setCircleDimmedLayer(true); // Circular crop overlay
-            options.setCropGridStrokeWidth(2);
-            options.setCropFrameStrokeWidth(4);
-            options.setToolbarTitle("Crop Profile Picture");
-            
-            // Set colors to match app theme
-            options.setToolbarColor(ContextCompat.getColor(requireContext(), R.color.primary));
-            options.setStatusBarColor(ContextCompat.getColor(requireContext(), R.color.primary_dark));
-            options.setActiveControlsWidgetColor(ContextCompat.getColor(requireContext(), R.color.accent));
-            
-            // Start uCrop with 1:1 aspect ratio for profile pictures
-            UCrop.of(sourceUri, destinationUri)
-                    .withAspectRatio(1, 1)
-                    .withMaxResultSize(512, 512)
-                    .withOptions(options)
-                    .start(requireContext(), this, UCROP_REQUEST);
-                    
-        } catch (Exception e) {
-            Log.e(TAG, "Error starting image cropping", e);
-            Toast.makeText(requireContext(), "Gagal memulai crop gambar", Toast.LENGTH_SHORT).show();
-        }
-    }
-    
-    /**
-     * Handle result from uCrop
-     */
-    private void handleCropResult(int resultCode, Intent data) {
-        if (resultCode == Activity.RESULT_OK && data != null) {
-            // Get cropped image URI
-            Uri croppedImageUri = UCrop.getOutput(data);
-            if (croppedImageUri != null) {
-                // Save the cropped image locally
-                saveProfileImageLocally(croppedImageUri);
-            } else {
-                Toast.makeText(requireContext(), "Gagal mendapatkan hasil crop", Toast.LENGTH_SHORT).show();
-            }
-        } else if (resultCode == UCrop.RESULT_ERROR && data != null) {
-            // Handle crop error
-            Throwable cropError = UCrop.getError(data);
-            Log.e(TAG, "Crop error", cropError);
-            Toast.makeText(requireContext(), "Error saat crop gambar: " + 
-                (cropError != null ? cropError.getMessage() : "Unknown error"), Toast.LENGTH_SHORT).show();
-        } else {
-            // User cancelled cropping
-            Log.d(TAG, "Image cropping cancelled by user");
-        }
-    }private void saveProfileImageLocally(Uri imageUri) {
-        if (imageUri == null) {
-            Toast.makeText(requireContext(), "Gambar tidak valid", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        
-        // Show loading indicator
-        Toast.makeText(requireContext(), "Menyimpan foto profil...", Toast.LENGTH_SHORT).show();
-        
-        // Execute in background thread
-        executor.execute(() -> {
-            try {
-                String currentUserId = getCurrentUserIdForStorage();
-                if (currentUserId == null) {
-                    requireActivity().runOnUiThread(() -> 
-                        Toast.makeText(requireContext(), "User ID tidak ditemukan", Toast.LENGTH_SHORT).show()
-                    );
-                    return;
-                }
-                
-                // Save image locally
-                String localImagePath = LocalProfileImageUtil.saveProfileImageLocally(
-                    requireContext(), currentUserId, imageUri);
-                
-                if (localImagePath != null) {
-                    // Update user's profile image path in local database
-                    updateUserProfileImagePath(localImagePath);
-                    
-                    // Update Firestore with placeholder URL (not the local path)
-                    updateUserPhotoUrlInFirestore(currentUserId, LocalProfileImageUtil.getDefaultProfileImageUrl());                    requireActivity().runOnUiThread(() -> {
-                        Toast.makeText(requireContext(), "Foto profil berhasil disimpan! Gambar disimpan secara lokal.", Toast.LENGTH_LONG).show();
-                        // Refresh the profile image display
-                        if (currentUser != null) {
-                            loadProfileImage(currentUser);
-                        }
-                    });
-                } else {                    requireActivity().runOnUiThread(() -> 
-                        Toast.makeText(requireContext(), "Gagal menyimpan foto profil ke storage lokal", Toast.LENGTH_SHORT).show()
-                    );
-                }
-                
-            } catch (Exception e) {
-                Log.e(TAG, "Error saving profile image locally", e);
-                requireActivity().runOnUiThread(() -> 
-                    Toast.makeText(requireContext(), "Gagal menyimpan foto: " + e.getMessage(), Toast.LENGTH_SHORT).show()
-                );
-            }
-        });
-    }
-      /**
-     * Update user's profile image path in local SQLite database
-     * This saves the local file path to the database, NOT to Firestore
-     */
-    private void updateUserProfileImagePath(String localImagePath) {
-        if (currentUser != null) {
-            executor.execute(() -> {
-                try {
-                    currentUser.setProfileImagePath(localImagePath);
-                    db.userDao().update(currentUser);
-                    Log.d(TAG, "Updated user profile image path in local database: " + localImagePath);
-                } catch (Exception e) {
-                    Log.e(TAG, "Error updating user profile image path in database", e);
-                }
-            });
-        }
-    }
-    
-    /**
-     * Get current user ID for storage purposes
-     */
-    private String getCurrentUserIdForStorage() {
-        if (authManager != null && authManager.isLoggedIn()) {
-            return authManager.getUserId();
-        } else if (currentUser != null) {
-            return String.valueOf(currentUser.getId());
-        }
-        return null;
-    }    private void updateUserPhotoUrlInFirestore(String userId, String photoUrl) {
-        if (!NetworkUtil.isNetworkAvailable(requireContext())) {
-            // No network, skip Firestore update
-            Log.d(TAG, "No network available, skipping Firestore photo URL update");
-            return;
-        }
-        
-        FirebaseFirestore firestore = FirebaseFirestore.getInstance();
-        firestore.collection("users").document(userId)
-            .update("photoURL", photoUrl)
-            .addOnSuccessListener(aVoid -> {
-                Log.d(TAG, "Photo URL updated in Firestore (placeholder): " + photoUrl);
-                // Don't show toast for placeholder updates to avoid confusion
-            })
-            .addOnFailureListener(e -> {
-                Log.w(TAG, "Failed to update photo URL in Firestore: " + e.getMessage());
-                // Don't show error toast for placeholder updates
-            });
-    }
-    
+        }    }
+
     // Create a default user in the local database if none exists
     private void createDefaultUserIfNeeded() {
         executor.execute(() -> {
