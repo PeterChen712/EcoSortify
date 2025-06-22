@@ -444,10 +444,13 @@ public class ProfileFragment extends Fragment {    private static final String T
                     }
                 }
             });
-            
-            // Also immediately try to get Firebase Auth user data as initial fallback
+              // Also immediately try to get Firebase Auth user data as initial fallback
             // This ensures we have some user data displayed even if Firestore profile is empty
-            updateUIWithFirebaseAuthFallback();
+            if (getActivity() != null) {
+                getActivity().runOnUiThread(() -> {
+                    updateUIWithFirebaseAuthFallback();
+                });
+            }
             
             Log.d(TAG, "🔥 Real-time Firebase listeners activated");
               } catch (Exception e) {
@@ -635,11 +638,14 @@ public class ProfileFragment extends Fragment {    private static final String T
                 // Update customize button state after Firebase profile is loaded
                 updateCustomizeButtonState();
                 
-            }
-        } catch (Exception e) {
+            }        } catch (Exception e) {
             Log.e(TAG, "Error updating UI with Firebase profile", e);
             // Try to fallback to Firebase Auth data directly
-            updateUIWithFirebaseAuthFallback();
+            if (getActivity() != null) {
+                getActivity().runOnUiThread(() -> {
+                    updateUIWithFirebaseAuthFallback();
+                });
+            }
         }
     }    /**
      * Fallback method to update UI with Firebase Auth user data when profile is not available
