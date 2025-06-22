@@ -78,6 +78,12 @@ public class BadgeSelectionFragment extends Fragment implements BadgeSelectionAd
         firebaseDataManager.loadProfileCustomization(new FirebaseDataManager.ProfileDataCallback() {
             @Override
             public void onProfileLoaded(UserProfile profile) {
+                // Check if fragment is still active before updating UI
+                if (!isAdded() || getActivity() == null || binding == null) {
+                    Log.w(TAG, "Fragment not active, skipping profile update");
+                    return;
+                }
+                
                 userProfile = profile;
                 
                 List<String> selectedBadges = profile.getSelectedBadges();
@@ -142,6 +148,12 @@ public class BadgeSelectionFragment extends Fragment implements BadgeSelectionAd
         updateCurrentBadgeDisplay();
         loadAvailableBadges();
     }    private void loadAvailableBadges() {
+        // Check if fragment is still active and binding is not null
+        if (!isAdded() || getActivity() == null || binding == null) {
+            Log.w(TAG, "Fragment not active, skipping badge loading");
+            return;
+        }
+        
         if (currentUser != null) {
             availableBadges = generateUserBadges(currentUser);
             
@@ -216,8 +228,19 @@ public class BadgeSelectionFragment extends Fragment implements BadgeSelectionAd
         Badge defaultBadge = new Badge(1, "Starter", "Your first badge", "starter", 1, true);
         defaultBadge.setIconResource(R.drawable.ic_star);
         return defaultBadge;
-    }
-      private void updateCurrentBadgeDisplay() {
+    }    private void updateCurrentBadgeDisplay() {
+        // Check if fragment is still active and binding is not null
+        if (binding == null || !isAdded() || getActivity() == null) {
+            Log.w(TAG, "Fragment not active, skipping badge display update");
+            return;
+        }
+        
+        // Check if selectedBadgeIds is null or empty
+        if (selectedBadgeIds == null || selectedBadgeIds.isEmpty()) {
+            Log.w(TAG, "No badges selected, skipping badge display update");
+            return;
+        }
+        
         if (binding.tvCurrentBadgeName != null) {
             if (selectedBadgeIds.size() == 1) {
                 Badge badge = findBadgeById(selectedBadgeIds.get(0));
@@ -238,16 +261,19 @@ public class BadgeSelectionFragment extends Fragment implements BadgeSelectionAd
             }
         }
     }
-    
-    private void showEmptyState() {
-        binding.rvBadges.setVisibility(View.GONE);
-        binding.layoutEmptyBadges.setVisibility(View.VISIBLE);
+      private void showEmptyState() {
+        if (binding != null) {
+            binding.rvBadges.setVisibility(View.GONE);
+            binding.layoutEmptyBadges.setVisibility(View.VISIBLE);
+        }
     }
     
     private void hideEmptyState() {
-        binding.rvBadges.setVisibility(View.VISIBLE);
-        binding.layoutEmptyBadges.setVisibility(View.GONE);
-    }      @Override
+        if (binding != null) {
+            binding.rvBadges.setVisibility(View.VISIBLE);
+            binding.layoutEmptyBadges.setVisibility(View.GONE);
+        }
+    }@Override
     public void onBadgeClick(Badge badge) {
         if (!badge.isEarned()) {
             return; // Can't select unearned badges
