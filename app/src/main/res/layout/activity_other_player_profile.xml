@@ -57,12 +57,20 @@
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:id="@+id/profileSkinBackground"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/profile_skin_default"
-                android:paddingStart="24dp"
-                android:paddingTop="32dp"
-                android:paddingEnd="24dp"
-                android:paddingBottom="24dp">
+                android:layout_height="260dp"
+                android:background="@drawable/profile_skin_default">
+
+                <!-- Background ImageView for GIF support -->
+                <ImageView
+                    android:id="@+id/profileSkinBackgroundImage"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:scaleType="centerCrop"
+                    android:visibility="gone"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent" />
 
                 <!-- Profile Picture with Frame (No Edit Functionality for Other Players) -->
                 <FrameLayout

@@ -223,13 +223,8 @@ public class OtherPlayerProfileActivity extends AppCompatActivity {
             }
             
             Log.d(TAG, "Player background loaded from document: " + activeBackground);
-            
-            // Apply the background to the profile
-            int backgroundResource = getSkinResource(activeBackground);
-            if (binding.profileSkinBackground != null) {
-                binding.profileSkinBackground.setBackgroundResource(backgroundResource);
-                Log.d(TAG, "Background applied from document for other player: " + activeBackground);
-            }
+              // Apply the background to the profile
+            loadProfileBackground(activeBackground);
             
         } catch (Exception e) {
             Log.e(TAG, "Error parsing player background from document", e);
@@ -257,13 +252,8 @@ public class OtherPlayerProfileActivity extends AppCompatActivity {
                             }
                             
                             Log.d(TAG, "Player background loaded: " + activeBackground);
-                            
-                            // Apply the background to the profile
-                            int backgroundResource = getSkinResource(activeBackground);
-                            if (binding.profileSkinBackground != null) {
-                                binding.profileSkinBackground.setBackgroundResource(backgroundResource);
-                                Log.d(TAG, "Background applied for other player: " + activeBackground);
-                            }
+                              // Apply the background to the profile
+                            loadProfileBackground(activeBackground);
                             
                         } catch (Exception e) {
                             Log.e(TAG, "Error parsing player background data", e);
@@ -284,16 +274,10 @@ public class OtherPlayerProfileActivity extends AppCompatActivity {
 
     /**
      * Apply default background when Firestore data is not available
-     */
-    private void applyDefaultBackground() {
-        if (binding.profileSkinBackground != null) {
-            binding.profileSkinBackground.setBackgroundResource(R.drawable.profile_skin_default);
-            Log.d(TAG, "Default background applied for other player");
-        }
-    }
-
-    /**
-     * Get the drawable resource for a skin ID (same logic as ProfileFragment)
+     */    private void applyDefaultBackground() {
+        loadProfileBackground("default");
+    }    /**
+     * Get the drawable resource for a skin ID (updated to handle GIF skins)
      */
     private int getSkinResource(String skinId) {
         switch (skinId) {
@@ -305,10 +289,14 @@ public class OtherPlayerProfileActivity extends AppCompatActivity {
                 return R.drawable.profile_skin_sunset;
             case "galaxy":
                 return R.drawable.profile_skin_galaxy;
+            case "animated_nature":
+            case "animated_ocean":
+                // GIF skins should not use this method, fallback to default
+                return R.drawable.profile_skin_default;
             default:
                 return R.drawable.profile_skin_default;
         }
-    }    private void loadProfileImage(String activeAvatar) {
+    }private void loadProfileImage(String activeAvatar) {
         if (activeAvatar != null && !activeAvatar.trim().isEmpty()) {
             // Use AvatarManager to load local avatar
             AvatarManager.loadAvatarIntoImageView(this, binding.ivProfilePic, activeAvatar);
@@ -371,6 +359,97 @@ public class OtherPlayerProfileActivity extends AppCompatActivity {
         super.onDestroy();
         if (executor != null && !executor.isShutdown()) {
             executor.shutdown();
+        }
+    }
+      /**
+     * Load profile background skin (supports both static images and GIF)
+     */
+    private void loadProfileBackground(String activeSkin) {
+        if (activeSkin == null || activeSkin.trim().isEmpty()) {
+            activeSkin = "default";
+        }
+        
+        Log.d(TAG, "Loading profile background: " + activeSkin);
+        
+        // Check if it's a GIF skin
+        if (isGifSkin(activeSkin)) {
+            // Show GIF using ImageView
+            loadGifBackground(activeSkin);
+        } else {
+            // Show static image using background resource
+            int backgroundResource = getSkinResource(activeSkin);
+            if (binding.profileSkinBackground != null) {
+                binding.profileSkinBackground.setBackgroundResource(backgroundResource);
+                // Hide the GIF ImageView
+                if (binding.profileSkinBackgroundImage != null) {
+                    binding.profileSkinBackgroundImage.setVisibility(View.GONE);
+                }
+                Log.d(TAG, "Static background applied: " + activeSkin);
+            }
+        }    }
+    
+    /**
+     * Check if the skin is a GIF
+     */
+    private boolean isGifSkin(String skinId) {
+        // Only return true for GIFs that actually exist in res/raw
+        switch (skinId) {
+            case "animated_nature":
+            case "animated_ocean":
+                return true;
+            case "animated_sunset":
+            case "animated_galaxy":
+                // These GIFs don't exist yet, treat as static
+                return false;
+            default:
+                return false;
+        }
+    }
+    
+    /**
+     * Load GIF background using Glide
+     */
+    private void loadGifBackground(String skinId) {
+        if (binding.profileSkinBackgroundImage == null) {
+            Log.w(TAG, "profileSkinBackgroundImage not found in layout");
+            return;
+        }
+        
+        int gifResource = getGifResource(skinId);
+        
+        // Hide the static background
+        if (binding.profileSkinBackground != null) {
+            binding.profileSkinBackground.setBackgroundResource(android.R.color.transparent);
+        }
+        
+        // Show and load GIF
+        binding.profileSkinBackgroundImage.setVisibility(View.VISIBLE);
+        
+        Glide.with(this)
+                .asGif()
+                .load(gifResource)
+                .centerCrop()
+                .into(binding.profileSkinBackgroundImage);
+                
+        Log.d(TAG, "GIF background loaded: " + skinId);
+    }
+      /**
+     * Get GIF resource for animated skins
+     */
+    private int getGifResource(String skinId) {
+        switch (skinId) {
+            case "animated_nature":
+                return R.raw.bg_animated_nature;
+            case "animated_ocean":
+                return R.raw.bg_animated_ocean;
+            case "animated_sunset":
+                // This GIF doesn't exist yet, fallback to default
+                return R.drawable.profile_skin_default;
+            case "animated_galaxy":
+                // This GIF doesn't exist yet, fallback to default
+                return R.drawable.profile_skin_default;
+            default:
+                return R.drawable.profile_skin_default;
         }
     }
 }
