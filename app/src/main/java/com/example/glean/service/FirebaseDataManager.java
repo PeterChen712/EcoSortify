@@ -286,11 +286,15 @@ public class FirebaseDataManager {
             }
             
             Log.d(TAG, "📝 User data - ID: " + userId + ", Username: " + username + ", FullName: " + fullName);
-            
-            // Get profile photo URL from users collection
+              // Get profile photo URL and activeAvatar from users collection
             String photoURL = userDoc.getString("photoURL");
             if (photoURL == null) photoURL = userDoc.getString("profileImageUrl");
             if (photoURL == null) photoURL = userDoc.getString("avatarUrl");
+            
+            String activeAvatar = userDoc.getString("activeAvatar");
+            if (activeAvatar == null || activeAvatar.trim().isEmpty()) {
+                activeAvatar = "default"; // Default avatar if not set
+            }
             
             // Get stats from user_stats collection (preferred) or fallback to users collection
             int totalPoints = 0;
@@ -355,13 +359,16 @@ public class FirebaseDataManager {
             
             // Create RankingUser with photoURL included
             RankingUser rankingUser = new RankingUser(userId, username, fullName, totalPoints, totalDistance, totalTrashCollected, lastUpdated);
-            
-            // Set photo URL if available
+              // Set photo URL and activeAvatar if available
             if (photoURL != null && !photoURL.trim().isEmpty()) {
                 rankingUser.setPhotoURL(photoURL);
             }
             
-            Log.d(TAG, "✅ Created RankingUser - ID: " + userId + ", Username: " + username + ", Points: " + totalPoints + ", Distance: " + totalDistance + ", PhotoURL: " + photoURL);
+            if (activeAvatar != null && !activeAvatar.trim().isEmpty()) {
+                rankingUser.setActiveAvatar(activeAvatar);
+            }
+            
+            Log.d(TAG, "✅ Created RankingUser - ID: " + userId + ", Username: " + username + ", Points: " + totalPoints + ", Distance: " + totalDistance + ", PhotoURL: " + photoURL + ", ActiveAvatar: " + activeAvatar);
             
             // Final validation - ensure we never return a user with completely null data
             if (username == null && fullName == null) {
@@ -515,11 +522,16 @@ public class FirebaseDataManager {
                     if (trashObj == null) trashObj = userStats.get("totalTrash");
                 }
             }
-            
-            if (trashObj instanceof Number) {
+              if (trashObj instanceof Number) {
                 totalTrashCollected = ((Number) trashObj).intValue();
             }
             Log.d(TAG, "🗑️ Trash data - totalTrashCollected: " + totalTrashCollected);
+            
+            // Get activeAvatar from users collection
+            String activeAvatar = document.getString("activeAvatar");
+            if (activeAvatar == null || activeAvatar.trim().isEmpty()) {
+                activeAvatar = "default"; // Default avatar if not set
+            }
             
             long lastUpdated = System.currentTimeMillis();
             Object timestampObj = document.get("lastUpdated");
@@ -527,7 +539,13 @@ public class FirebaseDataManager {
                 lastUpdated = ((Number) timestampObj).longValue();
             }
               RankingUser rankingUser = new RankingUser(userId, username, fullName, totalPoints, totalDistance, totalTrashCollected, lastUpdated);
-            Log.d(TAG, "✅ Created RankingUser - ID: " + userId + ", Username: " + username + ", Points: " + totalPoints + ", Distance: " + totalDistance);
+            
+            // Set activeAvatar if available
+            if (activeAvatar != null && !activeAvatar.trim().isEmpty()) {
+                rankingUser.setActiveAvatar(activeAvatar);
+            }
+            
+            Log.d(TAG, "✅ Created RankingUser - ID: " + userId + ", Username: " + username + ", Points: " + totalPoints + ", Distance: " + totalDistance + ", ActiveAvatar: " + activeAvatar);
             
             // Final validation - ensure we never return a user with completely null data
             if (username == null && fullName == null) {

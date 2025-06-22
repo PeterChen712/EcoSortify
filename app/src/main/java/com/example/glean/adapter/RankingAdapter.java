@@ -17,6 +17,7 @@ import com.bumptech.glide.Glide;
 import com.example.glean.R;
 import com.example.glean.activity.OtherPlayerProfileActivity;
 import com.example.glean.model.RankingUser;
+import com.example.glean.util.AvatarManager;
 import de.hdodenhof.circleimageview.CircleImageView;
 
 import java.util.List;
@@ -85,16 +86,14 @@ public class RankingAdapter extends RecyclerView.Adapter<RankingAdapter.RankingV
                 username = "User Baru";
             }
             tvUsername.setText(username);
-            
-            // Set profile image
-            if (user.getProfileImageUrl() != null && !user.getProfileImageUrl().isEmpty()) {
-                Glide.with(context)
-                        .load(user.getProfileImageUrl())
-                        .placeholder(R.drawable.ic_user_avatar)
-                        .error(R.drawable.ic_user_avatar)
-                        .into(ivUserProfile);
+              // Set profile image using activeAvatar (local assets only)
+            String activeAvatar = user.getActiveAvatar();
+            if (activeAvatar != null && !activeAvatar.trim().isEmpty()) {
+                // Use AvatarManager to load local avatar
+                AvatarManager.loadAvatarIntoImageView(context, ivUserProfile, activeAvatar);
             } else {
-                ivUserProfile.setImageResource(R.drawable.ic_user_avatar);
+                // Fallback to default avatar when activeAvatar is missing
+                ivUserProfile.setImageResource(R.drawable.avatar_default);
             }
             
             // Set stats

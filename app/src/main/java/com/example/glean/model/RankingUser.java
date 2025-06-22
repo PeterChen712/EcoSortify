@@ -8,6 +8,7 @@ public class RankingUser implements Serializable {
     private String fullName;
     private String photoURL;
     private String profileImageUrl;
+    private String activeAvatar; // Added for local avatar selection
     private int totalPoints;
     private double totalDistance;
     private int totalTrashCollected;
@@ -40,9 +41,11 @@ public class RankingUser implements Serializable {
     
     public String getFullName() { return fullName; }
     public void setFullName(String fullName) { this.fullName = fullName; }
-    
-    public String getPhotoURL() { return photoURL; }
+      public String getPhotoURL() { return photoURL; }
     public void setPhotoURL(String photoURL) { this.photoURL = photoURL; }
+    
+    public String getActiveAvatar() { return activeAvatar; }
+    public void setActiveAvatar(String activeAvatar) { this.activeAvatar = activeAvatar; }
     
     public int getTotalPoints() { return totalPoints; }
     public void setTotalPoints(int totalPoints) { this.totalPoints = totalPoints; }

@@ -19,6 +19,7 @@ import com.example.glean.adapter.RankingAdapter;
 import com.example.glean.auth.FirebaseAuthManager;
 import com.example.glean.databinding.FragmentRankingTabBinding;
 import com.example.glean.model.RankingUser;
+import com.example.glean.util.AvatarManager;
 import com.example.glean.util.NetworkUtil;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -276,16 +277,14 @@ public class RankingTabFragment extends Fragment {
         }
         
         binding.tvMyStats.setText(user.getFormattedStats());
-        
-        // Load profile image
-        if (user.getProfileImageUrl() != null && !user.getProfileImageUrl().isEmpty()) {
-            Glide.with(this)
-                    .load(user.getProfileImageUrl())
-                    .placeholder(R.drawable.ic_user_avatar)
-                    .error(R.drawable.ic_user_avatar)
-                    .into(binding.ivMyProfileImage);
+          // Load profile image using activeAvatar (local assets only)
+        String activeAvatar = user.getActiveAvatar();
+        if (activeAvatar != null && !activeAvatar.trim().isEmpty()) {
+            // Use AvatarManager to load local avatar
+            AvatarManager.loadAvatarIntoImageView(requireContext(), binding.ivMyProfileImage, activeAvatar);
         } else {
-            binding.ivMyProfileImage.setImageResource(R.drawable.ic_user_avatar);
+            // Fallback to default avatar when activeAvatar is missing
+            binding.ivMyProfileImage.setImageResource(R.drawable.avatar_default);
         }
     }
     
@@ -398,8 +397,8 @@ public class RankingTabFragment extends Fragment {
                 Log.d(TAG, "   - FullName: " + fbUser.getFullName());
                 Log.d(TAG, "   - Points: " + fbUser.getTotalPoints());
                 Log.d(TAG, "   - Distance: " + fbUser.getTotalDistance());
-                Log.d(TAG, "   - Trash: " + fbUser.getTotalTrashCollected());
-                Log.d(TAG, "   - PhotoURL: " + fbUser.getPhotoURL());
+                Log.d(TAG, "   - Trash: " + fbUser.getTotalTrashCollected());                Log.d(TAG, "   - PhotoURL: " + fbUser.getPhotoURL());
+                Log.d(TAG, "   - ActiveAvatar: " + fbUser.getActiveAvatar());
                 
                 // Use the best display name - prioritize fullName (nama) over username
                 String displayName = fbUser.getFullName();
@@ -410,11 +409,15 @@ public class RankingTabFragment extends Fragment {
                     displayName = "User " + fbUser.getUserId().substring(0, Math.min(8, fbUser.getUserId().length()));
                 }
                 
-                // Get photo URL
+                // Get photo URL and activeAvatar
                 String photoURL = fbUser.getPhotoURL();
                 if (photoURL == null) photoURL = "";
                 
-                RankingUser localUser = new RankingUser(
+                String activeAvatar = fbUser.getActiveAvatar();
+                if (activeAvatar == null || activeAvatar.trim().isEmpty()) {
+                    activeAvatar = "default"; // Default avatar if not set
+                }
+                  RankingUser localUser = new RankingUser(
                     fbUser.getUserId(),
                     displayName,  // Use the best name (nama field preferred)
                     photoURL,     // Use photoURL from Firebase
@@ -423,6 +426,10 @@ public class RankingTabFragment extends Fragment {
                     fbUser.getTotalTrashCollected(),
                     0 // badge count - will be simplified in display
                 );
+                
+                // Set activeAvatar for local assets
+                localUser.setActiveAvatar(activeAvatar);
+                
                 localRanking.add(localUser);
                 
                 Log.v(TAG, "✅ Converted user: " + displayName + " (Points: " + fbUser.getTotalPoints() + ", Distance: " + fbUser.getTotalDistance() + ", Photo: " + photoURL + ")");
@@ -477,16 +484,14 @@ public class RankingTabFragment extends Fragment {
             
             // Display simplified stats (only KM and points, no badges)
             binding.tvMyStats.setText(currentRankingUser.getFormattedStats());
-            
-            // Load profile image if available
-            if (currentRankingUser.getProfileImageUrl() != null && !currentRankingUser.getProfileImageUrl().isEmpty()) {
-                Glide.with(this)
-                        .load(currentRankingUser.getProfileImageUrl())
-                        .placeholder(R.drawable.ic_user_avatar)
-                        .error(R.drawable.ic_user_avatar)
-                        .into(binding.ivMyProfileImage);
+              // Load profile image using activeAvatar (local assets only)
+            String activeAvatar = currentRankingUser.getActiveAvatar();
+            if (activeAvatar != null && !activeAvatar.trim().isEmpty()) {
+                // Use AvatarManager to load local avatar
+                AvatarManager.loadAvatarIntoImageView(requireContext(), binding.ivMyProfileImage, activeAvatar);
             } else {
-                binding.ivMyProfileImage.setImageResource(R.drawable.ic_user_avatar);
+                // Fallback to default avatar when activeAvatar is missing
+                binding.ivMyProfileImage.setImageResource(R.drawable.avatar_default);
             }
             
             Log.d(TAG, "✅ Current user UI updated - Position: #" + currentUserPosition + 
@@ -528,9 +533,9 @@ public class RankingTabFragment extends Fragment {
                             if (tempUsername == null) tempUsername = "You";
                         }
                         final String username = tempUsername; // Make effectively final for lambda
-                        
-                        // Get profile photo
+                          // Get profile photo and activeAvatar
                         final String photoURL = userDoc.getString("photoURL");
+                        final String activeAvatar = userDoc.getString("activeAvatar");
                         
                         // Now get stats from user_stats collection
                         firestore.collection("user_stats")
@@ -582,16 +587,13 @@ public class RankingTabFragment extends Fragment {
                                     
                                     // Display simplified stats (only KM and points)
                                     binding.tvMyStats.setText(String.format("%.1f km • %d poin", userDistance / 1000.0, userPoints));
-                                    
-                                    // Load profile image if available
-                                    if (photoURL != null && !photoURL.isEmpty()) {
-                                        Glide.with(this)
-                                                .load(photoURL)
-                                                .placeholder(R.drawable.ic_user_avatar)
-                                                .error(R.drawable.ic_user_avatar)
-                                                .into(binding.ivMyProfileImage);
+                                      // Load profile image using activeAvatar if available
+                                    if (activeAvatar != null && !activeAvatar.trim().isEmpty()) {
+                                        // Use AvatarManager to load local avatar
+                                        AvatarManager.loadAvatarIntoImageView(RankingTabFragment.this.requireContext(), binding.ivMyProfileImage, activeAvatar);
                                     } else {
-                                        binding.ivMyProfileImage.setImageResource(R.drawable.ic_user_avatar);
+                                        // Fallback to default avatar when activeAvatar is missing
+                                        binding.ivMyProfileImage.setImageResource(R.drawable.avatar_default);
                                     }
                                     
                                     Log.d(TAG, "✅ Current user stats updated - Points: " + userPoints + ", Distance: " + userDistance + ", Name: " + username);

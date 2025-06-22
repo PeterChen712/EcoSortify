@@ -18,6 +18,7 @@ import com.example.glean.db.AppDatabase;
 import com.example.glean.model.Badge;
 import com.example.glean.model.RankingUser;
 import com.example.glean.model.UserEntity;
+import com.example.glean.util.AvatarManager;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
@@ -138,19 +139,18 @@ public class OtherPlayerProfileActivity extends AppCompatActivity {
         }
         
         if (document.exists()) {
-            try {
-                // Convert Firebase data to RankingUser
+            try {                // Convert Firebase data to RankingUser
                 String username = document.getString("username");
                 String fullName = document.getString("fullName");
                 Number totalPoints = document.getLong("totalPoints");
                 Number totalDistance = document.getDouble("totalDistance");
                 Number totalTrash = document.getLong("totalTrashCollected");
-                String profileImageUrl = document.getString("profileImageUrl");
+                String activeAvatar = document.getString("activeAvatar"); // Get activeAvatar instead of profileImageUrl
 
                 RankingUser user = new RankingUser();
                 user.setUserId(playerId);
                 user.setUsername(username != null ? username : playerUsername);
-                user.setProfileImageUrl(profileImageUrl);
+                user.setActiveAvatar(activeAvatar); // Set activeAvatar instead of profileImageUrl
                 user.setTotalPoints(totalPoints != null ? totalPoints.intValue() : 0);
                 user.setTotalDistance(totalDistance != null ? totalDistance.doubleValue() : 0.0);
                 user.setTrashCount(totalTrash != null ? totalTrash.intValue() : 0);
@@ -184,9 +184,8 @@ public class OtherPlayerProfileActivity extends AppCompatActivity {
             binding.tvTotalPlogs.setText("0"); // Not available in ranking data
             binding.tvTotalDistance.setText(String.format(Locale.getDefault(), 
                     "%.1f", user.getTotalDistance() / 1000.0));
-            
-            // Load profile image
-            loadProfileImage(user.getProfileImageUrl());
+              // Load profile image using activeAvatar (local assets only)
+            loadProfileImage(user.getActiveAvatar());
             
             // Load and apply profile background from Firestore only if not loaded from handleFirebaseData
             if (rankingUser != null) {
@@ -309,18 +308,13 @@ public class OtherPlayerProfileActivity extends AppCompatActivity {
             default:
                 return R.drawable.profile_skin_default;
         }
-    }
-
-    private void loadProfileImage(String imageUrl) {
-        if (imageUrl != null && !imageUrl.trim().isEmpty()) {
-            Glide.with(this)
-                    .load(imageUrl)
-                    .placeholder(R.drawable.ic_user_avatar)
-                    .error(R.drawable.ic_user_avatar)
-                    .circleCrop()
-                    .into(binding.ivProfilePic);
+    }    private void loadProfileImage(String activeAvatar) {
+        if (activeAvatar != null && !activeAvatar.trim().isEmpty()) {
+            // Use AvatarManager to load local avatar
+            AvatarManager.loadAvatarIntoImageView(this, binding.ivProfilePic, activeAvatar);
         } else {
-            binding.ivProfilePic.setImageResource(R.drawable.ic_user_avatar);
+            // Fallback to default avatar when activeAvatar is missing
+            binding.ivProfilePic.setImageResource(R.drawable.avatar_default);
         }
     }
 
