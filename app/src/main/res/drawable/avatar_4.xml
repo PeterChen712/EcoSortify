@@ -5,9 +5,9 @@
     android:viewportWidth="128"
     android:viewportHeight="128">
     
-    <!-- Background Circle -->
+    <!-- Background Circle: Purple -->
     <path
-        android:fillColor="#4CAF50"
+        android:fillColor="#9C27B0"
         android:pathData="M64,8C33.1,8 8,33.1 8,64s25.1,56 56,56s56,-25.1 56,-56S94.9,8 64,8z"/>
     
     <!-- Face -->
@@ -28,14 +28,14 @@
         android:fillColor="#FFCC9C"
         android:pathData="M64,62C65.1,62 66,62.9 66,64C66,65.1 65.1,66 64,66C62.9,66 62,65.1 62,64C62,62.9 62.9,62 64,62z"/>
     
-    <!-- Mouth -->
+    <!-- Mouth: Wide Smile -->
     <path
         android:fillColor="#333333"
-        android:pathData="M58,72 Q64,78 70,72"
+        android:pathData="M54,72 Q64,84 74,72"
         android:fillType="nonZero"/>
         
-    <!-- Hair -->
+    <!-- Hair: Dark Blue -->
     <path
-        android:fillColor="#8D6E63"
+        android:fillColor="#283593"
         android:pathData="M64,24C50,24 38,32 34,44 Q38,38 46,36 Q54,34 64,34 Q74,34 82,36 Q90,38 94,44C90,32 78,24 64,24z"/>
 </vector>

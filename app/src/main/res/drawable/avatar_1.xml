@@ -5,7 +5,7 @@
     android:viewportWidth="128"
     android:viewportHeight="128">
     
-    <!-- Background Circle -->
+    <!-- Background Circle: Green -->
     <path
         android:fillColor="#4CAF50"
         android:pathData="M64,8C33.1,8 8,33.1 8,64s25.1,56 56,56s56,-25.1 56,-56S94.9,8 64,8z"/>
@@ -34,8 +34,8 @@
         android:pathData="M58,72 Q64,78 70,72"
         android:fillType="nonZero"/>
         
-    <!-- Hair -->
+    <!-- Hair: Dark Brown -->
     <path
-        android:fillColor="#8D6E63"
+        android:fillColor="#5D4037"
         android:pathData="M64,24C50,24 38,32 34,44 Q38,38 46,36 Q54,34 64,34 Q74,34 82,36 Q90,38 94,44C90,32 78,24 64,24z"/>
 </vector>

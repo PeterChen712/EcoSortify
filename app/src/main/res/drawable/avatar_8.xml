@@ -5,9 +5,9 @@
     android:viewportWidth="128"
     android:viewportHeight="128">
     
-    <!-- Background Circle -->
+    <!-- Background Circle: Magenta -->
     <path
-        android:fillColor="#4CAF50"
+        android:fillColor="#E040FB"
         android:pathData="M64,8C33.1,8 8,33.1 8,64s25.1,56 56,56s56,-25.1 56,-56S94.9,8 64,8z"/>
     
     <!-- Face -->
@@ -15,27 +15,27 @@
         android:fillColor="#FFE0B2"
         android:pathData="M64,24C45.2,24 30,39.2 30,58v16c0,18.8 15.2,34 34,34s34,-15.2 34,-34V58C98,39.2 82.8,24 64,24z"/>
       
-    <!-- Eyes -->
+    <!-- Eyes: Bigger -->
     <path
         android:fillColor="#333333"
-        android:pathData="M54,51C55.66,51 57,52.34 57,54C57,55.66 55.66,57 54,57C52.34,57 51,55.66 51,54C51,52.34 52.34,51 54,51z"/>
+        android:pathData="M53,51C55,51 57,53 57,55C57,57 55,59 53,59C51,59 49,57 49,55C49,53 51,51 53,51z"/>
     <path
         android:fillColor="#333333"
-        android:pathData="M74,51C75.66,51 77,52.34 77,54C77,55.66 75.66,57 74,57C72.34,57 71,55.66 71,54C71,52.34 72.34,51 74,51z"/>
+        android:pathData="M75,51C77,51 79,53 79,55C79,57 77,59 75,59C73,59 71,57 71,55C71,53 73,51 75,51z"/>
     
     <!-- Nose -->
     <path
         android:fillColor="#FFCC9C"
         android:pathData="M64,62C65.1,62 66,62.9 66,64C66,65.1 65.1,66 64,66C62.9,66 62,65.1 62,64C62,62.9 62.9,62 64,62z"/>
     
-    <!-- Mouth -->
+    <!-- Mouth: Thicker lips -->
     <path
-        android:fillColor="#333333"
-        android:pathData="M58,72 Q64,78 70,72"
+        android:fillColor="#AD1457"
+        android:pathData="M58,74 Q64,80 70,74 Q64,78 58,74"
         android:fillType="nonZero"/>
         
-    <!-- Hair -->
+    <!-- Hair: Purple -->
     <path
-        android:fillColor="#8D6E63"
+        android:fillColor="#8E24AA"
         android:pathData="M64,24C50,24 38,32 34,44 Q38,38 46,36 Q54,34 64,34 Q74,34 82,36 Q90,38 94,44C90,32 78,24 64,24z"/>
 </vector>
