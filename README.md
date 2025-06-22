@@ -103,7 +103,9 @@ Tampilan beranda EcoSortify.
   <img width="200" src="README/M2d.png" alt="Contoh yang dibagikan"/>
 </p>
 - Gunakan fitur klasifikasi untuk mengenali jenis sampah secara otomatis.
+
 - Dapatkan tips pengelolaan sesuai hasil klasifikasi.
+
 - Bagikan hasil klasifikasi ke media sosial untuk menginspirasi orang lain.
 
 ---
@@ -115,7 +117,9 @@ Tampilan beranda EcoSortify.
   <img width="200" src="README/M3c.png" alt="Hasil saran EcoBot"/>
 </p>
 - Mulai sesi tanya jawab dengan EcoBot untuk mendapatkan panduan memilah sampah secara interaktif.
+  
 - Dapatkan saran dan edukasi langsung dari asisten virtual.
+  
 - EcoBot membantu menjawab pertanyaan seputar pengelolaan sampah sehari-hari.
 
 ---
@@ -126,6 +130,7 @@ Tampilan beranda EcoSortify.
     <img width="200" src="README/M4b.png" alt="Contoh gameplay"/>
 </p>
 - Mainkan game edukatif untuk mengasah pengetahuan tentang pengelolaan sampah.
+  
 - Dapatkan poin dan reward untuk setiap level yang diselesaikan.
 
 ---
