@@ -301,32 +301,45 @@ public class SkinSelectionFragment extends Fragment implements SkinSelectionAdap
                 firebaseDataManager.updateProfileCustomization(
                     userProfile.getSelectedBadges(),
                     userProfile.getOwnedBackgrounds(),
-                    selectedSkinId,
-                    new FirebaseDataManager.ProfileCustomizationCallback() {
+                    selectedSkinId,                    new FirebaseDataManager.ProfileCustomizationCallback() {
                         @Override
                         public void onSuccess() {
                             Log.d(TAG, "Skin selection saved to Firebase: " + selectedSkinId);
                             
-                            // Also save to SharedPreferences for backward compatibility
-                            SharedPreferences prefs = requireActivity().getSharedPreferences("profile_settings", 0);
-                            prefs.edit().putString("selected_skin", selectedSkinId).apply();
+                            // Check if fragment is still attached before accessing activity
+                            if (isAdded() && getActivity() != null) {
+                                // Also save to SharedPreferences for backward compatibility
+                                SharedPreferences prefs = getActivity().getSharedPreferences("profile_settings", 0);
+                                prefs.edit().putString("selected_skin", selectedSkinId).apply();
+                            } else {
+                                Log.w(TAG, "Fragment not attached, skipping SharedPreferences save");
+                            }
                         }
                         
                         @Override
                         public void onError(String error) {
                             Log.e(TAG, "Error saving skin selection to Firebase: " + error);
                             
-                            // Fallback to SharedPreferences only
-                            SharedPreferences prefs = requireActivity().getSharedPreferences("profile_settings", 0);
-                            prefs.edit().putString("selected_skin", selectedSkinId).apply();
-                            Log.d(TAG, "Skin selection saved to SharedPreferences as fallback: " + selectedSkinId);
+                            // Check if fragment is still attached before accessing activity
+                            if (isAdded() && getActivity() != null) {
+                                // Fallback to SharedPreferences only
+                                SharedPreferences prefs = getActivity().getSharedPreferences("profile_settings", 0);
+                                prefs.edit().putString("selected_skin", selectedSkinId).apply();
+                                Log.d(TAG, "Skin selection saved to SharedPreferences as fallback: " + selectedSkinId);
+                            } else {
+                                Log.w(TAG, "Fragment not attached, cannot save to SharedPreferences as fallback");
+                            }
                         }
-                    });
-            } else {
-                // Fallback to SharedPreferences only
-                SharedPreferences prefs = requireActivity().getSharedPreferences("profile_settings", 0);
-                prefs.edit().putString("selected_skin", selectedSkinId).apply();
-                Log.d(TAG, "Skin selection saved to SharedPreferences: " + selectedSkinId);
+                    });            } else {
+                // Check if fragment is still attached before accessing activity
+                if (isAdded() && getActivity() != null) {
+                    // Fallback to SharedPreferences only
+                    SharedPreferences prefs = getActivity().getSharedPreferences("profile_settings", 0);
+                    prefs.edit().putString("selected_skin", selectedSkinId).apply();
+                    Log.d(TAG, "Skin selection saved to SharedPreferences: " + selectedSkinId);
+                } else {
+                    Log.w(TAG, "Fragment not attached, cannot save to SharedPreferences");
+                }
             }
         }
     }

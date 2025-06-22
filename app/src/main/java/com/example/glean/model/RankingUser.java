@@ -19,7 +19,7 @@ public class RankingUser implements Serializable {
     
     public RankingUser() {} // Required for Firebase
       public RankingUser(String userId, String username, String fullName, int totalPoints, 
-                      double totalDistance, int totalTrashCollected, long lastUpdated) {
+                    double totalDistance, int totalTrashCollected, long lastUpdated) {
         this.userId = userId;
         this.username = username;
         this.fullName = fullName;
