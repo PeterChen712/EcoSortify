@@ -85,7 +85,7 @@
                     app:layout_constraintTop_toTopOf="parent"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent" /><!-- Profile Picture with Frame -->
+                    app:layout_constraintEnd_toEndOf="parent" />                <!-- Profile Picture with Frame -->
                 <FrameLayout
                     android:id="@+id/profilePictureFrame"
                     android:layout_width="120dp"
@@ -96,13 +96,11 @@
                     android:background="?attr/selectableItemBackgroundBorderless"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent">
-
-                <de.hdodenhof.circleimageview.CircleImageView
+                    app:layout_constraintTop_toTopOf="parent">                <de.hdodenhof.circleimageview.CircleImageView
                     android:id="@+id/ivProfilePic"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:src="@drawable/ic_person"
+                    android:src="@drawable/avatar_default"
                     app:civ_border_color="@color/white"
                     app:civ_border_width="4dp" />
 
@@ -113,25 +111,6 @@
                     android:visibility="gone"
                     tools:src="@drawable/ic_star"
                     tools:visibility="visible" />
-                
-                <!-- Edit overlay -->
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:background="@drawable/profile_edit_overlay" />
-                
-                <!-- Camera icon -->
-                <ImageView
-                    android:id="@+id/ivEditProfile"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:layout_gravity="bottom|end"
-                    android:layout_marginEnd="8dp"
-                    android:layout_marginBottom="8dp"
-                    android:background="@drawable/circle_white_background"
-                    android:src="@drawable/ic_camera"
-                    android:padding="6dp"
-                    app:tint="@color/environmental_green"                    android:contentDescription="Edit Profile Picture" />
 
                 </FrameLayout>
 

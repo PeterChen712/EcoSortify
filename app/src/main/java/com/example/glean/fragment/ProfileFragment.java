@@ -38,6 +38,7 @@ import com.example.glean.databinding.DialogSettingsBinding;
 import com.example.glean.db.AppDatabase;
 import com.example.glean.model.Badge;
 import com.example.glean.model.UserEntity;
+import com.example.glean.util.AvatarManager;
 import com.example.glean.util.NetworkUtil;
 import com.example.glean.util.ProfileImageLoader;
 import com.example.glean.service.FirebaseDataManager;
@@ -524,13 +525,22 @@ public class ProfileFragment extends Fragment {    private static final String T
                 if (binding.tvEmail != null) {
                     binding.tvEmail.setText(email != null && !email.isEmpty() ? email : "No email");
                     Log.d(TAG, "🔥 Firebase profile email set to: " + email);
-                }
-                  // Update profile avatar using activeAvatar field only
+                }                  // Update profile avatar using activeAvatar field only
                 String activeAvatar = profile.getActiveAvatar();
                 Log.d(TAG, "🔥 Loading avatar from activeAvatar field: " + activeAvatar);
                 
+                // Load avatar immediately when activeAvatar is available
+                if (activeAvatar != null && !activeAvatar.isEmpty()) {
+                    Log.d(TAG, "🎨 Immediately loading avatar: " + activeAvatar);
+                    loadAvatarDirectly(activeAvatar);
+                } else {
+                    Log.d(TAG, "🎨 No activeAvatar found, loading default");
+                    loadAvatarDirectly("default");
+                }
+                
                 // Create final versions for lambda
                 final String finalEmail = email;
+                final String finalActiveAvatar = activeAvatar;
                   // Update local user data if available - but don't let it override UI
                 if (currentUser != null) {
                     // Update current user object with profile data
@@ -543,15 +553,16 @@ public class ProfileFragment extends Fragment {    private static final String T
                     if (lastName != null && !lastName.isEmpty()) {
                         currentUser.setLastName(lastName);
                     }                    if (finalEmail != null && !finalEmail.isEmpty()) {
-                        currentUser.setEmail(finalEmail);
-                    }
+                        currentUser.setEmail(finalEmail);                    }
                     // Set the activeAvatar instead of profileImagePath
-                    if (activeAvatar != null && !activeAvatar.isEmpty()) {
-                        currentUser.setActiveAvatar(activeAvatar);
+                    if (finalActiveAvatar != null && !finalActiveAvatar.isEmpty()) {
+                        currentUser.setActiveAvatar(finalActiveAvatar);
+                    } else {
+                        currentUser.setActiveAvatar("default");
                     }
                     
-                    // Load the updated profile image using activeAvatar
-                    loadProfileImage(currentUser);
+                    // Avatar already loaded above, no need to load again
+                    // loadProfileImage(currentUser);
                     
                     // Update local database in background without affecting UI
                     executor.execute(() -> {
@@ -571,16 +582,18 @@ public class ProfileFragment extends Fragment {    private static final String T
                     firebaseUser.setLastName(profile.getLastName());
                     firebaseUser.setUsername(displayName);                    firebaseUser.setEmail(finalEmail);
                     // Set the activeAvatar instead of profileImagePath
-                    if (activeAvatar != null && !activeAvatar.isEmpty()) {
-                        firebaseUser.setActiveAvatar(activeAvatar);
+                    if (finalActiveAvatar != null && !finalActiveAvatar.isEmpty()) {
+                        firebaseUser.setActiveAvatar(finalActiveAvatar);
+                    } else {
+                        firebaseUser.setActiveAvatar("default");
                     }
                     firebaseUser.setCreatedAt(System.currentTimeMillis());
                     
                     // Set currentUser for immediate use
                     currentUser = firebaseUser;
                     
-                    // Load the profile image using activeAvatar
-                    loadProfileImage(firebaseUser);
+                    // Avatar already loaded above, no need to load again
+                    // loadProfileImage(firebaseUser);
                     
                     // Try to save/update in local database in background
                     executor.execute(() -> {
@@ -593,8 +606,10 @@ public class ProfileFragment extends Fragment {    private static final String T
                                 existingUser.setLastName(profile.getLastName());
                                 existingUser.setUsername(displayName);                                existingUser.setEmail(finalEmail);
                                 // Set the activeAvatar instead of profileImagePath
-                                if (activeAvatar != null && !activeAvatar.isEmpty()) {
-                                    existingUser.setActiveAvatar(activeAvatar);
+                                if (finalActiveAvatar != null && !finalActiveAvatar.isEmpty()) {
+                                    existingUser.setActiveAvatar(finalActiveAvatar);
+                                } else {
+                                    existingUser.setActiveAvatar("default");
                                 }
                                 db.userDao().update(existingUser);
                                 Log.d(TAG, "Updated existing local user with Firebase profile data");
@@ -659,20 +674,20 @@ public class ProfileFragment extends Fragment {    private static final String T
                     String emailDisplay = firebaseEmail != null && !firebaseEmail.isEmpty() ? firebaseEmail : "No email";
                     binding.tvEmail.setText(emailDisplay);
                     Log.d(TAG, "🔄 Updated email display to: " + emailDisplay);
-                }
-                  // Load default avatar for new users (no photo URL logic)
+                }                  // Load default avatar for new users (no photo URL logic)
                 Log.d(TAG, "🔄 Loading default avatar for Firebase Auth user");
                 if (currentUser != null) {
                     // Use default avatar if no activeAvatar is set
                     if (currentUser.getActiveAvatar() == null || currentUser.getActiveAvatar().isEmpty()) {
                         currentUser.setActiveAvatar("default");
+                        loadAvatarDirectly("default");
+                    } else {
+                        // User already has an activeAvatar, load it directly
+                        loadAvatarDirectly(currentUser.getActiveAvatar());
                     }
-                    loadProfileImage(currentUser);
                 } else {
                     // Create temporary user for image loading with default avatar
-                    UserEntity tempUser = new UserEntity();
-                    tempUser.setActiveAvatar("default");
-                    loadProfileImage(tempUser);
+                    loadAvatarDirectly("default");
                 }
                 
                 // ENHANCED: Create currentUser from Firebase Auth data if it's null
@@ -891,8 +906,59 @@ public class ProfileFragment extends Fragment {    private static final String T
     }    private void loadProfileImage(UserEntity user) {
         if (binding.ivProfilePic == null || user == null) return;
         
-        // Use the utility class to handle all profile image loading logic
-        ProfileImageLoader.loadProfileImage(requireContext(), binding.ivProfilePic, user);
+        // Ensure we're on the main thread
+        if (getActivity() != null) {
+            getActivity().runOnUiThread(() -> {
+                loadAvatarDirectly(user.getActiveAvatar());
+            });
+        } else {
+            loadAvatarDirectly(user.getActiveAvatar());
+        }
+    }
+      /**
+     * Load avatar directly from activeAvatar field without any fallbacks
+     */
+    private void loadAvatarDirectly(String activeAvatar) {
+        if (binding == null || binding.ivProfilePic == null) {
+            Log.w(TAG, "Cannot load avatar - binding or imageView is null");
+            return;
+        }
+        
+        try {
+            Log.d(TAG, "🎨 Loading avatar directly: " + activeAvatar);
+            
+            // Use activeAvatar directly, fallback to default only if null/empty
+            String avatarToLoad = (activeAvatar != null && !activeAvatar.isEmpty()) ? activeAvatar : "default";
+            
+            // Load avatar using AvatarManager - this ensures we get the correct local resource
+            AvatarManager.loadAvatarIntoImageView(requireContext(), binding.ivProfilePic, avatarToLoad);
+            
+            Log.d(TAG, "✅ Avatar loaded successfully: " + avatarToLoad);
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error loading avatar directly", e);
+            // Fallback: set default avatar resource directly
+            try {
+                binding.ivProfilePic.setImageResource(R.drawable.avatar_default);
+                Log.d(TAG, "🔄 Fallback to default avatar resource");
+            } catch (Exception fallbackError) {
+                Log.e(TAG, "❌ Even fallback avatar loading failed", fallbackError);
+            }
+        }
+    }
+    
+    /**
+     * Public method to refresh avatar when activeAvatar changes
+     * This can be called from external sources when the avatar selection changes
+     */
+    public void refreshAvatar() {
+        if (currentUser != null && currentUser.getActiveAvatar() != null) {
+            Log.d(TAG, "🔄 Refreshing avatar: " + currentUser.getActiveAvatar());
+            loadAvatarDirectly(currentUser.getActiveAvatar());
+        } else {
+            Log.d(TAG, "🔄 Refreshing with default avatar");
+            loadAvatarDirectly("default");
+        }
     }private String getDisplayName(UserEntity user) {
         if (user.getFirstName() != null && !user.getFirstName().isEmpty()) {
             String fullName = user.getFirstName();
@@ -1060,18 +1126,18 @@ public class ProfileFragment extends Fragment {    private static final String T
             if (binding.tvMemberSince != null) {
                 binding.tvMemberSince.setText("Member since: Recently joined");
             }              // Load avatar from activeAvatar field only
-            if (currentUser != null && activeAvatar != null && !activeAvatar.isEmpty()) {
-                currentUser.setActiveAvatar(activeAvatar);
-                ProfileImageLoader.loadProfileImage(requireContext(), binding.ivProfilePic, currentUser);
-            } else if (currentUser != null) {
-                // Use default avatar
-                currentUser.setActiveAvatar("default");
-                ProfileImageLoader.loadProfileImage(requireContext(), binding.ivProfilePic, currentUser);
+            Log.d(TAG, "🔥 Loading avatar from Firebase document: " + activeAvatar);
+            if (activeAvatar != null && !activeAvatar.isEmpty()) {
+                if (currentUser != null) {
+                    currentUser.setActiveAvatar(activeAvatar);
+                }
+                loadAvatarDirectly(activeAvatar);
             } else {
-                // Fallback if no currentUser
-                UserEntity tempUser = new UserEntity();
-                tempUser.setActiveAvatar("default");
-                ProfileImageLoader.loadProfileImage(requireContext(), binding.ivProfilePic, tempUser);
+                // Use default avatar
+                if (currentUser != null) {
+                    currentUser.setActiveAvatar("default");
+                }
+                loadAvatarDirectly("default");
             }
             
             Log.d(TAG, "UI successfully updated with Firebase data");
