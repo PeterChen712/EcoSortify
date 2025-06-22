@@ -365,6 +365,7 @@ public class FirebaseAuthManager {
         user.put("ownedSkins", Arrays.asList("default_skin_id"));
         user.put("selectedSkin", "default_skin_id");
         user.put("selectedBadges", Arrays.asList());
+        user.put("activeAvatar", "avatar_1"); // default avatar
         
         db.collection("users").document(userId)
                 .set(user)

@@ -1132,6 +1132,54 @@ public class FirebaseDataManager {
      * Force refresh all user data from Firebase after login
      * This ensures we always get fresh data for the new user
      */
+
+
+    /**
+ * Update only activeAvatar in Firestore
+ */
+    public void updateActiveAvatar(String activeAvatar, ProfileCustomizationCallback callback) {
+        if (!isUserLoggedIn()) {
+            callback.onError("User not logged in");
+            return;
+        }
+        
+        String userId = getCurrentUserId();
+        
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("activeAvatar", activeAvatar);
+        updates.put("lastUpdated", System.currentTimeMillis());
+        
+        firestore.collection(COLLECTION_USERS)
+                .document(userId)
+                .update(updates)
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "ActiveAvatar updated successfully: " + activeAvatar);
+                    
+                    // Sync to local database
+                    executor.execute(() -> {
+                        try {
+                            int localUserId = getCurrentLocalUserId();
+                            if (localUserId != -1) {
+                                UserEntity localUser = localDb.userDao().getUserByIdSync(localUserId);
+                                if (localUser != null) {
+                                    localUser.setActiveAvatar(activeAvatar);
+                                    localDb.userDao().update(localUser);
+                                    Log.d(TAG, "✅ Synced activeAvatar to local database: " + activeAvatar);
+                                }
+                            }
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error syncing avatar to local database", e);
+                        }
+                    });
+                    
+                    callback.onSuccess();
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error updating activeAvatar", e);
+                    callback.onError("Failed to update activeAvatar: " + e.getMessage());
+                });
+    }
+
     public void forceRefreshUserDataAfterLogin(DataSyncCallback callback) {
         if (!isUserLoggedIn()) {
             callback.onError("User not logged in");
@@ -1173,7 +1221,7 @@ public class FirebaseDataManager {
       /**
      * Update Firebase stats setelah sesi plogging selesai
      * Menggunakan increment untuk menghindari race condition
-     */    public void updateUserStatsAfterPloggingSession(DataSyncCallback callback) {
+     */ public void updateUserStatsAfterPloggingSession(DataSyncCallback callback) {
         Log.d(TAG, "🔄 === UPDATE FIREBASE STATS AFTER PLOGGING SESSION ===");
         
         if (!isUserLoggedIn()) {
@@ -1528,13 +1576,14 @@ public class FirebaseDataManager {
         updates.put("selectedBadges", selectedBadges);
         updates.put("ownedBackgrounds", ownedBackgrounds);
         updates.put("activeBackground", activeBackground);
+        updates.put("activeAvatar", activeBackground); // TAMBAHKAN INI - simpan avatar juga
         updates.put("lastUpdated", System.currentTimeMillis());
         
         firestore.collection(COLLECTION_USERS)
                 .document(userId)
                 .update(updates)
                 .addOnSuccessListener(aVoid -> {
-                    Log.d(TAG, "Profile customization updated successfully");
+                    Log.d(TAG, "Profile customization updated successfully with activeAvatar: " + activeBackground);
                     
                     // Sync to local database immediately after Firebase update
                     executor.execute(() -> {
@@ -1545,7 +1594,7 @@ public class FirebaseDataManager {
                                 if (localUser != null) {
                                     localUser.setActiveAvatar(activeBackground);
                                     localDb.userDao().update(localUser);
-                                    Log.d(TAG, "✅ Synced new activeBackground to local activeAvatar: " + activeBackground);
+                                    Log.d(TAG, "✅ Synced new activeAvatar to local database: " + activeBackground);
                                 }
                             }
                         } catch (Exception e) {

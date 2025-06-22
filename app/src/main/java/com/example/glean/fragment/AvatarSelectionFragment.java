@@ -27,6 +27,7 @@ import com.example.glean.model.UserStats;
 import com.example.glean.model.RankingUser;
 import com.example.glean.model.UserProfile;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class AvatarSelectionFragment extends Fragment implements AvatarSelectionAdapter.OnAvatarClickListener {
@@ -63,8 +64,7 @@ public class AvatarSelectionFragment extends Fragment implements AvatarSelection
         binding.rvAvatars.setLayoutManager(new GridLayoutManager(requireContext(), 3));
         // Adapter will be set after loading user data
     }
-    
-    private void loadUserData() {
+      private void loadUserData() {
         if (getActivity() instanceof CustomizeProfileActivity) {
             int userId = ((CustomizeProfileActivity) getActivity()).getUserId();
             
@@ -74,6 +74,9 @@ public class AvatarSelectionFragment extends Fragment implements AvatarSelection
                     updateUserPointsDisplay();
                     loadCurrentAvatar();
                     loadAvailableAvatars();
+                    
+                    // Load UserProfile from Firebase untuk save ke Firestore
+                    loadUserProfileFromFirebase();
                 }
             });
         }
@@ -152,6 +155,8 @@ public class AvatarSelectionFragment extends Fragment implements AvatarSelection
      */
     public void saveSelection() {
         if (currentUser != null && !selectedAvatarId.equals(originalAvatarId)) {
+            Log.d(TAG, "💾 Saving avatar selection: " + selectedAvatarId);
+            
             // Update local database
             currentUser.setActiveAvatar(selectedAvatarId);
             
@@ -159,6 +164,7 @@ public class AvatarSelectionFragment extends Fragment implements AvatarSelection
             new Thread(() -> {
                 try {
                     db.userDao().update(currentUser);
+                    Log.d(TAG, "✅ Avatar saved to local database: " + selectedAvatarId);
                     
                     // Save to Firestore
                     saveToFirestore();
@@ -177,32 +183,94 @@ public class AvatarSelectionFragment extends Fragment implements AvatarSelection
                 }
             }).start();
         }
-    }      private void saveToFirestore() {
+    } 
+      private void saveToFirestore() {
         try {
-            // Update profile customization in Firestore using the new method
-            // Avatar selection is treated as background selection in the Firebase data model
+            // Cek apakah userProfile sudah ter-load
             if (userProfile != null) {
-                firebaseDataManager.updateProfileCustomization(
-                    userProfile.getSelectedBadges(),  // keep existing badges
-                    userProfile.getOwnedBackgrounds(),  // keep existing owned backgrounds
-                    selectedAvatarId,  // set avatar as active background
+                Log.d(TAG, "💾 UserProfile available, saving avatar to Firestore: " + selectedAvatarId);
+                
+                // Gunakan method updateActiveAvatar yang baru
+                firebaseDataManager.updateActiveAvatar(
+                    selectedAvatarId,
                     new FirebaseDataManager.ProfileCustomizationCallback() {
                         @Override
                         public void onSuccess() {
-                            Log.d(TAG, "Avatar saved to Firestore successfully");
+                            Log.d(TAG, "✅ Avatar saved to Firestore successfully: " + selectedAvatarId);
                         }
                         
                         @Override
                         public void onError(String error) {
-                            Log.e(TAG, "Error saving avatar to Firestore: " + error);
+                            Log.e(TAG, "❌ Error saving avatar to Firestore: " + error);
                         }
                     }
                 );
             } else {
-                Log.w(TAG, "UserProfile is null, cannot save to Firestore");
+                Log.w(TAG, "⚠️ UserProfile is null, trying to save with direct Firestore update");
+                
+                // Fallback: Save langsung ke Firestore tanpa userProfile
+                saveAvatarDirectlyToFirestore();
             }
         } catch (Exception e) {
-            Log.e(TAG, "Error updating Firestore", e);
+            Log.e(TAG, "❌ Error updating Firestore", e);
+        }
+    }
+    
+    /**
+     * Fallback method untuk save avatar langsung ke Firestore 
+     */
+    private void saveAvatarDirectlyToFirestore() {
+        try {
+            // Panggil method updateActiveAvatar langsung
+            firebaseDataManager.updateActiveAvatar(
+                selectedAvatarId,
+                new FirebaseDataManager.ProfileCustomizationCallback() {
+                    @Override
+                    public void onSuccess() {
+                        Log.d(TAG, "✅ Avatar saved directly to Firestore: " + selectedAvatarId);
+                    }
+                    
+                    @Override
+                    public void onError(String error) {
+                        Log.e(TAG, "❌ Failed to save avatar directly to Firestore: " + error);
+                        
+                        // Show error message to user
+                        requireActivity().runOnUiThread(() -> {
+                            Toast.makeText(requireContext(), 
+                                "Avatar tersimpan lokal, tapi gagal sync ke cloud: " + error, 
+                                Toast.LENGTH_LONG).show();
+                        });
+                    }
+                }
+            );
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Exception in saveAvatarDirectlyToFirestore", e);
+        }
+    }
+    
+    /**
+     * Load UserProfile dari Firebase untuk memastikan save ke Firestore berhasil
+     */
+    private void loadUserProfileFromFirebase() {
+        if (firebaseDataManager != null) {
+            firebaseDataManager.subscribeToUserProfile(new FirebaseDataManager.ProfileDataCallback() {
+                @Override
+                public void onProfileLoaded(UserProfile profile) {
+                    userProfile = profile;
+                    Log.d(TAG, "✅ UserProfile loaded successfully for avatar save");
+                }
+                
+                @Override
+                public void onError(String error) {
+                    Log.e(TAG, "❌ Failed to load UserProfile: " + error);
+                    // Tetap set userProfile dengan data minimal agar save bisa jalan
+                    userProfile = new UserProfile();
+                    if (currentUser != null) {
+                        userProfile.setSelectedBadges(new ArrayList<>());
+                        userProfile.setOwnedBackgrounds(new ArrayList<>());
+                    }
+                }
+            });
         }
     }
     

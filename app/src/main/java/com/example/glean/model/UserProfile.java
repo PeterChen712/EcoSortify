@@ -29,6 +29,7 @@ public class UserProfile {
     private List<String> selectedBadges;
     private List<String> ownedBackgrounds;
     private String activeBackground;
+    private String activeAvatar; // Field baru untuk avatar aktif
     
     public UserProfile() {} // Required for Firebase
     
@@ -197,11 +198,17 @@ public class UserProfile {
         return ownedBackgrounds != null ? ownedBackgrounds : new ArrayList<>(); 
     }
     public void setOwnedBackgrounds(List<String> ownedBackgrounds) { this.ownedBackgrounds = ownedBackgrounds; }
-    
-    public String getActiveBackground() { 
+      public String getActiveBackground() { 
         return activeBackground != null ? activeBackground : "default"; 
     }
     public void setActiveBackground(String activeBackground) { this.activeBackground = activeBackground; }
+    
+    public String getActiveAvatar() {
+        return activeAvatar != null ? activeAvatar : "avatar_1";
+    }
+    public void setActiveAvatar(String activeAvatar) { 
+        this.activeAvatar = activeAvatar; 
+    }
     
     /**
      * Get the display name for UI purposes
@@ -229,4 +236,3 @@ public class UserProfile {
     }
 }
 
-    
