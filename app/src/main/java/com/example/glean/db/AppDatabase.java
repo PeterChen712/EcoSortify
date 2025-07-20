@@ -1,0 +1,94 @@
+package com.example.glean.db;
+
+import android.content.Context;
+
+import androidx.room.Database;
+import androidx.room.Room;
+import androidx.room.RoomDatabase;
+import androidx.room.TypeConverters;
+import androidx.room.migration.Migration;
+import androidx.sqlite.db.SupportSQLiteDatabase;
+
+import com.example.glean.db.DatabaseSeeder;
+import com.example.glean.db.DaoRecord;
+import com.example.glean.db.DaoTrash;
+import com.example.glean.db.UserDao;
+import com.example.glean.db.LocationPointDao;
+import com.example.glean.model.LocationPointEntity;
+import com.example.glean.model.RecordEntity;
+import com.example.glean.model.TrashEntity;
+import com.example.glean.model.UserEntity;
+import com.example.glean.db.Converters;
+
+@Database(
+    entities = {
+        UserEntity.class, 
+        RecordEntity.class, 
+        TrashEntity.class,
+        LocationPointEntity.class
+    },
+    version = 19, // Increment version to fix schema integrity error
+    exportSchema = false
+)
+@TypeConverters({Converters.class})
+public abstract class AppDatabase extends RoomDatabase {
+    
+    private static final String DATABASE_NAME = "glean_database";
+    private static volatile AppDatabase INSTANCE;    public abstract UserDao userDao();
+    public abstract DaoRecord recordDao();
+    public abstract DaoTrash trashDao();
+    public abstract LocationPointDao locationPointDao();
+    
+    public static AppDatabase getInstance(Context context) {
+        if (INSTANCE == null) {
+            synchronized (AppDatabase.class) {
+                if (INSTANCE == null) {
+                    INSTANCE = Room.databaseBuilder(
+                            context.getApplicationContext(),
+                            AppDatabase.class,
+                            DATABASE_NAME
+                    )
+                    // Use destructive migration to handle schema mismatches
+                    .fallbackToDestructiveMigration()                    // Optional: Add callback to populate initial data
+                    .addCallback(new RoomDatabase.Callback() {
+                        @Override
+                        public void onCreate(SupportSQLiteDatabase db) {
+                            super.onCreate(db);
+                            // Database is created fresh - seed initial data
+                            seedInitialData(context);
+                        }
+                    })
+                    .build();
+                }
+            }
+        }
+        return INSTANCE;
+    }
+      /**
+     * Close the database instance
+     */
+    public static void destroyInstance() {
+        if (INSTANCE != null) {
+            INSTANCE.close();
+            INSTANCE = null;
+        }
+    }
+    
+    /**
+     * Force close and clear database instance - useful for schema issues
+     */
+    public static synchronized void clearInstance() {
+        if (INSTANCE != null) {
+            INSTANCE.close();
+            INSTANCE = null;
+        }
+    }
+    
+    /**
+     * Seed initial data when database is created or opened
+     */
+    private static void seedInitialData(Context context) {
+        DatabaseSeeder seeder = new DatabaseSeeder(context);
+        seeder.seedDatabaseIfEmpty();
+    }
+}

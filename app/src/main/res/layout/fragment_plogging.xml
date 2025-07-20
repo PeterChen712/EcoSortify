@@ -1,0 +1,492 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_light">    <!-- Normal Plogging Content -->
+    <LinearLayout
+        android:id="@+id/layout_plogging_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:visibility="visible">        <!-- Header with Fixed Height -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:background="@color/primary_color"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp">
+
+            <!-- Plogging Icon -->
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_marginEnd="12dp"
+                android:src="@drawable/ic_plogging"
+                app:tint="@color/white"
+                android:contentDescription="Plogging Icon" />
+
+            <!-- Title Text -->
+            <TextView
+                android:id="@+id/tv_header_title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Plogging"
+                android:textColor="@color/white"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:gravity="center_vertical" />            <!-- Help Button -->
+            <ImageButton
+                android:id="@+id/btn_help"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Help"
+                android:src="@drawable/ic_help"
+                app:tint="@color/white"
+                android:padding="12dp" />
+
+            <!-- Hamburger Menu Button -->
+            <ImageButton
+                android:id="@+id/btn_menu"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Menu"
+                android:src="@drawable/ic_menu"
+                app:tint="@color/white"
+                android:padding="12dp" />
+        </LinearLayout>
+
+        <fragment
+            android:id="@+id/map"
+            android:name="com.google.android.gms.maps.SupportMapFragment"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" /><!-- Enhanced Control Panel with Modern Design -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/control_panel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="12dp"
+            app:strokeColor="@color/primary_color"
+            app:strokeWidth="1dp"
+            android:backgroundTint="@android:color/white">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <!-- Stats Section with Enhanced Design -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:weightSum="3"
+                    android:layout_marginBottom="20dp">
+
+                    <!-- Distance Card -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="0dp"
+                        android:layout_height="120dp"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="6dp"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="4dp"
+                        android:backgroundTint="#F0F8FF">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:padding="12dp">
+
+                            <ImageView
+                                android:layout_width="28dp"
+                                android:layout_height="28dp"
+                                android:layout_marginBottom="8dp"
+                                android:src="@drawable/ic_run"
+                                app:tint="#4A90E2" />
+
+                            <TextView
+                                android:id="@+id/tv_distance"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0.0 km"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:textColor="#2E5984"
+                                android:gravity="center" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Jarak"
+                                android:textSize="11sp"
+                                android:textColor="@color/text_secondary"
+                                android:gravity="center"
+                                android:layout_marginTop="4dp" />
+
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Duration Card -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="0dp"
+                        android:layout_height="120dp"
+                        android:layout_weight="1"
+                        android:layout_marginStart="3dp"
+                        android:layout_marginEnd="3dp"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="4dp"
+                        android:backgroundTint="#FFF8F0">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:padding="12dp">
+                            <ImageView
+                                android:layout_width="28dp"
+                                android:layout_height="28dp"
+                                android:layout_marginBottom="8dp"
+                                android:src="@drawable/ic_hourglass"
+                                app:tint="#FF9800" />
+
+                            <Chronometer
+                                android:id="@+id/chronometer"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:textColor="#E65100"
+                                android:gravity="center" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Durasi"
+                                android:textSize="11sp"
+                                android:textColor="@color/text_secondary"
+                                android:gravity="center"
+                                android:layout_marginTop="4dp" />
+
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Trash Count Card -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="0dp"
+                        android:layout_height="120dp"
+                        android:layout_weight="1"
+                        android:layout_marginStart="6dp"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="4dp"
+                        android:backgroundTint="#F0FFF0">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:padding="12dp">
+
+                            <ImageView
+                                android:layout_width="28dp"
+                                android:layout_height="28dp"
+                                android:layout_marginBottom="8dp"
+                                android:src="@drawable/ic_trash"
+                                app:tint="#4CAF50" />
+
+                            <TextView
+                                android:id="@+id/tv_trash_count"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:textColor="#2E7D32"
+                                android:gravity="center" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Sampah"
+                                android:textSize="11sp"
+                                android:textColor="@color/text_secondary"
+                                android:gravity="center"
+                                android:layout_marginTop="4dp" />
+
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                </LinearLayout>
+
+                <!-- Action Buttons Section -->
+                <LinearLayout
+                    android:id="@+id/layout_initial_state"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:visibility="visible">
+
+                    <!-- Start Button (Only visible initially) -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_start_stop"
+                        android:layout_width="match_parent"
+                        android:layout_height="60dp"
+                        android:text="Start Plogging"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="@android:color/white"
+                        app:cornerRadius="16dp"
+                        app:backgroundTint="@color/environmental_green"
+                        app:rippleColor="@android:color/white"
+                        app:icon="@drawable/ic_play"
+                        app:iconGravity="textStart"
+                        app:iconTint="@android:color/white" />
+
+                </LinearLayout>
+
+                <!-- Active State Buttons (Visible after start) -->
+                <LinearLayout
+                    android:id="@+id/layout_active_state"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:visibility="gone">                    <!-- Collect Trash Button -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_collect_trash"
+                        android:layout_width="0dp"
+                        android:layout_height="60dp"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="8dp"
+                        android:text="Sampah"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="@android:color/white"
+                        app:cornerRadius="16dp"
+                        app:backgroundTint="#FF9800"
+                        app:rippleColor="@android:color/white"
+                        app:icon="@drawable/ic_camera"
+                        app:iconGravity="textStart"
+                        app:iconTint="@android:color/white" />
+
+                    <!-- Finish Button -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_finish"
+                        android:layout_width="0dp"
+                        android:layout_height="60dp"
+                        android:layout_weight="1"
+                        android:layout_marginStart="8dp"
+                        android:text="Selesai"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="@android:color/white"
+                        app:cornerRadius="16dp"
+                        app:backgroundTint="#F44336"
+                        app:rippleColor="@android:color/white"
+                        app:icon="@drawable/ic_check"
+                        app:iconGravity="textStart"
+                        app:iconTint="@android:color/white" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+    </LinearLayout>
+
+    <!-- Enhanced No Internet Overlay -->
+    <FrameLayout
+        android:id="@+id/layout_no_internet_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <!-- Semi-transparent Background -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#CC000000"
+            android:alpha="0.8" />
+
+        <!-- No Internet Content -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="32dp">
+
+            <!-- Animated No Internet Icon -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="120dp"
+                android:layout_height="120dp"
+                android:layout_marginBottom="24dp"
+                app:cardCornerRadius="60dp"
+                app:cardElevation="8dp"
+                android:backgroundTint="@android:color/white">
+
+                <ImageView
+                    android:layout_width="64dp"
+                    android:layout_height="64dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_no_internet"
+                    app:tint="#FF6B6B"
+                    android:contentDescription="No Internet Connection" />
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Main Title -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🚫 No Internet Connection"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/white"
+                android:gravity="center"
+                android:layout_marginBottom="12dp" />
+
+            <!-- Subtitle -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Map requires internet connection for accurate tracking"
+                android:textSize="16sp"
+                android:textColor="#E0E0E0"
+                android:gravity="center"
+                android:layout_marginBottom="32dp" />
+
+            <!-- Feature Info Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="8dp"
+                android:backgroundTint="@android:color/white"
+                android:layout_marginBottom="24dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="💡 What you can do offline:"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/primary_dark"
+                        android:layout_marginBottom="12dp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="8dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="✅"
+                            android:textSize="16sp"
+                            android:layout_marginEnd="8dp" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="View previously downloaded maps"
+                            android:textSize="14sp"
+                            android:textColor="@color/text_primary" />
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="8dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="✅"
+                            android:textSize="16sp"
+                            android:layout_marginEnd="8dp" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Track distance and time locally"
+                            android:textSize="14sp"
+                            android:textColor="@color/text_primary" />
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="❌"
+                            android:textSize="16sp"
+                            android:layout_marginEnd="8dp" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Real-time map updates require internet"
+                            android:textSize="14sp"
+                            android:textColor="#666666" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Retry Button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_retry_connection"
+                android:layout_width="wrap_content"
+                android:layout_height="56dp"
+                android:text="🔄 Retry Connection"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/white"
+                app:cornerRadius="28dp"
+                app:backgroundTint="@color/environmental_green"
+                app:rippleColor="@android:color/white"
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp" />
+
+        </LinearLayout>
+
+    </FrameLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

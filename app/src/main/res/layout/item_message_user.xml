@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="8dp">
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/message_container"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="48dp"
+        android:layout_marginEnd="8dp"
+        app:cardBackgroundColor="@color/primary"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="2dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintWidth_max="280dp"
+        app:layout_constraintHorizontal_bias="1.0">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <TextView
+                android:id="@+id/message_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@android:color/white"
+                android:textSize="16sp"
+                tools:text="Halo, bagaimana cara memilah sampah yang benar?" />
+
+        </LinearLayout>
+
+    </androidx.cardview.widget.CardView>
+
+    <TextView
+        android:id="@+id/message_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:layout_marginEnd="8dp"
+        android:textColor="@color/text_hint"
+        android:textSize="12sp"
+        app:layout_constraintEnd_toEndOf="@+id/message_container"
+        app:layout_constraintTop_toBottomOf="@+id/message_container"
+        tools:text="14:30" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

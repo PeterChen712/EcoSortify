@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_favorite"
+        android:icon="@drawable/ic_favorite_outline"
+        android:title="💝 Add to Favorites"
+        app:iconTint="@color/environmental_green"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_share"
+        android:icon="@drawable/ic_share"
+        android:title="📤 Share Article"
+        app:iconTint="@color/environmental_green"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_open_browser"
+        android:icon="@drawable/ic_open_in_browser"
+        android:title="🌐 Open in Browser"
+        app:iconTint="@color/environmental_green"
+        app:showAsAction="never" />
+
+</menu>

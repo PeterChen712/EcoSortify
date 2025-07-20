@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="128dp"
+    android:height="128dp"
+    android:viewportWidth="128"
+    android:viewportHeight="128">
+    
+    <!-- Background Circle: Lime -->
+    <path
+        android:fillColor="#CDDC39"
+        android:pathData="M64,8C33.1,8 8,33.1 8,64s25.1,56 56,56s56,-25.1 56,-56S94.9,8 64,8z"/>
+    
+    <!-- Face -->
+    <path
+        android:fillColor="#F0F4C3"
+        android:pathData="M64,24C45.2,24 30,39.2 30,58v16c0,18.8 15.2,34 34,34s34,-15.2 34,-34V58C98,39.2 82.8,24 64,24z"/>
+      
+    <!-- Eyes: Sipit -->
+    <path
+        android:fillColor="#333333"
+        android:pathData="M52,54 Q54,53 56,54"/>
+    <path
+        android:fillColor="#333333"
+        android:pathData="M72,54 Q74,53 76,54"/>
+    
+    <!-- Nose -->
+    <path
+        android:fillColor="#DCE775"
+        android:pathData="M64,62C65.1,62 66,62.9 66,64C66,65.1 65.1,66 64,66C62.9,66 62,65.1 62,64C62,62.9 62.9,62 64,62z"/>
+    
+    <!-- Mouth: Small Smile -->
+    <path
+        android:fillColor="#333333"
+        android:pathData="M60,72 Q64,75 68,72"
+        android:fillType="nonZero"/>
+        
+    <!-- Hair: Dark Green -->
+    <path
+        android:fillColor="#33691E"
+        android:pathData="M64,24C50,24 38,32 34,44 Q38,38 46,36 Q54,34 64,34 Q74,34 82,36 Q90,38 94,44C90,32 78,24 64,24z"/>
+</vector>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">    <!-- Base application theme. -->
+    <style name="Base.Theme.Ecosortify" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Customize your light theme here. -->
+        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+    </style>    <style name="Theme.Ecosortify" parent="Base.Theme.Ecosortify">
+        <!-- Primary brand color -->
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryVariant">@color/primary_dark</item>
+        <item name="colorOnPrimary">@color/white</item>
+        
+        <!-- Secondary brand color -->
+        <item name="colorSecondary">@color/accent</item>
+        <item name="colorSecondaryVariant">@color/accent_dark</item>
+        <item name="colorOnSecondary">@color/black</item>
+        
+        <!-- Background colors -->
+        <item name="android:colorBackground">@color/background_light</item>
+        <item name="colorSurface">@color/white</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        <item name="colorOnBackground">@color/text_primary</item>
+        
+        <!-- Status bar color -->
+        <item name="android:statusBarColor">@color/primary_dark</item>
+        <item name="android:windowLightStatusBar">true</item>
+        
+        <!-- Navigation bar -->
+        <item name="android:navigationBarColor">@color/white</item>
+    </style>    <!-- Splash screen theme -->
+    <style name="Theme.Ecosortify.Splash" parent="Theme.Ecosortify">
+        <item name="android:windowBackground">@drawable/splash_background</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowTranslucentNavigation">true</item>
+    </style>    <!-- Authentication theme -->
+    <style name="Theme.Ecosortify.Auth" parent="Theme.Ecosortify">
+        <item name="android:windowBackground">@color/background_light</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:statusBarColor">@color/background_light</item>
+    </style>
+
+    <!-- Standard Header Style - 56dp height -->
+    <style name="AppBarLayout" parent="Widget.Material3.AppBarLayout">
+        <item name="android:layout_height">56dp</item>
+        <item name="android:elevation">4dp</item>
+    </style>
+
+    <style name="MaterialToolbar" parent="Widget.Material3.Toolbar">
+        <item name="android:layout_height">56dp</item>
+        <item name="android:minHeight">56dp</item>
+        <item name="titleTextAppearance">@style/ToolbarTitleStyle</item>
+    </style>
+
+    <style name="ToolbarTitleStyle" parent="TextAppearance.Material3.HeadlineSmall">
+        <item name="android:textSize">20sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- Header Layout Style -->
+    <style name="HeaderLayout">
+        <item name="android:layout_height">56dp</item>
+        <item name="android:paddingHorizontal">16dp</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:orientation">horizontal</item>
+    </style>
+</resources>

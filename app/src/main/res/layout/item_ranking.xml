@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cardRanking"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginVertical="4dp"
+    android:layout_marginHorizontal="16dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="2dp"
+    app:cardBackgroundColor="@color/white">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:gravity="center_vertical">
+
+        <!-- Ranking Position Number -->
+        <TextView
+            android:id="@+id/tvRankingPosition"
+            android:layout_width="48dp"
+            android:layout_height="wrap_content"
+            android:text="1"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="@color/primary_color"
+            android:layout_marginEnd="12dp"
+            android:gravity="center" />
+
+        <!-- Crown for top 3 positions -->
+        <ImageView
+            android:id="@+id/ivCrown"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_crown"
+            android:visibility="gone"
+            android:layout_marginEnd="8dp" />
+
+        <!-- User Profile with Border -->
+        <de.hdodenhof.circleimageview.CircleImageView
+            android:id="@+id/ivUserProfile"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@drawable/ic_user_avatar"
+            app:civ_border_width="2dp"
+            app:civ_border_color="@color/primary_color"
+            android:layout_marginEnd="12dp" />
+
+        <!-- User Info -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvUserName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Username"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:textColor="@color/text_primary"
+                android:singleLine="true"
+                android:ellipsize="end" />
+
+            <TextView
+                android:id="@+id/tvStats"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="12.5km • 850 poin • 3 badge"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary"
+                android:layout_marginTop="2dp" />
+
+        </LinearLayout>
+
+        <!-- Score -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="end">
+
+            <TextView
+                android:id="@+id/tvPoints"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="1,250"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/primary_color"
+                android:gravity="end" />
+
+            <TextView
+                android:id="@+id/tvScoreUnit"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="poin"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary"
+                android:gravity="end" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>

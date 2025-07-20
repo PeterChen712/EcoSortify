@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/menu_stats"
+        android:title="📊 Statistics"
+        android:icon="@drawable/ic_stats" />
+    <item
+        android:id="@+id/menu_ranking"
+        android:title="🏆 Ranking"
+        android:icon="@drawable/ic_ranking" />
+    <item
+        android:id="@+id/menu_trash_map"
+        android:title="🗺️ Peta Sampah"
+        android:icon="@drawable/ic_map" />
+
+    <item
+        android:id="@+id/menu_profile"
+        android:title="👤 Profile"
+        android:icon="@drawable/ic_profile" />
+</menu>

@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp">
+
+        <ImageButton
+            android:id="@+id/btn_back"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Back"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <!-- App Logo and Title Section -->
+        <ImageView
+            android:id="@+id/iv_app_logo"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_marginTop="32dp"
+            android:src="@drawable/ic_launcher_foreground"
+            android:contentDescription="Ecosortify Logo"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/tv_app_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Ecosortify"
+            android:textColor="@color/primary_color"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/iv_app_logo" />
+
+        <TextView
+            android:id="@+id/tv_app_version"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Version 1.0"
+            android:textSize="16sp"
+            android:textColor="@android:color/darker_gray"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tv_app_title" />
+
+        <!-- App Description Card -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/card_description"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tv_app_version">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:id="@+id/tv_description_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Tentang Ecosortify"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/primary_color"
+                    android:layout_marginBottom="12dp" />
+
+                <TextView
+                    android:id="@+id/tv_app_description"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Ecosortify adalah aplikasi plogging yang mengajak pengguna berolahraga sambil menjaga lingkungan dengan memungut sampah."
+                    android:textSize="16sp"
+                    android:lineSpacingExtra="4dp"
+                    android:textColor="@android:color/black" />
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Story Behind Name Card -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/card_story"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/card_description">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:id="@+id/tv_story_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Cerita di Balik Nama &amp; Inspirasi"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/primary_color"
+                    android:layout_marginBottom="12dp" />
+
+                <TextView
+                    android:id="@+id/tv_story_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Nama &quot;Ecosortify&quot; mengandung filosofi mendalam: &quot;Eco&quot; merujuk pada ekologi dan kepedulian lingkungan, &quot;Sort&quot; berarti memilah dan mengategorikan sampah dengan tepat, dan &quot;ify&quot; memberikan makna transformasi aktif — mengubah kebiasaan menjadi aksi nyata untuk lingkungan."
+                    android:textSize="16sp"
+                    android:lineSpacingExtra="4dp"
+                    android:textColor="@android:color/black"
+                    android:layout_marginBottom="12dp" />
+
+                <TextView
+                    android:id="@+id/tv_wikipedia_link"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Pelajari lebih lanjut tentang &quot;The Gleaners&quot;"
+                    android:textSize="16sp"
+                    android:textColor="@color/primary_color"
+                    android:textStyle="bold"
+                    android:padding="12dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:drawableStart="@android:drawable/ic_menu_info_details"
+                    android:drawablePadding="8dp"
+                    android:gravity="center_vertical" />
+
+            </LinearLayout>        </androidx.cardview.widget.CardView>
+
+        <TextView
+            android:id="@+id/tv_copyright"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="16dp"
+            android:text="© 2025 Ecosortify Team. All rights reserved."
+            android:textColor="@android:color/darker_gray"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/card_story" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</ScrollView>

@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="3dp"
+    android:foreground="?attr/selectableItemBackground"
+    android:clickable="true"
+    android:focusable="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp">
+
+        <!-- Skin Preview with Selection Indicator -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            android:layout_marginBottom="8dp">            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="1dp">
+
+                <ImageView
+                    android:id="@+id/viewSkinPreview"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:background="@drawable/profile_skin_default" />
+
+            </androidx.cardview.widget.CardView><!-- Selection Check Mark -->
+            <ImageView
+                android:id="@+id/ivSelected"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="top|end"
+                android:layout_margin="8dp"
+                android:background="@drawable/circle_green_background"
+                android:src="@drawable/ic_check"
+                android:padding="4dp"
+                app:tint="@color/white"
+                android:visibility="gone"
+                tools:visibility="visible"
+                android:contentDescription="Selected Skin" />            <!-- Status Icon (Locked/Buy/Owned) -->
+            <ImageView
+                android:id="@+id/ivStatusIcon"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_gravity="bottom|end"
+                android:layout_margin="8dp"
+                android:background="@drawable/circle_white_background"
+                android:padding="6dp"
+                android:visibility="gone"
+                tools:visibility="visible"
+                android:contentDescription="Status Icon"
+                android:elevation="2dp" />
+
+        </FrameLayout>
+
+        <!-- Skin Info -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">                <!-- Skin Name -->
+                <TextView
+                    android:id="@+id/tvSkinName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Default Green"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary"
+                    android:maxLines="2"
+                    android:ellipsize="end" />
+
+                <!-- Price Text (only shown for purchasable items) -->
+                <TextView
+                    android:id="@+id/tvPriceInfo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="12sp"
+                    android:textColor="@color/environmental_green"
+                    android:layout_marginTop="2dp"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:visibility="gone"
+                    tools:text="100 points" />            </LinearLayout>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>

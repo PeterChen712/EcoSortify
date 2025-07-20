@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="6dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="3dp"
+    android:foreground="?attr/selectableItemBackground"
+    android:clickable="true"
+    android:focusable="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp"
+        android:gravity="center">
+
+        <!-- Badge Icon with Selection Indicator -->
+        <FrameLayout
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_marginBottom="8dp">
+
+            <ImageView
+                android:id="@+id/ivBadgeIcon"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/circle_light_background"
+                android:padding="12dp"
+                android:src="@drawable/ic_star"
+                app:tint="@color/primary_color"
+                android:contentDescription="Badge Icon" />
+
+            <!-- Selection Check Mark -->
+            <ImageView
+                android:id="@+id/ivSelected"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="bottom|end"
+                android:background="@drawable/circle_green_background"
+                android:src="@drawable/ic_check"
+                android:padding="2dp"
+                app:tint="@color/white"
+                android:visibility="gone"
+                tools:visibility="visible"
+                android:contentDescription="Selected Badge" />
+
+            <!-- Lock Icon for Locked Badges -->
+            <ImageView
+                android:id="@+id/ivLocked"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="bottom|end"
+                android:background="@drawable/circle_gray_background"
+                android:src="@drawable/ic_lock"
+                android:padding="2dp"
+                app:tint="@color/white"
+                android:visibility="gone"
+                android:contentDescription="Locked Badge" />
+
+        </FrameLayout>
+
+        <!-- Badge Name -->
+        <TextView
+            android:id="@+id/tvBadgeName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Starter"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:gravity="center"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+        <!-- Badge Rarity -->
+        <TextView
+            android:id="@+id/tvBadgeRarity"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Common"
+            android:textSize="10sp"
+            android:textColor="@color/text_secondary"
+            android:gravity="center"
+            android:layout_marginTop="2dp"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>
